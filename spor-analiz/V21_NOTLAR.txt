@@ -1,0 +1,9 @@
+V21 - Basketbol kadın takım etiketi + ESPN doğrudan maç bulma
+
+- Basketbol takım adlarında (W) ve (K) aynı kadın takım etiketi olarak kabul edilir.
+- [W], [K], Women/Women's, Kadın/Kadin son ekleri de eşleşmede temizlenir.
+- Örn: Phoenix Mercury (W), Phoenix Mercury (K) ve Phoenix Mercury aynı takımla eşleşebilir.
+- Basketbolda ESPN artık sadece oyuncu boxscore yedeği değil, doğrudan maç bulma kaynağıdır.
+- WNBA, NBA, NCAA erkek ve NCAA kadın programları denenir.
+- ESPN maçı bulursa aynı akışta oyuncu boxscore verileri de alınır.
+- Oyuncu bahisleri maç toplam sayısına düşürülmez.

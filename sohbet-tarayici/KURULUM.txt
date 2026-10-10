@@ -1,0 +1,27 @@
+Hızır Bey Sohbet Tarayıcı — 1.1.0
+
+1. ZIP dosyasını bir klasöre çıkarın.
+2. Chrome adres çubuğuna chrome://extensions yazın.
+3. Sağ üstten Geliştirici modu seçeneğini açın.
+4. Paketlenmemiş öğe yükle düğmesine basın.
+5. manifest.json dosyasının bulunduğu hizir-bey-sohbet-tarayici klasörünü seçin.
+6. LiveChat sayfasını bir kez yenileyin.
+7. Eklenti menüsünden Sesi dene ve Şimdi kontrol et düğmelerini deneyin.
+
+Davranış:
+- LiveChat sekmesi öndeyken 15 saniyede bir kontrol eder.
+- 2 dakika ve üzeri tüm süreler uyarılır: 2m, 3m, 4m, 10m, 1h, 1d vb.
+- 120 saniye ve üzeri saniye göstergeleri ve 1h 2m gibi birleşik süreler de desteklenir.
+- Son mesajı kimin gönderdiğine bakmaz. HTML'de bulunan tüm sohbet satırları kontrol edilir.
+- Her taramada en az bir eşleşme varsa tek bir ding sesi verir.
+- Eşleşen süre alanını 200 milisaniye yeşil çerçeveyle işaretler.
+- Eşleşme devam ederse sonraki 15 saniyelik kontrolde yeniden uyarır.
+- Ses dosyası orijinal ding.mp3 sağlanmadığı için hazırlanmış yeni bir ding.wav sesidir.
+- Site adresleri: https://*.livechat.com/* ve https://*.livechatinc.com/*
+- Chrome kapalıysa, sekme uyutulmuşsa veya sohbet listesi sayfada bulunmuyorsa tarama yapılamaz.
+- İsim ve mesajlar dışarı gönderilmez; eklenti harici sunucuya bağlantı kurmaz.
+
+Süre göstergesi LiveChat tarafından güncellenirse seçicilerin uyarlanması gerekebilir.
+Kaynak kodları pakete dahildir. Kurulumdan sonra klasörü silmeyin.
+
+Güncelleme: Yeni dosyaları mevcut eklenti klasörüne kopyalayın; chrome://extensions sayfasında eklentinin yenile düğmesine basın, sonra LiveChat sayfasını yenileyin.

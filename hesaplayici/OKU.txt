@@ -1,0 +1,19 @@
+HIZIR BEY - YATIRIM / CEKIM HESAPLAYICI
+
+Bu paket hazir bir EXE degil, Windows icin EXE olusturma paketidir.
+
+1. ZIP'in tamamini bir klasore cikarin.
+2. EXE_OLUSTUR.bat dosyasina cift tiklayin.
+3. Derleme bitince dist klasoru otomatik acilir.
+4. HizirBey_Hesaplayici.exe dosyasini istediginiz yere tasiyabilirsiniz.
+
+Derleme icin Python 3.9+ (Tcl/Tk ve pip dahil) ve internet gerekir.
+Python kurulu degilse https://www.python.org/downloads/windows/ adresinden
+kurun. Kurulumda Add Python to PATH secenegini isaretleyin.
+Derleme araclari bu klasordeki .build-venv icine kurulur.
+
+Olusan EXE tek dosyadir; calistirmak icin Python veya internet gerekmez.
+Logo ve uygulama simgesi dahildir. Konsol penceresi acilmaz.
+Hesaplama ve kopyalama mantigi korunmustur.
+
+Hata olursa derleme penceresindeki hata metnini paylasin.

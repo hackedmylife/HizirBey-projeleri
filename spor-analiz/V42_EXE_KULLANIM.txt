@@ -1,0 +1,42 @@
+V42 - EXE BUILD DROP-IN DUZELTMESI
+=================================
+
+Bu paket sadece build dosyalarini icerir.
+TOKEN / API KEY dosyasi ICERMEZ.
+Program koduna veya tokenlara dokunmaz.
+
+NEDEN ONCEKI LOG AYNI HATAYI VERDI?
+-----------------------------------
+Logda [1/5] gorunmesi, eski V40 EXE_OLUSTUR_ONEDIR.bat dosyasinin
+calistirildigini gosterir. V42 [1/6] yazar ve once "Kaynak klasoru
+automatik bulundu" satirini gosterir.
+
+KURULUM
+-------
+1) Bu ZIP'teki 3 build dosyasini su klasore cikart:
+   C:\Users\work\Desktop\bet-analyzer\
+
+2) Windows "dosya zaten var" derse UZERINE YAZ / DEGISTIR de.
+   Ozellikle eski EXE_OLUSTUR_ONEDIR.bat dosyasinin degismesi gerekir.
+
+3) Sonra SADECE:
+   EXE_OLUSTUR_ONEDIR.bat
+   dosyasina normal cift tikla.
+
+DOGRU SURUMU NASIL ANLARSIN?
+----------------------------
+Ekranin basinda sunlari gormelisin:
+
+  Spor Analiz Merkezi - V42 Guvenli ONEDIR EXE Build
+  Kaynak klasoru otomatik bulundu:
+  C:\Users\work\Desktop\bet-analyzer\
+  [1/6] ...
+
+Eger yine [1/5] gorursen hala eski BAT dosyasini calistiriyorsun.
+
+CIKTI
+-----
+Basarili build:
+C:\Users\work\Desktop\bet-analyzer\dist\SporAnalizMerkezi\SporAnalizMerkezi.exe
+
+Sadece EXE'yi degil SporAnalizMerkezi klasorunun tamamini tasiyin.

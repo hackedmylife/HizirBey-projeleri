@@ -1,0 +1,14 @@
+V29 - ROLLBACK + SADECE PANEL/KART KÖŞELERİ OVAL
+
+Yapılanlar:
+- V28'de bozulan giriş alanları ve combobox düzeni geri alındı.
+- Input/entry alanları eski haline döndürüldü.
+- Sadece büyük panel ve kart alanları yumuşak oval köşeli hale getirildi.
+- Sol ana form kartı ovalleştirildi.
+- Sağ skor kartı ovalleştirildi.
+- Seçilen bahis / bahis sonucu / korner kartları ovalleştirildi.
+- Analiz açıklaması ve veri kaynağı kartları ovalleştirildi.
+- Console / Debug kapsayıcısı ovalleştirildi.
+- Geçmiş sayfasındaki üst bölüm, tablo ve detay kartları ovalleştirildi.
+- Orta skor kutusu hafif ovalleştirildi.
+- Kod py_compile kontrolünden geçti.

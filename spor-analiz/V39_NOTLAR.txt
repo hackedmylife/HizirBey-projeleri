@@ -1,0 +1,16 @@
+V39 - Groq enrich import / NameError düzeltmesi
+
+- gui.py içindeki enrich_match_data_with_groq NameError düzeltildi.
+- groq_web_fallback.enrich_match_data_with_groq GUI tarafında güvenli try/except import ile bağlandı.
+- Modül mevcut değilse NameError yerine güvenli şekilde None fallback kullanılır.
+- _scrape_worker Groq eksik-veri tamamlama akışı smoke test ile doğrulandı.
+- Token/API key dosyaları bu pakete KESİNLİKLE dahil edilmedi.
+  Böylece mevcut kurulum klasöründeki kullanıcı anahtarları yeni sürüm açılırken ezilmez.
+
+Kontroller:
+- py_compile: OK
+- compileall: OK
+- tabnanny: OK
+- core import smoke: OK
+- GUI smoke: OK
+- _scrape_worker Groq enrichment smoke: OK

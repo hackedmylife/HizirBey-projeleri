@@ -1,0 +1,30 @@
+V45 - TEK DOSYALIK ONEFILE EXE BUILD
+====================================
+
+AMAC
+- Calisan V44/V43/V39 koduna dokunmadan tek bir SporAnalizMerkezi.exe uretmek.
+- Mevcut ONEDIR build'i korumak.
+- Token/API key dosyalarini EXE'ye kesinlikle dahil etmemek.
+
+KURULUM
+1) Bu ZIP'teki dosyalari mevcut bet-analyzer klasorunun icine cikart.
+2) EXE_OLUSTUR_ONEFILE.bat dosyasina normal cift tikla.
+3) Yonetici olarak calistirma.
+4) Basarili cikti:
+   dist_onefile\SporAnalizMerkezi.exe
+
+TOKENLAR
+- Bu build token/API key dosyalarini kopyalamaz, silmez veya paketlemez.
+- Mevcut tokenlar %LOCALAPPDATA%\HizirBeySports altinda kalabilir.
+- Mevcut programin destekledigi EXE-yani / AppData arama mantigi aynen korunur.
+
+ONEMLI
+- ONEFILE ilk acilista gerekli dosyalari Windows TEMP klasorune cikartir.
+- Bu nedenle ilk acilis ONEDIR surumunden daha yavas olabilir.
+- Antivirus yazilimlari ilk calistirmada EXE'yi tarayabilir.
+- UPX kapali tutulmustur.
+- Sorun olursa mevcut ONEDIR build'in dist\SporAnalizMerkezi klasorunde kalir.
+
+PUTER / GROQ / WEB FALLBACK
+- Groq, Puter Browser Search ve Direct Web modulleri otomatik hidden-import taramasina dahildir.
+- Puter gerektiğinde varsayilan tarayiciyi acmaya devam eder.

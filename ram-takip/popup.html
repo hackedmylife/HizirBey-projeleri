@@ -1,0 +1,12 @@
+<!doctype html>
+<html lang="tr"><meta charset="utf-8"><title>Hızır Bey RAM Takip</title>
+<style>
+*{box-sizing:border-box}body{width:400px;max-height:580px;overflow:auto;margin:0;padding:24px;background:#101827;color:#e7eef8;font:14px/1.5 system-ui}h1{font-size:20px;margin:0 0 6px}p{color:#afbed1}section{padding:18px;background:#1b293d;border-radius:14px;margin:18px 0}strong{display:block;font-size:30px;color:#66e7b6}button{width:100%;padding:12px;border:0;border-radius:9px;font:600 14px system-ui;cursor:pointer;margin:5px 0;background:#66e7b6;color:#10261f}button.secondary{background:#30425c;color:white}button:disabled{opacity:.5;cursor:wait}small{display:block;color:#afbed1}#status{white-space:pre-line;color:#e7eef8}
+.brand-logo{display:block;width:132px;height:122px;object-fit:contain;margin:0 auto 12px}h1{text-align:center}
+</style>
+<img class="brand-logo" src="logo.png" alt="Hızır Bey logosu"><h1>Hızır Bey RAM Takip</h1><small>Yeni sekme aç · Yüklenmesini bekle · Eskiyi kapat</small>
+<section><small>Her sekme için ayrı sınır</small><strong>1 GB</strong><small>Renderer süreç RAM’i · Kontrol: ~30 saniye</small></section><div id="list"></div>
+<p id="api" role="status"></p><p id="status" role="status">Durum okunuyor…</p>
+<button id="all">Tüm web sekmelerini otomatik izle</button><button id="start">Bu sekmeyi izlemeye başla</button><button id="site" class="secondary">Bu sitenin açık sekmelerini ekle</button><button id="stop" class="secondary">Tümünü durdur</button>
+<p><small>Bu sürüm Chrome’un renderer süreç privateMemory değerini ölçer. Aynı süreçteki sekmeler RAM değerini paylaşır. Sekme önizlemesindeki sayı ile birebir eşleşmesi garanti değildir. Taslaklar taşınmaz; sayfanın yüklenmesi uygulamanın bağlandığını doğrulamaz.</small></p>
+<script src="popup.js"></script></html>

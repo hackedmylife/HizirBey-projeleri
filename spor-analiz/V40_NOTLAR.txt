@@ -1,0 +1,19 @@
+V40 - WINDOWS EXE BUILD KIT
+
+- V39 çalışan kod tabanı korunmuştur.
+- PyInstaller ONEDIR için project/gui_onedir.spec eklendi.
+- Tek tık build: EXE_OLUSTUR_ONEDIR.bat
+- Kalıcı token kopyalama: TOKENLERI_KALICI_YERE_KOPYALA.bat
+- Token/API key dosyaları pakete dahil edilmemiştir.
+- API-FOOTBALL, football-data.org, BetsAPI, TheSportsDB ve PandaScore token arama sistemi EXE klasörü + %LOCALAPPDATA%/HizirBeySports için güçlendirildi.
+- Groq zaten EXE ve AppData yollarını desteklemektedir.
+- UPX kapalı tutuldu; daha güvenilir paketleme ve daha az antivirüs false-positive hedeflendi.
+- ONEDIR ilk aşama olarak seçildi; doğrulandıktan sonra istenirse ONEFILE sürümü hazırlanabilir.
+
+Kontroller:
+- compileall: geçti
+- tabnanny: geçti
+- modül import smoke: geçti
+- GUI xvfb smoke: geçti
+- kalıcı AppData token lookup testi: geçti
+- PyInstaller spec Python syntax testi: geçti

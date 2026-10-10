@@ -1,0 +1,26 @@
+V44 - GERCEK KAYNAKLAR ONCELIKLI + GROQ -> PUTER -> DIRECT WEB
+
+KAYNAK SIRASI
+1) Branşa uygun tum gercek veri kaynaklari tamamen denenir.
+   - Futbol: Flashscore, API-FOOTBALL, TheSportsDB, football-data.org, Sofascore, BetsAPI
+   - E-Spor: PandaScore/Offstage/HLTV/ESportsBattle, TheSportsDB, Sofascore, BetsAPI
+   - Diger sporlar: ESPN (Basketbol), Flashscore, Tennis Explorer (Tenis), TheSportsDB, Sofascore, BetsAPI
+2) Tum gercek kaynaklar bittiyse Groq Web AI.
+3) Groq 429/sonucsuzsa Puter Web AI (tarayici tabanli, kurulum/API key gerektirmez; Puter hesabi ile oturum gerekebilir).
+4) Puter da sonucsuzsa AI kullanmayan token-free direct web arama/parser.
+
+EKSIK ISTATISTIK
+- Ilk kaynak maci bulsa bile bahis/periyot/istatistik verisi eksikse AI hemen devreye girmez.
+- Once kalan gercek kaynaklar sadece eksik alanlari tamamlamak icin taranir.
+- Sonra hala eksik varsa Groq -> Puter -> Direct Web sirasina gecilir.
+- Mevcut dogrulanmis skor/veri AI veya diger kaynak tarafindan ezilmez.
+
+GUVENLIK
+- Puter/Direct Web otomatik settlement icin yuksek kanit esigi kullanir.
+- Direct Web icin iki farkli domain + tarih kaniti gerekir.
+- Token/API key dosyalari bu pakete dahil DEGILDIR.
+
+KURULUM
+- Bu ZIP'i mevcut bet-analyzer klasorunun uzerine cikartip dosyalari degistir.
+- Once python gui.py ile test et.
+- EXE kullaniyorsan daha sonra EXE_OLUSTUR_ONEDIR.bat ile yeniden build al.

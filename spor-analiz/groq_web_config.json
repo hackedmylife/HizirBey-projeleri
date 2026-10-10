@@ -1,0 +1,13 @@
+{
+  "enabled": true,
+  "endpoint": "https://api.groq.com/openai/v1/chat/completions",
+  "model": "openai/gpt-oss-20b",
+  "timeout_seconds": 70,
+  "max_debug_lines": 35,
+  "min_confidence_for_settlement": 0.84,
+  "min_sources_for_settlement": 2,
+  "max_completion_tokens": 2400,
+  "reasoning_effort": "low",
+  "min_confidence_for_enrichment": 0.86,
+  "min_sources_for_enrichment": 2
+}

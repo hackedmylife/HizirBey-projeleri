@@ -1,0 +1,22 @@
+V25 — Premium Referans Tasarım
+
+Bu sürümde GUI, kullanıcı tarafından gönderilen referans ekrana mümkün olduğunca birebir yaklaştırıldı:
+- Sol sabit navigasyon menüsü ve aktif altın Ana Sayfa kartı
+- Üst premium header, merkez Hızır Bey Casino logosu, altın ışık/saha/football arka planı ve HAZIR rozeti
+- Sol tarafta kompakt Karşılaşma & Bahis Ayarları paneli
+- Altın premium ana analiz butonu
+- Sağ tarafta Analiz Sonucu başlığı, takım rozetleri ve büyük skor kartı
+- Seçilen Bahis / Bahis Sonucu / Korner-Ek Bilgi kartları
+- Analiz Açıklaması + Veri Kaynağı iki kolonlu düzen
+- Alt bölümde Console / Debug paneli, log gösterimi, Kopyala ve Temizle butonları
+- Kazandı/Kaybetti/İade durumlarına göre yeşil/kırmızı/altın sonuç vurgusu
+- Takım isimlerinden otomatik baş harf rozeti
+- Basketbol oyuncu bahislerinde tek satır kompakt Oyuncu + Çizgi + ÜST/ALT alanı; 720p ekranda ana buton görünürlüğü korunur
+- EXE paketlemesinde kullanılan tüm yeni görsel assetler gui.spec içerisine eklendi
+
+Kalite kontrolleri:
+- Tüm Python dosyaları compileall ile kontrol edildi
+- tabnanny girinti kontrolü yapıldı
+- Tüm ana modüller import smoke testinden geçti
+- Tkinter GUI 1280x720 xvfb smoke testinden geçti
+- Basketbol Oyuncu Sayı Üst/Alt dinamik alanı ayrıca test edildi

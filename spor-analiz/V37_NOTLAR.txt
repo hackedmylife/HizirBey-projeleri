@@ -1,0 +1,25 @@
+V37 - GROQ WEB AI EKSİK VERİ / İSTATİSTİK TAMAMLAMA
+
+- Normal veri kaynakları maçı bulsa bile seçilen bahis için gerekli alan eksikse Groq Browser Search devreye girer.
+- Örnek: final skor bulundu ancak Maç Sonucu 1. Yarı için ht_score yok -> Groq web'de 1. yarı skorunu arar.
+- Seçilen istatistik görünümü boşsa ilgili periyot istatistikleri aranır.
+- Futbol: ht_score, ht_corners, toplam/1.yarı/2.yarı takım istatistikleri desteklenir.
+- Basketbol ve oyuncu marketleri: doğrulanmış oyuncu boxscore alanları (points/rebounds/assists/threes/steals/blocks vb.) desteklenir.
+- Tenis, masa tenisi, voleybol vb.: period_scores / set skorları tamamlanabilir.
+- E-Spor: map_scores ve round_score tamamlanabilir.
+- AI mevcut doğrulanmış veriyi EZMEZ; yalnız eksik alanları doldurur.
+- Otomatik analize etki edecek AI verisi için varsayılan min güven %86 ve en az 2 bağımsız web kaynak URL'si gerekir.
+- Eşik sağlanmazsa veri ana maça işlenmez ve program uydurma settlement yapmaz.
+- Groq enrichment web kaynakları raporun altında kanıt URL'leri olarak gösterilir.
+- Ağ çağrısı worker thread içinde çalışır; GUI donmaz.
+
+TESTLER
+- py_compile / compileall: OK
+- tabnanny: OK
+- modül import: OK
+- Tk GUI smoke (1366x768): OK
+- sentetik 1. yarı skor + 1. yarı takım istatistiği enrichment testi: OK
+- sentetik basketbol oyuncu boxscore + period_scores merge testi: OK
+- GUI worker enrichment smoke testi: OK
+
+Not: API anahtarları güvenlik nedeniyle bu pakette boş bırakılmıştır. Kendi çalışan klasörünüzdeki token dosyalarını project klasörüne kopyalayın.

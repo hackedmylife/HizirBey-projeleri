@@ -1,0 +1,17 @@
+V36 - FLASHSCORE CANONICAL MAC LINKI COZUCU
+
+Sorun:
+- Flashscore feed'deki JA/JB/AU/AV katilimci kimlikleri public web URL'sindeki takim kimlikleriyle her zaman ayni degil.
+- Bu nedenle slug + feed ID ile uretilen linkler bazi maclarda "The requested page can't be displayed" hatasina dusuyordu.
+
+Cozum:
+- Feed takim ID'lerinden public URL tahmin etme kaldirildi.
+- Flashscore event_id (AA / mid), takim adlari ve spor dali kullanilarak Groq Browser Search ile gercek public Flashscore mac URL'si bulunuyor.
+- Bulunan link yalnizca flashscore.com/match/... ve mid=<event_id> birebir eslesiyorsa kabul ediliyor.
+- Dogrulanan link event_id bazinda LOCALAPPDATA/HizirBeySports/flashscore_link_cache.json dosyasina cache'leniyor.
+- Ayni mac tekrar analiz edilirse Groq kotasi harcanmadan cache linki kullaniliyor.
+- Groq/canonical cozumleme basarisizsa bozuk tahmini Flashscore URL'si verilmek yerine event ID + takim adlariyla calisan Google site arama linki veriliyor.
+- Flashscore'un ic /x/feed adresi kullaniciya kaynak linki olarak gosterilmiyor.
+
+Not:
+- Yeni ZIP'e API anahtarlari bilincli olarak gomulmez. Kendi yerel token dosyalarinizi yeni surume kopyalayin.

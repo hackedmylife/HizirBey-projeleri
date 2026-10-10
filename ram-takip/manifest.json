@@ -1,0 +1,33 @@
+{
+  "manifest_version": 3,
+  "name": "Hızır Bey RAM Takip",
+  "version": "2.0.1",
+  "minimum_chrome_version": "120",
+  "description": "Sekmenin renderer süreç RAM’i 1 GB olduğunda yeni sekme açar ve yüklenince eskiyi kapatır. Özel Chrome başlatma seçeneği gerekir.",
+  "permissions": [
+    "tabs",
+    "storage",
+    "alarms",
+    "processes"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Hızır Bey RAM Takip",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "32": "icons/icon-32.png",
+      "48": "icons/icon-48.png",
+      "128": "icons/icon-128.png"
+    }
+  },
+  "short_name": "Hızır Bey RAM",
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  }
+}

@@ -1,0 +1,7 @@
+V24 GUI dashboard tasarımı:
+- Arayüz, örnek görsele daha yakın modern dashboard stiline dönüştürüldü.
+- Sol tarafa sabit menü eklendi.
+- Üst bölüm hero/header görünümüne geçirildi.
+- Sağ panel artık sadece konsol değil; skor kartı, seçilen bahis, bahis sonucu, kaynak ve analiz açıklaması alanlarını içeriyor.
+- Alt bölümde yeşil yazılı console/debug alanı korunmuştur.
+- Mevcut analiz mantığı korunarak sonuç geldiğinde sağ panel kartları otomatik güncellenir.

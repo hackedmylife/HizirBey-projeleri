@@ -1,0 +1,21 @@
+# Local credentials and sessions
+.env
+.env.*
+!.env.example
+*token*.txt
+*api_key*.txt
+*api-key*.txt
+*credentials*.json
+*.pem
+*.key
+*.jks
+*.keystore
+# Runtime data and build output
+__pycache__/
+*.pyc
+.build-venv/
+.venv/
+build/
+dist/
+*.log
+node_modules/

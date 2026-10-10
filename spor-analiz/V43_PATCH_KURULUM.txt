@@ -1,0 +1,19 @@
+V43 - EXE ARKA PLAN TARAMA / MASA TENISI TAKILMA DUZELTMESI
+
+Bu paket SADECE degisen kod dosyalarini icerir.
+TOKEN / API KEY DOSYASI ICERMEZ.
+
+Kurulum:
+1) Bu ZIP icindeki dosyalari mevcut C:\Users\work\Desktop\bet-analyzer\ klasorunun uzerine cikart.
+2) Dosya degistirme sorusuna Evet / Degistir de.
+3) Once python gui.py ile kisa test yapabilirsin.
+4) Sonra EXE_OLUSTUR_ONEDIR.bat ile EXE'yi yeniden olustur.
+
+Degisiklikler:
+- Masa Tenisi Flashscore sport_id=25 dogrulandi ve genis sport-ID taramasi kapatildi.
+- Flashscore feed denemeleri 3 istek / 5 sn timeout ile sinirlandi.
+- Dogrulanmamis diger branşlarda discovery maksimum 2 ID / yaklasik 25 sn ile sinirlandi.
+- GUI worker veri taramasina 150 sn global watchdog eklendi.
+- Herhangi bir kaynak takilirsa program sonsuza kadar 'Veriler taraniyor' ekraninda kalmaz.
+
+Not: Token/API anahtarlarina dokunulmaz.

@@ -1,0 +1,20 @@
+V32 - API-FOOTBALL + football-data.org
+
+1) API-FOOTBALL
+- Resmî API-SPORTS V3 entegrasyonu.
+- Token: project/api_football_token.txt veya API_FOOTBALL_TOKEN.
+- Günlük fixture araması + fixture ID detay çağrısı.
+- Skor, durum, takım logoları, maç olayları, takım istatistikleri ve mevcutsa oyuncu maç istatistikleri parse edilir.
+- Ücretsiz kotayı korumak için 1 saat cache ve 8 istek/dk yerel güvenlik sınırı.
+
+2) football-data.org
+- Resmî V4 entegrasyonu.
+- Token: project/football_data_token.txt veya FOOTBALL_DATA_TOKEN.
+- Tarih bazlı maç arama, skor/durum ve takım crest/logo verisi.
+- Ücretsiz planda ileri maç istatistikleri bulunmadığından TheSportsDB zenginleştirmesi korunur.
+- 1 saat cache ve 8 istek/dk yerel güvenlik sınırı.
+
+3) Futbol kaynak zinciri
+Flashscore -> API-FOOTBALL -> TheSportsDB -> football-data.org -> Sofascore -> BetsAPI
+
+Not: FreeAPIHub bir dizin/rehberdir; programa FreeAPIHub değil, alttaki resmî servisler doğrudan entegre edilmiştir.

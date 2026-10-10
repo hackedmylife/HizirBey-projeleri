@@ -1,0 +1,14 @@
+V35 - GROQ ONLINE WEB AI FALLBACK
+=================================
+
+- Ollama yerel fallback tamamen kaldirildi.
+- GroqCloud openai/gpt-oss-20b eklendi.
+- Groq Browser Search ile gercek web taramasi yapilir.
+- Son kullanici bilgisayarinda AI/model kurulumu gerekmez.
+- GROQ_API_KEY veya groq_api_key.txt destegi eklendi.
+- Tum klasik kaynaklar basarisiz olduktan sonra en son Groq Web AI calisir.
+- AI sonucu ancak FINAL skor + yuksek guven + en az 2 web kaynak URL'si varsa
+  normal bahis settlement akimina aktarilir.
+- Kanit yetersizse AI_FALLBACK olarak gosterilir ve otomatik settlement yapilmaz.
+- Web kanit URL'leri raporda kopyalanabilir olarak gosterilir.
+- gui.spec Groq web config/modulu ile guncellendi; Ollama paket girdileri kaldirildi.

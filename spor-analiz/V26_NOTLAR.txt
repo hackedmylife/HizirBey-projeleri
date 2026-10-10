@@ -1,0 +1,30 @@
+V26 - Takım logoları + Hızır Bey logo düzeltmesi
+
+1) Takım logoları artık internetten otomatik yüklenir.
+   - Öncelik: maç kaynağının döndürdüğü gerçek logo URL'si.
+   - ESPN maçlarında ESPN logo URL'si doğrudan taşınır.
+   - Sofascore maçlarında takım ID'sinden img.sofascore.com logo URL'si oluşturulur.
+   - TheSportsDB sonuçlarında badge/logo alanları kullanılır.
+   - Kaynak logo vermiyorsa ESPN Search v2 ile takım adı aranır.
+   - NBA/WNBA/MLB/NHL/NFL için ESPN takım-listesi fallback'i vardır.
+   - İndirilen logolar LOCALAPPDATA altında cache'lenir.
+   - Ağ başarısızsa uygulama çökmez; eski baş harf rozeti fallback olarak kalır.
+   - Logo indirme işlemi arka planda yapılır; Tk güncellemesi ana thread queue üzerinden güvenlidir.
+
+2) Hızır Bey logosu düzeltildi.
+   - Siyah dikdörtgen zeminli eski flatten görsel kaldırıldı.
+   - Orijinal şeffaf PNG'den hazırlanmış hizir_bey_transparent.png kullanılır.
+   - Header logosu grid kolonuna değil geometrik merkeze place(relx=0.5) ile sabitlenmiştir.
+   - Sol menünün altındaki Hızır Bey markası da aynı şeffaf logo ile değiştirildi.
+
+3) Paketleme
+   - gui.spec yeni şeffaf logo assetini içerir.
+   - Eski hizir_bey_reference_logo.png paketten çıkarılmıştır.
+
+Doğrulamalar
+- python -m compileall: OK
+- Ana modül importları: OK
+- 1366x768 Xvfb GUI smoke test: OK
+- Asenkron logo indirme/queue testi (lokal HTTP): OK
+- Gerçek logo bytes -> TeamBadge render testi: OK
+- Dashboard final sonuç testi: OK

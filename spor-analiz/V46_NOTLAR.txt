@@ -1,0 +1,29 @@
+V46 - Puter Web AI otomatik / kalici oturum duzeltmesi
+
+Degisen dosya:
+- puter_web_fallback.py
+
+Yeni davranis:
+1) Gercek spor kaynaklari tamamen bittikten sonra Groq denenir.
+2) Groq basarisiz/429 ise Puter denenir.
+3) Puter auth token daha once kaydedilmisse tarayici ACILMAZ.
+   Puter arka planda HTTP API ile otomatik calisir.
+4) Puter ilk kez kullaniliyorsa bir defalik baglanti sayfasi arka planda acilir.
+   Ana spor analizi 75 saniye BEKLEMEZ; hemen Direct Web fallback'e devam eder.
+5) Ilk baglantida tarayicida Puter oturumu zaten aciksa token otomatik kaydedilmeye calisilir.
+   Oturum acik degilse tarayici guvenligi nedeniyle kullanicinin bir defa "Puter'i Bagla" dugmesine basmasi gerekir.
+6) Baglanti tamamlandiktan sonra token:
+   %LOCALAPPDATA%\HizirBeySports\puter_auth_token.txt
+   konumunda saklanir ve sonraki sorgularda yeni sayfa acilmaz.
+7) PUTER_AUTH_TOKEN ortam degiskeni de desteklenir.
+8) Puter 429 verirse program takilmaz; Direct Web fallback'e gecer.
+
+ONEMLI:
+- Bu ZIP'in icinde puter_auth_token.txt veya baska hicbir token/API key dosyasi YOKTUR.
+- Mevcut groq/api-football/football-data/PandaScore/BetsAPI token dosyalarina dokunulmaz.
+- Puter auth token bir sifre gibi korunmalidir.
+
+Kurulum:
+- ZIP'i mevcut bet-analyzer klasorunun uzerine cikartin.
+- Once python gui.py ile deneyebilirsiniz.
+- ONEFILE EXE kullaniyorsaniz EXE_OLUSTUR_ONEFILE.bat ile yeniden build alin.

@@ -1,0 +1,40 @@
+HIZIR BEY RAM TAKİP — 2.0.1 — SÜREÇ RAM ÖLÇÜMÜ
+
+BU SÜRÜM NEYİ DÜZELTİR?
+Önceki sürümler yalnızca yaklaşık kullanılan JavaScript belleğini ölçüyordu. Bu sürüm chrome.processes API'sinin privateMemory alanını okur: sekmenin ana renderer sürecinin özel bellek ayak izi. JavaScript belleğine sessizce geri dönmez.
+Eşik: 1.000.000.000 bayt, yani 1 GB (1.000 MB). Kontrol yaklaşık 30 saniyede bir.
+
+KURULUM / GÜNCELLEME
+1. Önceki eklentide Tümünü durdur düğmesine basın.
+2. ZIP'teki LiveChat-Tab-Switcher klasörü içeriğini mevcut eklenti klasörüne çıkarın. manifest.json aynı klasörde kalmalı.
+3. Çalışmalarınızı kaydedin. Chrome menüsünden Çıkış yapın. Arka planda Chrome çalışıyorsa onu da normal şekilde kapatın. Başlatıcı açık Chrome varsa çalışmayı reddeder, zorla kapatmaz.
+4. Klasördeki Chrome-RAM-Modu.cmd dosyasına çift tıklayın. Chrome aynı varsayılan profilinizle ve --enable-experimental-extension-apis seçeneğiyle açılır. Önceki sekmeleri geri getirmesi istenir; geri yükleme Chrome oturum durumuna bağlıdır.
+5. chrome://extensions üzerinden eklentide Yeniden yükle simgesine basın. Yeni kurulumsa Geliştirici modu > Paketlenmemiş öğe yükle ile manifest.json bulunan klasörü seçin.
+6. Eklentiyi açın. Süreç RAM API erişimi açık mesajını görmelisiniz. Erişim kapalıysa başlatma seçeneği uygulanmamış, Chrome politikası engellemiş veya sürüm desteği değişmiş olabilir. Başlatılamaz; çalışıyor görünümü verilmez.
+7. Tüm web sekmelerini otomatik izle düğmesine basın.
+8. Eklenti listesinde MB değerini kontrol edin; artık JS belleği değil süreç RAM'i görünür.
+
+SONRAKİ AÇILIŞLAR
+Chrome'u bu .cmd dosyasıyla başlatın. Alternatif: Chrome kısayolunun Hedef alanındaki kapanış tırnağından sonra bir boşluk ve --enable-experimental-extension-apis ekleyin. Tüm Chrome süreçleri önce kapanmış olmalıdır. Normal kısayoldan ilk açılışta API tekrar kapalı kalabilir. Her yeni Chrome oturumunda eklentide izlemeyi başlatın.
+
+KAPSAM / DAVRANIŞ
+Tüm pencerelerdeki mevcut ve yeni HTTP/HTTPS sekmeleri izlenir. Tek sekme ve aynı site sekmelerini topluca ekleme düğmeleri de vardır. Başlıklar yalnızca listede gösterilir; seçim sekme kimliğiyle yapılır.
+1 GB eşiğinde mevcut URL yeni sekmede açılır. Yeni sekmenin Chrome yükleme durumu complete olunca eski sekme kapatılır. Aktif eski sekmeyse yeni sekmeye geçilir.
+Yeni sekme 90 saniyede yüklenmezse veya başka origin'e yönlenirse eski sekme korunur, o izleme durur. Yeni sekmenin açılması giriş veya görüşme bağlantısının hazır olduğunu garanti etmez. Taslaklar, kaydedilmemiş formlar, seçili görüşme ve kaydırma konumu taşınmaz.
+Her geçişten sonra sekme ve kaynak süreç için beş dakika beklenir. Aynı süreçteki birden çok sekmenin birlikte sürekli yeniden açılmasını önlemek için kaynak süreç bekleme süresi paylaşılır.
+Bir sekmeyi durdurmak onu otomatik tekrar eklemez; hatalı sekmeler kendiliğinden yeniden denenmez. Tümünü durdur otomatik eklemeyi de kapatır.
+
+ÖNEMLİ ÖLÇÜM SINIRI
+Süreç RAM'i, sekmenin Chrome önizlemesindeki bellek değeriyle birebir aynı ölçüm olmak zorunda değildir. Alt iframe/worker süreçleri ayrı olabilir. Aynı renderer sürecini paylaşan sekmeler aynı privateMemory değerini gösterir. Bu sürüm bir sekmenin tüm alt süreçlerini tek başına ona aitmiş gibi toplamaz. Yeni sekme yeni renderer süreci garantisi vermez.
+Chrome'un korumalı veya chrome:// sayfaları kapsam dışıdır. Bu sürüm sayfalara kod enjekte etmez ve tüm siteler içerik erişimi istemez. Süreç izni ve tabs izni kullanır; dış sunucuya veri göndermez, hesap anahtarı içermez.
+--enable-experimental-extension-apis seçeneği deneysel uzantı API erişimini açar; bu yalnızca bu eklentiyle sınırlı bir seçenek değildir. Chrome'un web güvenliğini veya sandbox'ını kapatmaz. Geri almak için normal kısayolla tüm Chrome kapalıyken açın veya kısayoldan seçeneği silin. Eklentiyi kaldırabilirsiniz.
+
+DOĞRULAMA
+Sözdizimi ve sahte Chrome API'leriyle süreç RAM eşiği, JS değerine bağımlı olmama, API kapalı durumu, süreç bekleme süresi, yüklenme/sekme değişimi ve çoklu sekme akışları kontrol edilmiştir. Windows/Chrome ve gerçek LiveChat, Slack veya EveryMatrix hesaplarında canlı test yapılmamıştır.
+
+KAYNAKLAR
+https://developer.chrome.com/docs/extensions/reference/api/processes
+https://raw.githubusercontent.com/chromium/chromium/main/extensions/common/features/simple_feature.cc
+Kaynak kod, --enable-experimental-extension-apis bayrağı olduğunda kanal kısıtının atlandığını belirtir. Resmi API belgesi Dev kanalı desteği belirtir; Stable üzerinde bu başlatma seçeneğiyle kullanım deneysel kabul edilmelidir.
+
+2.0.1: Eklenti adı Hızır Bey RAM Takip olarak değiştirildi. Gönderilen logo araç çubuğu, uzantı listesi ve açılır panel için eklendi. RAM takibi ve sekme geçiş davranışı aynıdır.

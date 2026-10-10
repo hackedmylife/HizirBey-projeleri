@@ -1,0 +1,9 @@
+V33 - FLASHSCORE PUBLIC MATCH URL DUZELTMESI
+
+- Kullaniciya artik Flashscore ic /x/feed URL'si gosterilmez.
+- Flashscore feed'indeki WU/WV slug, JA/JB veya AU/AV takim ID'leri ve AA event ID kullanilarak gercek public match URL olusturulur.
+- URL, guncel /match/<sport>/<team-1>/<team-2>/?mid=<event-id> formatinda uretilir.
+- Takim ID/slug verisi yoksa eski event-ID match URL'si fallback olarak kullanilir.
+- Ic feed URL'si sadece internal_source_url alaninda debug amacli tutulur.
+- Duzeltme futbol ve Flashscore multi-sport sonuclari icin uygulanmistir.
+- compileall, py_compile, tabnanny, import smoke ve GUI smoke testleri basarili.

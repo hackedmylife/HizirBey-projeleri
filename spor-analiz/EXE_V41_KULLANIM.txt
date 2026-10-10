@@ -1,0 +1,35 @@
+SPOR ANALIZ MERKEZI - V41 EXE BUILD DUZELTMESI
+================================================
+
+Bu paket SADECE build araclarini icerir.
+Mevcut calisan gui.py veya diger program dosyalarini degistirmez.
+Token/API key dosyasi ICERMEZ ve mevcut tokenlara dokunmaz.
+
+NEDEN V40 HATA VERDI?
+---------------------
+V40, kaynak kodun bet-analyzer\project\gui.py konumunda oldugunu varsayiyordu.
+Sizin bilgisayarinizda gui.py dogrudan bet-analyzer\gui.py konumunda.
+Bu nedenle project klasoru bulunamadi ve PyInstaller yanlislikla System32'den calisti.
+
+KULLANIM
+--------
+1. Bu ZIP'teki 3 dosyayi mevcut klasore cikartin:
+   C:\Users\work\Desktop\bet-analyzer\
+
+2. gui.py ayni klasorde kalabilir. Script bunu otomatik algilar.
+   project\gui.py yapisi varsa onu da otomatik algilar.
+
+3. EXE_OLUSTUR_V41.bat dosyasina cift tiklayin.
+   MUMKUNSE Yonetici olarak degil, normal kullanici olarak calistirin.
+
+4. Basarili olursa cikti:
+   dist\SporAnalizMerkezi\SporAnalizMerkezi.exe
+
+5. Baska bilgisayara tasirken sadece EXE'yi degil,
+   dist\SporAnalizMerkezi klasorunun tamamini kopyalayin.
+
+TOKENLAR
+--------
+Bu build paketinde token/API key dosyasi yoktur.
+Build islemi tokenlari silmez, bosaltmaz veya uzerine yazmaz.
+Mevcut %LOCALAPPDATA%\HizirBeySports klasoru aynen korunur.

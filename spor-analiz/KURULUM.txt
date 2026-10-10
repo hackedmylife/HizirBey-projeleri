@@ -1,0 +1,49 @@
+GÜNCELLEME V17 - ÜST AÇIKLAMA SATIRI TAM GÖRÜNÜR
+
+Düzeltmeler:
+- Header yüksekliği artırıldı; "Çoklu kaynak veri tarama..." satırı artık kesilmez.
+- Logo büyük haliyle korunur.
+- Alt form ve console alanları yalnız çok az kompaktlaştırıldı.
+- Modern iki panel görünüm, buton efektleri ve yeşil console korunur.
+
+Kurulum:
+ZIP içindeki project klasörünü mevcut projenin üzerine yaz.
+
+Test: python gui.py
+EXE: pyinstaller --clean --noconfirm gui.spec
+
+V18 KAYNAK GÜNCELLEMESİ
+- PandaScore: Bearer token + 400 hata gövdesi + minimum-parametre fallback.
+- Offstage: tahmini URL'den önce güncel maç liste sayfasından bağlantı keşfi.
+- HLTV: 403 anti-bot durumunda gereksiz tekrar yerine kontrollü atlama.
+- Sofascore: resmi genel API bulunmadığından 403 üreten dahili API zorlaması kaldırıldı; web fallback korunuyor.
+- BetsAPI: resmi /v1/events/search korunuyor; token artık proje ana klasöründeki betsapi_token.txt dosyasından da okunuyor.
+
+V31 TheSportsDB:
+- Ek anahtar gerekmez; resmi ücretsiz V1 anahtarı 123 varsayılan olarak kullanılır.
+- İstersen premium/özel V1 anahtarını THESPORTSDB_API_KEY ortam değişkenine veya project/thesportsdb_token.txt dosyasına yazabilirsin.
+
+
+V32 RESMÎ FUTBOL API ENTEGRASYONU
+- API-FOOTBALL (API-SPORTS) desteği eklendi. Free plan: 100 istek/gün, 10 istek/dk.
+  Ücretsiz hesabından anahtar alıp project/api_football_token.txt içine yalnızca anahtarı yaz.
+  Alternatif: API_FOOTBALL_TOKEN ortam değişkeni.
+- football-data.org V4 desteği eklendi. Free plan: 12 yarışma, gecikmeli skorlar, fikstür ve puan durumu; 10 istek/dk.
+  Ücretsiz tokenı project/football_data_token.txt içine yalnızca token olarak yaz.
+  Alternatif: FOOTBALL_DATA_TOKEN ortam değişkeni.
+- Futbol kaynak zinciri: Flashscore -> API-FOOTBALL -> TheSportsDB -> football-data.org -> Sofascore -> BetsAPI.
+- API-FOOTBALL bulunduğunda tek fixture-detail isteğiyle olaylar, takım istatistikleri ve oyuncu maç istatistikleri mümkün olduğunca alınır.
+- Her iki API için yerel cache ve güvenli dakikalık rate-limit koruması vardır.
+- Token yoksa program hata vermez; ilgili kaynak debug logunda atlanır.
+
+V35 ONLINE WEB AI SON YEDEK
+--------------------------
+Program tum spor veri kaynaklari basarisiz oldugunda GroqCloud uzerindeki
+GPT-OSS 20B modelini ve sunucu tarafli Browser Search aracini son fallback
+olarak kullanabilir. Bilgisayara Ollama/model/GPU kurulumu gerekmez.
+
+1. GroqCloud ucretsiz hesabindan API key olustur.
+2. project/groq_api_key.txt dosyasina yalnizca anahtari yapistir.
+3. Alternatif olarak GROQ_API_KEY ortam degiskenini kullanabilirsin.
+
+Detaylar: GROQ_WEB_AI_KURULUM.txt

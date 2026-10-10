@@ -1,0 +1,65 @@
+SPOR ANALIZ MERKEZI - EXE OLUSTURMA REHBERI
+===========================================
+
+EN GUVENLI YONTEM: PyInstaller ONEDIR
+
+Neden ONEDIR?
+- Mevcut calisan Python koduna en yakin paketleme yapisidir.
+- curl_cffi, Pillow ve sertifika dosyalari daha sorunsuz paketlenir.
+- Hata ayiklama ve guncelleme daha kolaydir.
+- Token/API key dosyalari EXE icine gomulmez.
+
+ADIMLAR
+------
+1) Bu paketi mevcut calisan proje klasorunun uzerine cikart.
+   ZIP icinde token/API key dosyasi yoktur; mevcut tokenlarin ezilmez.
+
+2) Bir kere:
+   TOKENLERI_KALICI_YERE_KOPYALA.bat
+   dosyasini calistirabilirsin.
+   Bu islem tokenlari SILMEZ; sadece su kalici klasore kopyalar:
+   %LOCALAPPDATA%\HizirBeySports
+
+3) EXE_OLUSTUR_ONEDIR.bat dosyasina cift tikla.
+   Script otomatik olarak:
+   - .venv-build sanal ortami olusturur
+   - PyInstaller/Pillow/curl_cffi/requests/certifi kurar
+   - compileall kontrolu yapar
+   - EXE'yi olusturur
+
+4) Basarili cikti:
+   project\dist\SporAnalizMerkezi\SporAnalizMerkezi.exe
+
+5) Ilk asamada dist\SporAnalizMerkezi klasorunun TAMAMINI kullan.
+   Sadece EXE'yi tek basina tasima; _internal klasoru ve diger dosyalar gerekir.
+
+TOKEN GUVENLIGI
+---------------
+Token/API key dosyalari PyInstaller datas listesine eklenmemistir.
+Program asagidaki konumlari otomatik tarar:
+- EXE klasoru
+- EXE\project
+- mevcut calisma klasoru
+- %LOCALAPPDATA%\HizirBeySports
+- %APPDATA%\HizirBeySports
+- ilgili ortam degiskenleri
+
+Desteklenen harici anahtar dosyalari:
+- groq_api_key.txt
+- api_football_token.txt
+- football_data_token.txt
+- pandascore_token.txt
+- betsapi_token.txt
+- thesportsdb_token.txt
+
+GUNCELLEME YONTEMI
+------------------
+Yeni kod surumu geldiginde token dosyalarini ZIP'e koymayacagiz.
+Kalici tokenlari %LOCALAPPDATA%\HizirBeySports icinde tutarsan dist/build
+klasorlerini tamamen silip yeniden EXE olustursan bile anahtarlar kaybolmaz.
+
+NOT
+---
+Windows EXE, Windows uzerinde olusturulmalidir. PyInstaller cross-compile yapmaz.
+Bu nedenle hazir spec ve BAT dosyalari Windows bilgisayarda calistirilacak sekilde
+hazirlanmistir.

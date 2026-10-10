@@ -1,0 +1,23 @@
+V38 - GROQ API KEY BULMA / EXE YOL DUZELTMESI
+============================================
+
+- V37 tabani korunmustur.
+- Groq API key arama mantigi genisletildi.
+- Kaynak kod, EXE, PyInstaller one-file ve farkli calisma dizinleri desteklenir.
+- Su konumlar otomatik taranir:
+  * GROQ_API_KEY ortam degiskeni
+  * programin calisma klasoru
+  * calisma klasoru/project
+  * EXE'nin bulundugu klasor
+  * EXE'nin bulundugu klasor/project
+  * modul klasoru ve parent/project
+  * PyInstaller _MEIPASS ve _MEIPASS/project
+  * LOCALAPPDATA/HizirBeySports
+  * APPDATA/HizirBeySports
+- groq_api_key.txt.txt (Windows gizli uzanti) desteklenir.
+- grok_api_key.txt yazim hatasi da toleransli desteklenir.
+- GROQ_API_KEY=gsk_... , Bearer gsk_... ve JSON key formatlari okunabilir.
+- BOM (UTF-8-SIG) temizlenir.
+- Debug logu anahtarin kendisini asla yazmaz; sadece bulundugu dosya konumunu gosterir.
+- Anahtar bulunamazsa aranan temel konumlari debug loguna ekler.
+- py_compile, compileall, tabnanny, import smoke ve key-loader senaryo testleri gecmistir.

@@ -1,0 +1,49 @@
+HIZIR BEY SPOR ANALIZ - V38 GROQ WEB AI KEY KURULUMU
+=====================================================
+
+EN KOLAY YONTEM
+---------------
+Kaynak koddan calistiriyorsan:
+  project/groq_api_key.txt
+
+Windows EXE kullaniyorsan anahtari su iki yerden birine koyman yeterli:
+  FutbolMacAnaliz.exe
+  groq_api_key.txt
+
+veya:
+  FutbolMacAnaliz.exe
+  project/groq_api_key.txt
+
+Dosyanin icine tercihen yalnizca anahtar yaz:
+  <API_KEY_BURAYA>
+
+V38 su formatlari da otomatik kabul eder:
+  GROQ_API_KEY=<API_KEY_BURAYA>
+  Bearer <API_KEY_BURAYA>
+
+WINDOWS UZANTI SORUNU
+---------------------
+Windows dosya uzantilarini gizliyorsa dosya fark etmeden
+"groq_api_key.txt.txt" olabilir. V38 bunu da otomatik tanir.
+
+ALTERNATIF
+----------
+GROQ_API_KEY ortam degiskeni kullanabilirsin.
+
+EK ARAMA KONUMLARI
+------------------
+V38 ayrica program klasoru/project, EXE klasoru/project,
+LOCALAPPDATA/HizirBeySports ve APPDATA/HizirBeySports yollarini da kontrol eder.
+
+DEBUG
+-----
+Key bulunduysa console'da su tip bir satir gorursun:
+  Groq Web AI: API anahtari bulundu (.../groq_api_key.txt).
+
+Anahtarin kendisi hicbir zaman debug loguna yazilmaz.
+
+ONEMLI
+------
+Eski V35/V36/V37 klasorundeki groq_api_key.txt dosyasi yeni V38 klasorune
+otomatik tasinmaz. Yeni surumu ayri klasore cikardiysan eski key dosyasini
+V38'in project klasorune veya EXE'nin yanina kopyalamalisin.

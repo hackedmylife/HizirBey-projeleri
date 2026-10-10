@@ -1,0 +1,34 @@
+V27 Premium UI / Geçmiş / Console güncellemesi
+
+1) Üst header:
+- Sağdaki stadyum/futbol hero görseli sol başlık alanının bittiği noktaya kadar genişletildi.
+- Orta Hızır Bey logosu şeffaf PNG olarak Canvas üzerinde üst katmanda ve geometrik merkezde tutuldu.
+- HAZIR / İŞLENİYOR / HATA durumu artık arka plansız, yalnız metin olarak gösteriliyor.
+
+2) Skor / takım alanı:
+- Bozuk görünen score hero arka planı tamamen kaldırıldı.
+- Takım/logo alanı 174 px'e yükseltildi; takım isimleri wrap ile güvenli yerleşiyor.
+- Gerçek internet logosu geldiğinde ekstra daire arka plan çizilmiyor; PNG kendi şeffaflığıyla gösteriliyor.
+- İnternet logosu alınamazsa mevcut premium baş harf fallback rozeti devam ediyor.
+
+3) Console / Debug:
+- Sağ panel dikey PanedWindow'a dönüştürüldü.
+- "Logları Göster" düğmesi console'u yukarı doğru büyütüyor.
+- "Logları Küçült" ile aynı panel tekrar eski kompakt yüksekliğe dönüyor.
+
+4) Sol menü / Geçmiş:
+- Ayarlar ve Raporlar menüden kaldırıldı.
+- Ana Sayfa, Analiz ve Geçmiş butonları aktif navigasyona dönüştürüldü.
+- Her tamamlanan sorgu kalıcı analysis_history.json dosyasına kaydediliyor.
+- Windows'ta kayıt konumu: %APPDATA%/HizirBeySports/analysis_history.json
+- Geçmiş ekranında tarih, spor, karşılaşma, bahis, sonuç, skor ve kaynak görüntüleniyor.
+- Satıra tıklayınca eski sonuç raporu açılıyor.
+- "Analize Yükle" eski sorguyu forma geri yüklüyor.
+- "Yeniden İncele" aynı ayarlarla yeni sorguyu otomatik başlatıyor.
+
+Kalite kontrolleri:
+- Tüm Python dosyaları compileall kontrolünden geçti.
+- tabnanny girinti kontrolünden geçti.
+- 1680x900 Tkinter smoke/integration testi geçti.
+- Console expand/collapse testi geçti.
+- Kalıcı geçmiş JSON yazma/okuma ve form replay testi geçti.

@@ -1,0 +1,9 @@
+V22 - Basketbol oyuncu bahisleri manuel giriş arayüzü
+
+- Oyuncu prop alt seçeneği seçildiğinde artık gerçek giriş alanları açılır.
+- Oyuncu adı ayrı alan.
+- Çizgi ayrı sayısal alan.
+- ÜST / ALT ayrı seçim kutusu.
+- Program bu üç alanı analiz motorunun beklediği "Oyuncu: Üst 14.5" biçimine güvenli şekilde dönüştürür.
+- Oyuncu Sayı, Ribaund, Asist, Üçlük, Top Çalma, Blok ve PRA marketlerinde aynı yapı kullanılır.
+- Eksik oyuncu adı veya geçersiz çizgi için özel uyarı verilir.

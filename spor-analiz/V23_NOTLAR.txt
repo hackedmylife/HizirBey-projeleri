@@ -1,0 +1,10 @@
+V23 - Basketbol kaynak düzeltmeleri
+
+- ESPN isteklerinde curl_cffi/requests başarısız olursa urllib ile ikinci HTTP motoru denenir.
+- ESPN scoreboard tek tarih YYYYMMDD ile çağrılır; tarih aralığı kullanılmaz.
+- ABD/Türkiye/UTC gün farkları için hedef tarih, bir önceki gün ve bir sonraki gün taranır.
+- (W)/(K)/Women/Kadın etiketi algılanınca WNBA + kadın NCAA önceliklendirilir; erkek ligleri boşuna taranmaz.
+- ESPN hata mesajları artık gerçek hata ayrıntısını debug konsoluna yazar.
+- WNBA için ESPN'den bağımsız NBA Stats ScoreboardV3 (LeagueID=10) yedeği eklendi.
+- Maç ID bulunursa NBA/WNBA CDN liveData boxscore üzerinden oyuncu PTS/REB/AST/STL/BLK/3PM alınır.
+- Oyuncu bahsi maç toplamına düşmez; bireysel player_stats üzerinden değerlendirilir.

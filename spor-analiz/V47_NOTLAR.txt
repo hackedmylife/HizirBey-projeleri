@@ -1,0 +1,34 @@
+V47 - Puter tamamen headless / tarayicisiz fallback
+
+Degisen dosya:
+- puter_web_fallback.py
+
+Davranis:
+- Puter fallback artik ASLA otomatik tarayici acmaz.
+- Dashboard'dan alinan Puter Auth Token ile dogrudan https://api.puter.com/drivers/call kullanilir.
+- Token yoksa Puter sessizce atlanir ve Direct Web fallback'e gecilir.
+- 401/403 durumunda token dosyasi otomatik silinmez ve giris sayfasi acilmaz.
+- 402/429 durumunda beklemeden Direct Web'e gecilir.
+- Ucretsiz hesap icin OpenAI-uyumlu endpoint fallback'i kullanilmaz.
+- Web search icin guncel OpenAI model adaylari denenir.
+
+Desteklenen ortam degiskenleri:
+- PUTER_AUTH_TOKEN
+- PUTER_API_TOKEN
+- PUTER_API_KEY
+
+Desteklenen dosya adlari:
+- puter_auth_token.txt
+- puter_token.txt
+- puter_api_token.txt
+- puter_api_key.txt
+
+Onerilen kalici konum:
+%LOCALAPPDATA%\HizirBeySports\puter_auth_token.txt
+
+Dosya icerigi yalnizca dashboard'dan aldigin Puter Auth Token olabilir.
+PUTER_AUTH_TOKEN=... veya Bearer ... formati da kabul edilir.
+
+GUVELIK:
+Bu guncelleme ZIP'inde hicbir token/API key/credential dosyasi bulunmaz.
+Mevcut token dosyalarini silmez veya uzerine yazmaz.

@@ -1,0 +1,24 @@
+V31 - THESPORTSDB V1 TAM ENTEGRASYON
+
+Ana özellikler:
+- TheSportsDB V1 resmi ücretsiz anahtar (123) varsayılan olarak entegre edildi.
+- İsteğe bağlı THESPORTSDB_API_KEY ortam değişkeni veya thesportsdb_token.txt desteklenir.
+- Resmî ücretsiz 30 istek/dakika limitine karşı yerel güvenlik limiti (27/dk) eklendi.
+- 1 saatlik bellek cache sistemi eklendi; aynı API isteği gereksiz tekrarlanmaz.
+- searchevents.php ile takım/oyuncu + tarih eşleşmesi yapılır.
+- eventsday.php günlük program fallback'i eklendi (ücretsiz katmanın 3 kayıt sınırı dikkate alınır).
+- lookupeventstats.php ile takım istatistikleri alınır.
+- lookuptimeline.php ile maç olayları/goller alınır.
+- lookuplineup.php ile kadro/oyuncu listesi ve oyuncu görselleri alınır.
+- TheSportsDB takım logoları GUI internet logo sistemi tarafından kullanılabilir.
+- Flashscore/ESPN gibi ana kaynak bulunduğunda TheSportsDB sonucu bozmaz; yalnız eksik detayları zenginleştirir.
+- Futbol ve diğer klasik spor dallarında hem fallback hem zenginleştirme olarak devrededir.
+- E-Spor tarafında özel PandaScore/HLTV/Offstage/ESportsBattle zinciri korunur. TheSportsDB sadece doğrudan event eşleşmesi varsa ek kaynak/fallback olur; yanlış eşleşme riskine karşı e-sporda genel günlük liste kullanılmaz.
+- Basketbol oyuncu prop'larında ESPN/NBA/WNBA boxscore zinciri korunur; TheSportsDB kadro/takım istatistiği desteği ekler.
+
+Kalite kontrol:
+- py_compile / compileall: OK
+- tabnanny: OK
+- modül import smoke test: OK
+- Tkinter GUI smoke test: OK
+- TheSportsDB stats/timeline/lineup parser fixture test: OK

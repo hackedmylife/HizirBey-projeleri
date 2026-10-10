@@ -1,0 +1,32 @@
+V30 - PREMIUM RADIUS + VURGULU SONUC KARTLARI + SOFT GLASS CONSOLE
+
+Bu sürüm V29 üzerine kurulmuştur. İşlevsel mantığa dokunulmamıştır.
+
+1) Genel kart radius ayarı biraz daha premium hale getirildi.
+2) Özellikle sağ taraftaki sonuç kartlarının oval köşeleri daha belirgin hale getirildi:
+   - skor kartı
+   - orta skor kutusu
+   - seçilen bahis
+   - bahis sonucu
+   - korner / ek bilgi
+   - analiz açıklaması
+   - veri kaynağı
+3) Console / Debug alanına soft-glass hissi veren daha derin lacivert yüzey, daha yumuşak mavi kontur ve gölge uygulandı.
+
+Korunanlar:
+- input alanları
+- combobox alanları
+- takım logo sistemi
+- geçmiş sistemi
+- log büyüt/küçült
+- navigasyon
+- analiz ve veri çekme mantığı
+
+Kontroller:
+- py_compile
+- tabnanny
+- tüm Python dosyaları compile kontrolü
+- GUI açılış smoke testi
+- native Entry / TTK Combobox doğrulaması
+- log büyüt/küçült testi
+- Ana Sayfa / Geçmiş navigasyon testi
