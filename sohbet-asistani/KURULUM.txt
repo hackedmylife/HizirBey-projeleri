@@ -1,0 +1,41 @@
+0.1.0 KULLANANLAR ICIN GUNCELLEME
+
+1. Eklentiyi Chrome'dan KALDIRMA.
+2. Yeni ZIP'teki extension klasorunun ICINDEKI dosyalari,
+   daha once yukledigin mevcut extension klasorunun ICINE kopyala.
+3. Ayni isimli dosyalari degistir. Mevcut klasorun yerini degistirme.
+4. chrome://extensions > Hizir Bey Sohbet Asistani > Yeniden yukle.
+5. LiveChat sekmesini yenile. Panel surumu 0.1.1 olmali.
+
+Ayni klasor/eklenti kimligi korundugunda API anahtari, arsiv ve Windows
+baglantisi korunur. Windows kurulumunu tekrar yapmak gerekmez.
+Pakette API anahtari, token veya kullanici FastKeys dosyasi yoktur.
+
+HIZIR BEY SOHBET ASISTANI - 0.1.1 ILK DENEME
+
+1. ZIP'i bilgisayarinda kalici bir klasore cikar.
+2. Chrome adres cubuguna chrome://extensions yaz.
+3. Gelistirici modu ac > Paketlenmemis oge yukle > extension klasorunu sec.
+4. Asistanin eklenti simgesine tikla ve bilgisayarindaki Hizir.fdb dosyasini sec.
+5. LiveChat sayfasini yenile. Sag altta asistan paneli acilir.
+6. Son mesaj temsilciden ise Yenile'ye bas. Kaliplari arama kutusundan da bulabilirsin.
+7. Oneriyi incele > Kopyala > uygun gordugun yerde kendin yapistir.
+
+API anahtari olmadan yerel kelime eslesmesi calisir; bu yapay zeka degildir.
+Yapay zeka icin eklenti ayarlarina kendi Groq API anahtarini gir,
+Yapay zeka secimini etkinlestir ve kaydet.
+
+FASTKEYS DOSYASINI OTOMATIK GUNCEL TUTMA
+1. Asistan ayarlarindan eklenti kimligini kopyala.
+2. windows klasorundeki Kurulum.cmd dosyasini calistir.
+3. Eklenti kimligini gir ve FastKeys'in kullandigi ASIL .fdb dosyasini sec.
+4. Asistan ayarlarinda Baglantiyi kontrol et dugmesine bas.
+5. Otomatik FastKeys baglantisini kullan secenegini ac ve kaydet.
+6. FastKeys'te degisiklik yapinca kaydet. Gorunur LiveChat paneli yaklasik
+   10 saniyede dosyayi kontrol eder.
+
+Asistan hicbir mesaj gondermez, yazi alanina metin koymaz, makro calistirmaz.
+FastKeys dosyasi ve API anahtari bu pakete dahil degildir.
+Sifre/IP blokesi, finans yonlendirme ve bahis/tur ID orneklerini kontrollu dene.
+Windows yardimcisi, gercek Chrome pano erisimi ve gercek API baglantisi ilk
+denemede kontrol edilmelidir. Ayrintilar README.md dosyasindadir.

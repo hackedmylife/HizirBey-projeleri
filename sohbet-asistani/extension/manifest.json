@@ -1,0 +1,52 @@
+{
+  "manifest_version": 3,
+  "name": "Hızır Bey Sohbet Asistanı",
+  "version": "0.1.1",
+  "minimum_chrome_version": "116",
+  "description": "LiveChat için FastKeys kalıplarından cevap önerileri. Yalnızca gösterir ve kopyalar.",
+  "permissions": [
+    "storage",
+    "nativeMessaging",
+    "clipboardWrite"
+  ],
+  "host_permissions": [
+    "https://api.groq.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_title": "Asistan ayarları"
+  },
+  "options_page": "options.html",
+  "content_scripts": [
+    {
+      "matches": [
+        "https://my.livechatinc.com/*",
+        "https://my.livechat.com/*"
+      ],
+      "js": [
+        "reader.js",
+        "content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "icons": {
+    "16": "icons/icon-16.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "logo.png"
+      ],
+      "matches": [
+        "https://my.livechatinc.com/*",
+        "https://my.livechat.com/*"
+      ]
+    }
+  ]
+}
