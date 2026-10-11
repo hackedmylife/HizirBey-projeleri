@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {parseFastKeys, rankTemplates, cleanMessages, needsConfirmation} from '../extension/core.js';
+import {parseFastKeys, rankTemplates, cleanMessages, needsConfirmation, selectSmsPolicy, requestContext} from '../extension/core.js';
 
 test('imports multiline plain text while excluding disabled, command and interactive entries', () => {
   const source = '\uFEFFDefault\n‼\n1•id*•ID talebi•Send•{\\rtf1 hidden}♥Oyun turu ID\'sini iletir misiniz?¶Teşekkürler.•2•\n1•multi*•Açıklama•Send•{\\rtf1 hidden}♥Birinci satır\nİkinci satır•2•\n1•macro*•Makro•Command•Send, {Enter}•0•\n1•fill*•Bilgi•Send•♥%INPUT_isim%•2•\n1•menu*•Menü•Send•♥%SELECT_bilgi▬secenek%•2•\n0•off*•Kapalı•Send•♥Kapalı cevap•2•\n∟';
@@ -47,4 +47,47 @@ test('unspecified bonus request does not infer SMS, explicit SMS request can mat
   const templates = [{id: 'sms', label: 'SMS bonusu', shortcut: 'sms*', text: 'SMS aktivasyon bonusu bilgisi'}];
   assert.equal(rankTemplates(templates, [{role: 'user', text: 'Bonus istiyorum'}]).length, 0);
   assert.equal(rankTemplates(templates, [{role: 'user', text: 'SMS bonusu istiyorum'}]).length, 1);
+});
+const smsTemplates = [
+  {id: 'return', label: 'Geri dönüş bonusu', shortcut: 'return*', text: 'Geri dönüş bonusu için öncelikle SMS doğrulamanızı açınız.'},
+  {id: 'general', label: 'Genel koşullar', shortcut: 'policy*', text: 'SMS Aktif Bonusumuz bulunmaktadır. SMS Doğrulama promosyonundan yalnızca 1 (bir) kere yararlanılabilir.'},
+  {id: 'repeat', label: 'SMS bonusu tekrar', shortcut: 'repeat*', text: 'SMS aktif bonusu daha önce almış olduğunuzu görmekteyim, ilgili bonus yalnızca 1 defa alınabilmekte olup yeniden tanımlama sağlanamamaktadır.', guarded: false},
+  {id: 'eligible', label: 'SMS doğrulama bonusu', shortcut: 'eligible*', text: 'SMS aktif bonusumuz için yeterli yatırımınız mevcuttur.', guarded: false},
+  {id: 'assigned', label: 'SMS bonusu', shortcut: 'assigned*', text: 'SMS aktif bonusunuz tarafınıza tanımlıdır.', guarded: false},
+  {id: 'security', label: 'SMS güvenliği', shortcut: 'security*', text: 'SMS doğrulama için şifrenizi değiştiriniz.'}
+];
+test('greeting, username and waiting messages preserve the earlier second-bonus request', () => {
+  const messages = ['merhaba', 'kolay gelsin', '2. sms bonusu alabilirmym rica etsem ?', 'kullanıcı adım test', 'merhaba', 'bekliyorum'].map(text => ({role: 'user', text}));
+  assert.equal(requestContext(messages), '2. sms bonusu alabilirmym rica etsem ?');
+  const ranked = rankTemplates(smsTemplates, messages);
+  const selected = selectSmsPolicy(ranked, messages);
+  assert.deepEqual(selected.items.map(t => t.id), ['repeat', 'general']);
+  assert.equal(selected.items[0].guarded, true);
+  assert.match(selected.notice, /İkinci/);
+});
+test('SMS request excludes return bonus and account-specific assertions despite shared SMS words', () => {
+  const messages = [{role: 'user', text: 'sms doğrulama bonusu istiyorum'}];
+  const ranked = rankTemplates(smsTemplates, messages);
+  assert.ok(!ranked.some(t => ['return', 'security'].includes(t.id)));
+  assert.ok(ranked.filter(t => ['eligible', 'assigned', 'repeat'].includes(t.id)).every(t => t.guarded));
+  assert.deepEqual(selectSmsPolicy(ranked, messages).items.map(t => t.id), ['general']);
+});
+test('repeat variants work; account history is never inferred from asking for a second bonus', () => {
+  for (const text of ['ikinci sms bonusunu istiyorum', 'SMS bonusunu 2 defa alabilir miyim?', 'SMS bonusunu tekrar istiyorum', 'SMS bonusunu daha önce aldım bir daha istiyorum']) {
+    const messages = [{role: 'user', text}];
+    const result = selectSmsPolicy(rankTemplates(smsTemplates, messages), messages);
+    assert.equal(result.items[0].id, 'repeat');
+    assert.equal(result.items[0].guarded, true);
+    assert.match(result.notice, /Hesap geçmişi doğrulanmadı/);
+  }
+});
+test('a stated return-bonus request stays separate from the SMS activation promotion', () => {
+  const messages = [{role: 'user', text: 'Geri dönüş bonusu için SMS doğrulamamı açtım'}];
+  assert.equal(selectSmsPolicy(rankTemplates(smsTemplates, messages), messages), null);
+});
+test('an explicit new topic replaces the previous promotion context', () => {
+  const messages = [{role: 'user', text: 'Geri dönüş bonusu istiyorum'}, {role: 'user', text: 'sms doğrulama bonusu istiyorum'}];
+  assert.deepEqual(selectSmsPolicy(rankTemplates(smsTemplates, messages), messages).items.map(t => t.id), ['general']);
+  messages.push({role: 'user', text: 'Şifre sorunum var'});
+  assert.equal(selectSmsPolicy(rankTemplates(smsTemplates, messages), messages), null);
 });

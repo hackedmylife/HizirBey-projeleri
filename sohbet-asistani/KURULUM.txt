@@ -1,17 +1,17 @@
-0.1.0 KULLANANLAR ICIN GUNCELLEME
+0.1.0 / 0.1.1 KULLANANLAR ICIN GUNCELLEME
 
 1. Eklentiyi Chrome'dan KALDIRMA.
 2. Yeni ZIP'teki extension klasorunun ICINDEKI dosyalari,
    daha once yukledigin mevcut extension klasorunun ICINE kopyala.
 3. Ayni isimli dosyalari degistir. Mevcut klasorun yerini degistirme.
 4. chrome://extensions > Hizir Bey Sohbet Asistani > Yeniden yukle.
-5. LiveChat sekmesini yenile. Panel surumu 0.1.1 olmali.
+5. LiveChat sekmesini yenile. Panel surumu 0.1.2 olmali.
 
 Ayni klasor/eklenti kimligi korundugunda API anahtari, arsiv ve Windows
 baglantisi korunur. Windows kurulumunu tekrar yapmak gerekmez.
 Pakette API anahtari, token veya kullanici FastKeys dosyasi yoktur.
 
-HIZIR BEY SOHBET ASISTANI - 0.1.1 ILK DENEME
+HIZIR BEY SOHBET ASISTANI - 0.1.2 ILK DENEME
 
 1. ZIP'i bilgisayarinda kalici bir klasore cikar.
 2. Chrome adres cubuguna chrome://extensions yaz.

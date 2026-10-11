@@ -86,3 +86,21 @@ test('simultaneous identical requests share a single fetch', async () => {
   assert.equal(calls, 1);
   assert.ok(results.every(result => result.ok && result.data.items[0].id === 't0'));
 });
+test('SMS policy matching uses the imported catalog without AI and marks previous-use text for confirmation', async () => {
+  const lines = [
+    '1•return*•Geri dönüş bonusu•Send•♥Geri dönüş bonusu için SMS doğrulamanızı açınız.•2•',
+    '1•policy*•SMS bonusu koşulları•Send•♥SMS Aktif Bonusumuzdan yalnızca 1 (bir) kere yararlanılabilir.•2•',
+    '1•repeat*•SMS bonusu tekrar•Send•♥SMS aktif bonusu daha önce almış olduğunuzu görmekteyim, bonus yalnızca 1 defa alınabilmektedir.•2•'
+  ];
+  await send({type: 'import', text: lines.join('\n') + '\n∟'});
+  let calls = 0;
+  globalThis.fetch = async () => { calls++; throw new Error('SMS policy must not need a remote call'); };
+  const second = await send({type: 'suggest', messages: [{role: 'user', text: '2. sms bonusu alabilir miyim?'}, {role: 'user', text: 'kullanıcı adım test'}, {role: 'user', text: 'merhaba'}]}, live);
+  assert.equal(second.ok, true);
+  assert.deepEqual(second.data.items.map(t => t.shortcut), ['repeat*', 'policy*']);
+  assert.equal(second.data.items[0].guarded, true);
+  const first = await send({type: 'suggest', messages: [{role: 'user', text: 'sms doğrulama bonusu istiyorum'}]}, live);
+  assert.deepEqual(first.data.items.map(t => t.shortcut), ['policy*']);
+  assert.equal(first.data.items[0].text, data.catalog.templates[1].text);
+  assert.equal(calls, 0);
+});

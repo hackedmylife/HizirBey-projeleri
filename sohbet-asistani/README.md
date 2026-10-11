@@ -1,10 +1,19 @@
-# Hızır Bey Sohbet Asistanı — 0.1.1
+# Hızır Bey Sohbet Asistanı — 0.1.2
 
 LiveChat açık görüşmesindeki mesajları okuyarak FastKeys düz metin cevaplarından öneri gösterir. Yalnızca **Kopyala** düğmesi vardır. Mesaj göndermez, yazı alanını değiştirmez, makro çalıştırmaz. Süre takip eklentisi ayrı olarak çalışmaya devam eder.
 
-## 0.1.0 sürümünü güncelleme
+## 0.1.0 / 0.1.1 sürümünü güncelleme
 
 Eklentiyi kaldırmayın. Bu ZIP içindeki `extension` klasörünün **içeriğini**, Chrome'a daha önce yüklediğiniz mevcut `extension` klasörünün içine kopyalayın ve dosyaları değiştirin. `chrome://extensions` ekranında Hızır Bey Sohbet Asistanı kartındaki yeniden yükle düğmesine basın, ardından LiveChat sekmesini yenileyin. Aynı klasör ve eklenti kimliği korununca mevcut API anahtarı, içe aktarılan arşiv ve Windows bağlantısı korunur. Yeni klasörü ayrı bir eklenti olarak yüklemeyin.
+
+## 0.1.2 bağlam düzeltmeleri
+
+- Selamlaşma, bekleme ve kullanıcı adı bildirimleri önceki asıl talebi düşürmez. Yeni açık konu eski bonus bağlamını değiştirir.
+- SMS doğrulama bonusu ile geri dönüş bonusu kalıpları ayrılır. Genel SMS talebinde hesabı doğrulanmış gibi konuşan metin yerine arşivdeki genel şartlar seçilir.
+- İkinci/tekrar SMS talebinde kalıptaki tek kullanım şartı okunur. Arşivde ilgili önceki kullanım cevabı varsa doğrulama kutusu ile gösterilir; genel koşul kalıbı da sunulur. Bu öneri üyenin gerçekten bonus almış olduğuna kanıt değildir.
+- “Görmekteyim”, “tarafınıza tanımlıdır”, “yeterli yatırımınız mevcuttur” gibi hesap durumu iddiaları mevcut içe aktarılan arşivde de yeniden denetlenir. Önceki kullanım cevabı sen onaylamadan kopyalanamaz.
+- Bu belirgin SMS talep örnekleri mevcut kalıplardan yerel kuralla seçilir; uzaktaki AI gerekmemesi hem alakasız seçimleri hem API kullanımını azaltır. Yeni cevap üretilmez, arşivdeki tam metin gösterilir.
+- Kullanıcının gerçek 487 kalıplık arşivinde iki hata örneği yeniden üretildi ve düzeltmeden sonra ilgili SMS koşulu/tekrar kalıplarının seçildiği doğrulandı. Kullanıcı arşivi ve ekran görüntüleri pakete veya GitHub'a eklenmedi.
 
 ## 0.1.1 düzeltmeleri
 
@@ -49,13 +58,13 @@ Bağlantıyı kaldırmak için Windows PowerShell'de `windows/Kaldir.ps1` çalı
 - Anahtar kelime sıralamasıyla en fazla 6 aday modele sunulur; aday metinleri toplam 3.800, görüşme metinleri toplam 3.360 karakter ile sınırlanır. Doğru kalıp adaylar arasında yoksa arşiv araması gerekir; hiçbir model seçiminin hatasız olduğu varsayılmaz.
 - Karşılama ve bekletme tekrarlarını azaltmak için görüşme kontrol edilir. IP ve şifre blokesi ayrımı AI talimatına dahildir; doğruluğu gerçek kullanımda gözden geçirilmelidir.
 - Makrolar, bilgi giriş alanları, seçim menüleri ve devre dışı kalıplar elenir. Metin tekrarları tekilleştirilir.
-- İşlem tamamlandı iddiası ve belirli tarih içeren kalıplar otomatik öneriden çıkarılır. Arşiv aramasında kopyalamak için **Bu metindeki işlem ve bilgileri doğruladım** kutusu gerekir. Bu sınıflandırma sezgiseldir; yeni kalıplar ayrıca gözden geçirilmelidir.
+- İşlem tamamlandı iddiası ve belirli tarih içeren kalıplar AI seçiminden çıkarılır. İkinci SMS bonusu talebi için ilgili önceki kullanım metni, temsilci doğrulama kutusuyla ayrıca sunulabilir. Arşiv aramasında kopyalamak için **Bu metindeki işlem ve bilgileri doğruladım** kutusu gerekir. Bu sınıflandırma sezgiseldir; yeni kalıplar ayrıca gözden geçirilmelidir.
 - AI açıkken son mesajlar ve aday metinler Groq'a gönderilir. İsim/kullanıcı adı alanları okunmaz; mesaj içindeki e-posta, uzun numara ve bağlantılar kısmen maskelenir. Bu tam anonimleştirme değildir.
 - API anahtarı `chrome.storage.local` içinde, yalnızca güvenilen eklenti sayfalarına açık saklanır; şifreli kasa değildir. ZIP ve GitHub'a anahtar veya kullanıcı dosyası konmaz.
 
 ## Doğrulama ve sınırlar
 
-21 Node testi `npm test` ile geçer; önbellek, aynı anda tekrar istek, 429 bekleme, 401 ayrımı, istem sınırı ve jest/SMS bağlamı doğrulanır. Parser ve DOM ayrımı sağlanan örneklerle yerel olarak doğrulanır. Paket, Windows ve gerçek LiveChat oturumunda henüz denenmemiştir; native host kurulumu, gerçek pano erişimi ve gerçek Groq çağrısı ilk denemede doğrulanmalıdır. Bu sürüm üretim onayı değil, kontrollü ilk deneme sürümüdür.
+27 Node testi `npm test` ile geçer; önbellek, aynı anda tekrar istek, 429 bekleme, 401 ayrımı, istem sınırı ve jest/SMS bağlamı doğrulanır. Parser ve DOM ayrımı sağlanan örneklerle yerel olarak doğrulanır. Paket, Windows ve gerçek LiveChat oturumunda henüz denenmemiştir; native host kurulumu, gerçek pano erişimi ve gerçek Groq çağrısı ilk denemede doğrulanmalıdır. Bu sürüm üretim onayı değil, kontrollü ilk deneme sürümüdür.
 
 ## Geliştirme
 

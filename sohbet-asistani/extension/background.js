@@ -1,4 +1,4 @@
-import {parseFastKeys, rankTemplates, cleanMessages} from './core.js';
+import {parseFastKeys, rankTemplates, cleanMessages, selectSmsPolicy} from './core.js';
 import {AiControl, retryDelay, compactInput, headerWait} from './ai-control.js';
 const ai = new AiControl();
 let revision = 0;
@@ -96,6 +96,8 @@ async function suggestFresh(payload, messages, controller, key) {
   if (!library.templates.length) return {items: [], mode: 'empty', notice: 'Ayarlar bölümünden FastKeys dosyanı içe aktar.'};
   const ranked = rankTemplates(library.templates, messages, payload.query || '');
   if (payload.query) return {items: ranked.slice(0, 12), mode: 'search', notice: 'Arşiv araması — seçmeden önce görüşmeye uygunluğunu kontrol et.'};
+  const smsPolicy = selectSmsPolicy(ranked, messages);
+  if (smsPolicy) return smsPolicy;
   const candidates = ranked.filter((t) => !t.guarded).slice(0, 6);
   if (!config.aiEnabled) return {items: candidates.slice(0, 3), mode: 'local', notice: 'Yerel eşleşme: yapay zekâ kapalı. Bunlar anahtar kelimeye dayalı adaylardır.'};
   const local = (notice, retryAfterMs = 0) => ({items: candidates.slice(0, 3), mode: 'local', notice: `${notice} ${candidates.length ? 'Yerel adaylar gösteriliyor; uygunluğunu kontrol et.' : 'Uygun yerel kalıp bulunamadı.'}`, retryAfterMs});

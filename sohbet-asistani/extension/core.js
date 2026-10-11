@@ -2,7 +2,7 @@ export const normalize = (s) => String(s || '').toLocaleLowerCase('tr-TR').norma
 const stop = new Set('bir bu ben bana benim sen siz sizin beni bunu bana icin ile ve de da mi mu ne nasil lutfen istiyorum rica ederim bey hanim'.split(' '));
 export const tokens = (s) => [...new Set(normalize(s).match(/[a-z0-9]{3,}/g) || [])].filter((t) => !stop.has(t));
 export function needsConfirmation(text) {
-  return /(?:ilettim|iletilmistir|aktariyorum|aktarildi|aktarilmistir|tanimlanmistir|tanimladim|eklenmistir|ekledim|kaldirildi|kaldirilmistir|aktif hale gel|kontrol sagladigimda|kontrol ettigimde|goruntulemekteyim|yararlanmis|yararlandiginiz|hakkiniz (?:mevcut degil|bulunmuyor)|minimum yatirim tutarini karsilamadiginiz|mail adresiniz guncel|incelemenin devam ettigi|hesabinizda .*engel|hesabinizda bahis duzeltmesi)/.test(normalize(text)) || /\b\d{1,2}[/.]\d{1,2}[/.]20\d{2}\b/.test(text);
+  return /(?:ilettim|iletilmistir|aktariyorum|aktarildi|aktarilmistir|tanimlanmistir|tanimladim|eklenmistir|ekledim|kaldirildi|kaldirilmistir|aktif hale gel|kontrol sagladigimda|kontrol ettigimde|goruntulemekteyim|gormekteyim|yararlanmis|yararlandiginiz|hakkiniz (?:mevcut degil|bulunmuyor)|minimum yatirim tutarini karsilamadiginiz|mail adresiniz guncel|incelemenin devam ettigi|hesabinizda .*engel|hesabinizda bahis duzeltmesi|tarafiniza tanimlidir|tarafiniza tanimlanmis|yeterli yatiriminiz mevcuttur|bu bonusu son alisinizdan)/.test(normalize(text)) || /\b\d{1,2}[/.]\d{1,2}[/.]20\d{2}\b/.test(text);
 }
 export function parseFastKeys(source) {
   if (typeof source !== 'string' || source.length > 8_000_000) throw new Error('Dosya çok büyük veya metin biçiminde değil.');
@@ -42,19 +42,68 @@ const domains = [
   ['casino', /oyun|casino|slot|tur\b|aviator/, /oyun|casino|slot|tur\b|aviator/],
   ['bonus', /bonus|promosyon|freespin|discount/, /bonus|promosyon|freespin|discount/]
 ];
+export function requestContext(messages) {
+  const userMessages = messages.filter((m) => m.role === 'user');
+  const meaningful = userMessages.filter((m) => {
+    const text = normalize(m.text).trim();
+    return !/^(?:bekliyorum|hala bekliyorum|tamam|peki|evet|tesekkur.*|ok|okey|merhaba.*|selam.*|haba|kolay gelsin.*|iyi (?:gunler|aksamlar).*|ilgilenecek misiniz.*|ilgilenir misiniz.*|orada misiniz.*)[.!?\s]*$/.test(text)
+      && !/^(?:kullanici\s*(?:adim|adi)|kullanici\s*ismim|nick(?:im)?|username)\b/.test(text);
+  });
+  const topic = /sms.*(?:bonus|promosyon)|(?:bonus|promosyon).*sms|jest|geri\s*don.*bonus|kupon|bahis|sifre|girem|oyun.*(?:sorun|id)/;
+  const anchor = meaningful.findLastIndex((m) => topic.test(normalize(m.text)));
+  return meaningful.slice(anchor < 0 ? -2 : anchor).slice(-4).map((m) => m.text).join(' ');
+}
+export function smsIntent(messages) {
+  const text = normalize(requestContext(messages));
+  if (!/sms/.test(text) || !/bonus|promosyon/.test(text)) return null;
+  if (/geri\s*don|geridon|30\s*gun/.test(text)) return null;
+  const repeat = /(?:\b2\s*\.(?!\d)|\b2\s*(?:defa|kez)|ikinci|bir daha|tekrar|yeniden|daha once.*(?:aldim|almistim|kullandim))/.test(text);
+  return {repeat, text};
+}
+export function templatePolicy(t) {
+  const text = normalize(t.text), title = normalize(`${t.label} ${t.shortcut}`);
+  const otherBonus = /geri\s*don|geridon|30\s*gun|kayip|jest|discount|yatirim bonus/.test(title)
+    || /^(?:geri\s*don|kayip bonus)/.test(text.trim());
+  const smsBonus = !otherBonus && (/sms(?:\s*(?:aktif|aktivasyon|dogrulama))?\s*(?:bonus|promosyon)|sms\s*dogrulama promosyon|smsicerik|smsbonus|smsyok|smsvar/.test(`${title} ${text}`));
+  const singleUse = /(?:yalnizca|sadece)\s*(?:1\s*(?:\(bir\))?|bir)\s*(?:defa|kez|kere)/.test(text);
+  const repeated = smsBonus && /daha once.*(?:almis|yararlan|kullan)|yeniden tanimlama saglanama/.test(text) && !/silinmistir|48 saat/.test(text);
+  return {smsBonus, singleUse, repeated};
+}
+export function selectSmsPolicy(ranked, messages) {
+  const intent = smsIntent(messages);
+  if (!intent) return null;
+  const policies = ranked.filter((t) => templatePolicy(t).smsBonus);
+  const general = policies.find((t) => templatePolicy(t).singleUse && !t.guarded);
+  if (intent.repeat) {
+    const repeated = policies.find((t) => templatePolicy(t).repeated);
+    const items = [repeated, general].filter(Boolean);
+    return {items, mode: 'local', notice: items.length
+      ? 'İkinci SMS bonusu talebi: arşivdeki tek kullanım şartı esas alındı. Hesap geçmişi doğrulanmadı; önceki kullanım iddiası içeren metni kontrol edip onaylamadan kopyalama.'
+      : 'İkinci SMS bonusu talebi anlaşıldı; arşivde uygun tek kullanım kalıbı bulunamadı.'};
+  }
+  // General eligibility is distinct from a claimed account outcome.
+  if (general && !/gelmedi|eklenmedi|tanimlanmadi|silin|iptal/.test(intent.text)) return {
+    items: [general], mode: 'local', notice: 'SMS bonusu talebi için arşivdeki genel koşullar seçildi. Geri dönüş bonusu ayrı bir promosyondur; hesap uygunluğu veya bonus tanımlaması doğrulanmış değildir.'
+  };
+  return null;
+}
 export function rankTemplates(templates, messages, query = '') {
   const userMessages = messages.filter((m) => m.role === 'user');
-  // Short acknowledgements keep the most recent substantive request in scope.
-  const meaningful = userMessages.filter((m) => !/^(?:bekliyorum|tamam|peki|evet|tesekkur.*|ok|okey|hala bekliyorum)[.!?\s]*$/.test(normalize(m.text).trim()));
-  const latest = query || meaningful.slice(-2).map((m) => m.text).join(' ');
+  const latest = query || requestContext(messages);
   const q = normalize(latest), words = tokens(latest);
+  const sms = query ? null : smsIntent(messages);
   const used = new Set(messages.filter((m) => m.role === 'agent' || m.role === 'bot').map((m) => m.text.trim()));
   const hasAgent = messages.some((m) => m.role === 'agent');
   const hasWait = messages.some((m) => ['agent', 'bot'].includes(m.role) && /kontrol ediyorum|beklemenizi|bekletecegim/.test(normalize(m.text)));
   return templates.map((t) => {
+    // Existing imported catalogs also receive updated assertion checks.
+    t = {...t, guarded: Boolean(t.guarded) || needsConfirmation(t.text)};
     const hay = normalize(`${t.label} ${t.shortcut} ${t.text}`), label = normalize(`${t.label} ${t.shortcut}`);
+    const policy = templatePolicy(t);
     let score = words.reduce((n, w) => n + (hay.includes(w) ? 1 : 0) + (label.includes(w) ? 2 : 0), 0);
     if (!query) {
+      if (sms && /bonus|promosyon|freespin/.test(hay) && !policy.smsBonus) return {...t, score: -100};
+      if (sms && !policy.smsBonus && /sms/.test(hay)) return {...t, score: -100};
       // A general bonus mention is insufficient evidence for a specific promotion.
       if (/sms|telefon dogrulama/.test(hay) && !/sms|telefon|dogrulama/.test(q)) return {...t, score: -100};
       if (/jest/.test(q) && /bonus|promosyon|freespin/.test(hay) && !/jest/.test(hay)) return {...t, score: -100};
@@ -62,6 +111,11 @@ export function rankTemplates(templates, messages, query = '') {
     for (const [, input, output] of domains) if (input.test(q) && output.test(hay)) score += 3;
     if (/sms/.test(q) && /sms/.test(hay)) score += 4;
     if (/bonus/.test(q) && /bonus/.test(hay)) score += 3;
+    if (sms && policy.smsBonus) {
+      score += 20;
+      if (policy.singleUse && !t.guarded) score += 25;
+      if (sms.repeat && policy.repeated) score += 50;
+    }
     if (/ip\b/.test(q) && /ip\b/.test(hay)) score += 5;
     if (/sifre/.test(q) && /sifre/.test(hay)) score += 5;
     if (used.has(t.text.trim())) score = -100;
