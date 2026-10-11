@@ -37,7 +37,7 @@ test('retry-after seconds and dates are respected, missing headers use a pause',
 });
 test('prompt size stays bounded with long conversations and 487 long templates', () => {
   const input = compactInput(Array.from({length: 20}, () => ({role: 'user', text: 'x'.repeat(1800)})), Array.from({length: 487}, (_, i) => ({id: `t${i}`, text: 'y'.repeat(12000)})));
-  assert.ok(input.candidates.length <= 6);
+  assert.ok(input.candidates.length <= 12);
   assert.ok(input.conversation.reduce((n, m) => n + m.text.length, 0) <= 3360);
   assert.ok(input.candidates.reduce((n, m) => n + m.text.length, 0) <= 3800);
 });

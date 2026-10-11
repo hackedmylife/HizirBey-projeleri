@@ -49,7 +49,7 @@ export function requestContext(messages) {
     return !/^(?:bekliyorum|hala bekliyorum|tamam|peki|evet|tesekkur.*|ok|okey|merhaba.*|selam.*|haba|kolay gelsin.*|iyi (?:gunler|aksamlar).*|ilgilenecek misiniz.*|ilgilenir misiniz.*|orada misiniz.*)[.!?\s]*$/.test(text)
       && !/^(?:kullanici\s*(?:adim|adi)|kullanici\s*ismim|nick(?:im)?|username)\b/.test(text);
   });
-  const topic = /sms.*(?:bonus|promosyon)|(?:bonus|promosyon).*sms|jest|geri\s*don.*bonus|kupon|bahis|sifre|girem|oyun.*(?:sorun|id)/;
+  const topic = /sms.*(?:bonus|promosyon)|(?:bonus|promosyon).*sms|jest|geri\s*don.*bonus|kupon|bahis|sifre|parola|girem|yatirim\w*\s*(?:gel|gec|sorun)|cekim\w*\s*(?:talep|gel|gec|sorun|ist)|para.*(?:cek|gel|yatir)|telefon|e.?posta|kimlik|hesap.*kapat|oyun.*(?:sorun|id)/;
   const anchor = meaningful.findLastIndex((m) => topic.test(normalize(m.text)));
   return meaningful.slice(anchor < 0 ? -2 : anchor).slice(-4).map((m) => m.text).join(' ');
 }

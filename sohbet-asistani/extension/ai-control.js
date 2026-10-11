@@ -72,13 +72,16 @@ export function retryDelay(response, now = Date.now()) {
 export function compactInput(messages, candidates) {
   // Character ceilings bound Turkish input without requiring a tokenizer install.
   const conversation = messages.filter((m) => m.role !== 'system').slice(-12).map((m) => ({...m, text: m.text.slice(0, 280)}));
-  let remaining = 3800;
-  const compact = [];
-  for (const {id, text} of candidates.slice(0, 6)) {
-    if (remaining < 200) break;
-    const snippet = text.slice(0, Math.min(900, remaining));
-    remaining -= snippet.length;
-    compact.push({id, text: snippet});
-  }
+  const compact = candidates.slice(0, 12).map(t => ({
+    id: t.id,
+    title: `${t.label || ''} ${t.shortcut || ''}`.slice(0, 70),
+    text: t.text.slice(0, 180),
+    conditions: (t.profile?.conditions || []).slice(0, 3).map(s => s.slice(0, 130)),
+    topics: t.profile?.primary || [],
+    singleUse: Boolean(t.profile?.singleUse),
+    requiresVerification: Boolean(t.guarded)
+  }));
+  // Cap the whole candidate payload while preserving conditions separately.
+  while (JSON.stringify(compact).length > 5600 && compact.length > 1) compact.pop();
   return {conversation, candidates: compact};
 }

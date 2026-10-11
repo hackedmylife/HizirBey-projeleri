@@ -1,10 +1,17 @@
-# Hızır Bey Sohbet Asistanı — 0.1.2
+# Hızır Bey Sohbet Asistanı — 0.1.3
 
 LiveChat açık görüşmesindeki mesajları okuyarak FastKeys düz metin cevaplarından öneri gösterir. Yalnızca **Kopyala** düğmesi vardır. Mesaj göndermez, yazı alanını değiştirmez, makro çalıştırmaz. Süre takip eklentisi ayrı olarak çalışmaya devam eder.
 
-## 0.1.0 / 0.1.1 sürümünü güncelleme
+## 0.1.0 / 0.1.1 / 0.1.2 sürümünü güncelleme
 
 Eklentiyi kaldırmayın. Bu ZIP içindeki `extension` klasörünün **içeriğini**, Chrome'a daha önce yüklediğiniz mevcut `extension` klasörünün içine kopyalayın ve dosyaları değiştirin. `chrome://extensions` ekranında Hızır Bey Sohbet Asistanı kartındaki yeniden yükle düğmesine basın, ardından LiveChat sekmesini yenileyin. Aynı klasör ve eklenti kimliği korununca mevcut API anahtarı, içe aktarılan arşiv ve Windows bağlantısı korunur. Yeni klasörü ayrı bir eklenti olarak yüklemeyin.
+
+## 0.1.3 tüm arşivde aday seçimi
+
+- Yalnızca SMS için değil, içe aktarılan tüm arşiv için konu ve koşul indeksi oluşturulur. Bonus türleri, şifre/IP, yatırım/çekim, kupon ve oyun ayrımları sıralamaya dahil edilir. Bu sezgisel sınıflandırmadır; modelin bütün kalıpları tek istekte okuduğu anlamına gelmez.
+- İlk değerlendirmede en fazla 12 adayın başlığı, özeti, koşulları ve doğrulama gereksinimi modele gönderilir. Uzun metnin sonundaki koşullar ayrıca taşınır. Aday JSON toplamı 5.600 karakterle sınırlanır; bu sınır aday sayısını azaltabilir.
+- Model boş veya geçersiz kimlik seçerse ilk boş sonuç önbelleğe alınmaz. Aynı görüşme için istek bütçesi izin verdiğinde farklı adaylarla bir ikinci değerlendirme yapılır. İkinci değerlendirme de boşsa konuya ait yerel adaylar kontrol uyarısıyla sunulur. Arşivde olmayan cevap üretilmez.
+- Hesap sonucu iddiası içeren adaylar artık tamamen elenmez; panelde doğrulama kutusuyla gösterilebilir. İç talimat/comment kalıpları otomatik öneriye alınmaz. Kopyalanan cevap arşivdeki tam metindir.
 
 ## 0.1.2 bağlam düzeltmeleri
 
@@ -55,17 +62,17 @@ Bağlantıyı kaldırmak için Windows PowerShell'de `windows/Kaldir.ps1` çalı
 - Üye, temsilci, bot ve sistem mesajları ayrı okunur. Görünür DOM'daki son 30 mesaj kullanılır; ekrana yüklenmemiş eski geçmiş okunamaz.
 - Yeni görüşmeye geçiş veya yeni mesaj sonrasında eski öneriler temizlenir. Kopyalama anında görüşme tekrar kontrol edilir.
 - AI yalnızca aday kalıp kimliklerini seçebilir; kopyalanan metin FastKeys arşivindeki metindir. AI gerekçesi ayrı gösterilir, cevap metnine katılmaz.
-- Anahtar kelime sıralamasıyla en fazla 6 aday modele sunulur; aday metinleri toplam 3.800, görüşme metinleri toplam 3.360 karakter ile sınırlanır. Doğru kalıp adaylar arasında yoksa arşiv araması gerekir; hiçbir model seçiminin hatasız olduğu varsayılmaz.
+- Tüm arşiv konu ve koşullara göre sıralanır; en fazla 12 adayın özet bilgisi modele sunulur. Aday JSON toplamı 5.600, görüşme metinleri toplam 3.360 karakter ile sınırlanır. Doğru kalıp adaylar arasında yoksa arşiv araması gerekir; hiçbir model seçiminin hatasız olduğu varsayılmaz.
 - Karşılama ve bekletme tekrarlarını azaltmak için görüşme kontrol edilir. IP ve şifre blokesi ayrımı AI talimatına dahildir; doğruluğu gerçek kullanımda gözden geçirilmelidir.
 - Makrolar, bilgi giriş alanları, seçim menüleri ve devre dışı kalıplar elenir. Metin tekrarları tekilleştirilir.
-- İşlem tamamlandı iddiası ve belirli tarih içeren kalıplar AI seçiminden çıkarılır. İkinci SMS bonusu talebi için ilgili önceki kullanım metni, temsilci doğrulama kutusuyla ayrıca sunulabilir. Arşiv aramasında kopyalamak için **Bu metindeki işlem ve bilgileri doğruladım** kutusu gerekir. Bu sınıflandırma sezgiseldir; yeni kalıplar ayrıca gözden geçirilmelidir.
+- İşlem tamamlandı iddiası ve belirli tarih içeren kalıplar doğrulama gerektirir. AI seçimi ve yerel adaylar bu işareti korur. İkinci SMS bonusu talebi için ilgili önceki kullanım metni, temsilci doğrulama kutusuyla ayrıca sunulabilir. Arşiv aramasında kopyalamak için **Bu metindeki işlem ve bilgileri doğruladım** kutusu gerekir. Bu sınıflandırma sezgiseldir; yeni kalıplar ayrıca gözden geçirilmelidir.
 - AI açıkken son mesajlar ve aday metinler Groq'a gönderilir. İsim/kullanıcı adı alanları okunmaz; mesaj içindeki e-posta, uzun numara ve bağlantılar kısmen maskelenir. Bu tam anonimleştirme değildir.
 - API anahtarı `chrome.storage.local` içinde, yalnızca güvenilen eklenti sayfalarına açık saklanır; şifreli kasa değildir. ZIP ve GitHub'a anahtar veya kullanıcı dosyası konmaz.
 
 ## Doğrulama ve sınırlar
 
-27 Node testi `npm test` ile geçer; önbellek, aynı anda tekrar istek, 429 bekleme, 401 ayrımı, istem sınırı ve jest/SMS bağlamı doğrulanır. Parser ve DOM ayrımı sağlanan örneklerle yerel olarak doğrulanır. Paket, Windows ve gerçek LiveChat oturumunda henüz denenmemiştir; native host kurulumu, gerçek pano erişimi ve gerçek Groq çağrısı ilk denemede doğrulanmalıdır. Bu sürüm üretim onayı değil, kontrollü ilk deneme sürümüdür.
+32 Node testi `npm test` ile geçer; önbellek, aynı anda tekrar istek, 429 bekleme, 401 ayrımı, istem sınırı ve jest/SMS bağlamı doğrulanır. Yeni indeks için konu ayrımı, geç koşullar, ID tekrarını önleme ve farklı adaylarla ikinci değerlendirme test edilir. 487 kalıplık gerçek arşivde örnek taleplerin yerel sıralaması da incelendi; kullanıcı arşivi pakete eklenmedi. Parser ve DOM ayrımı sağlanan örneklerle yerel olarak doğrulanır. Paket, Windows ve gerçek LiveChat oturumunda henüz denenmemiştir; native host kurulumu, gerçek pano erişimi ve gerçek Groq çağrısı ilk denemede doğrulanmalıdır. Bu sürüm üretim onayı değil, kontrollü ilk deneme sürümüdür.
 
 ## Geliştirme
 
-`extension/core.js`: FastKeys ayrıştırma ve aday sıralama. `reader.js`: DOM'dan mesaj okuma. `background.js`: güvenilen kaynak erişimi, Windows bağlantısı ve AI. `content.js`: salt okunur panel. `windows/NativeHost.cs`: çerçeveli stdio ile yerel dosya okuma. Kullanıcı verileri ve anahtarlar test fixture'ı veya paket içeriği olarak eklenmez.
+`extension/core.js`: FastKeys ayrıştırma ve aday sıralama. `extension/retrieval.js`: konu/koşul indeksi ve farklı aday seçimi. `reader.js`: DOM'dan mesaj okuma. `background.js`: güvenilen kaynak erişimi, Windows bağlantısı ve AI. `content.js`: salt okunur panel. `windows/NativeHost.cs`: çerçeveli stdio ile yerel dosya okuma. Kullanıcı verileri ve anahtarlar test fixture'ı veya paket içeriği olarak eklenmez.

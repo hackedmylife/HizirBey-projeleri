@@ -104,3 +104,25 @@ test('SMS policy matching uses the imported catalog without AI and marks previou
   assert.equal(first.data.items[0].text, data.catalog.templates[1].text);
   assert.equal(calls, 0);
 });
+test('empty AI selection retries a different batch and keeps exact guarded catalog text available', async () => {
+  clock += 60000;
+  const lines = Array.from({length: 25}, (_, i) => `1•kupon${i}*•Kupon bilgisi•Send•♥Spor kupon numarasını iletir misiniz? Seçenek ${i}.•2•`);
+  await send({type:'import', text:lines.join('\n') + '\n∟'});
+  const batches = [];
+  globalThis.fetch = async (_, options) => {
+    const input = JSON.parse(JSON.parse(options.body).messages[1].content);
+    batches.push(input.candidates.map(t => t.id));
+    return {ok:true, json:async()=>({usage:{total_tokens:100}, choices:[{message:{content:JSON.stringify({ids:batches.length === 1 ? [] : [input.candidates[0].id]})}}]})};
+  };
+  const payload = {type:'suggest', messages:[{role:'user', text:'Spor kuponum yanlış sonuçlandı'}]};
+  const first = (await send(payload, live)).data;
+  assert.equal(first.retryAfterMs, 8000);
+  assert.ok(first.items.length);
+  clock += 8000;
+  const second = (await send(payload, live)).data;
+  assert.equal(second.mode, 'ai');
+  assert.ok(second.items.length);
+  assert.ok(batches[1].every(id => !batches[0].includes(id)));
+  assert.equal(second.items[0].text, data.catalog.templates.find(t => t.id === batches[1][0]).text);
+  assert.equal((await send(payload, live)).data.cached, true);
+});
