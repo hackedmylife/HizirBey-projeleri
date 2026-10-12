@@ -1,5 +1,6 @@
 import {parseFastKeys, rankTemplates, cleanMessages} from './core.js';
 import {emptyMemory, addExamples, makeExample, removeExample, rejectResponse, selectExamples, memoryStats} from './learning.js';
+import {exportMemory, parseBackup, mergeBackup} from './backup.js';
 import {buildIndex} from './retrieval.js';
 import {prepareKnowledge, knowledgeBatch, knowledgeProgress, KNOWLEDGE_SYSTEM, validateAnalysis} from './knowledge.js';
 import {COMPOSER_SYSTEM, composeInput, validateReplies, localReplies} from './composer.js';
@@ -158,7 +159,9 @@ export async function prepareOne() {
   const idleWait = 30000 - (Date.now() - lastInteractionAt);
   if (idleWait > 0) {schedulePreparation(idleWait); return;}
   if (prepController || running.size) {schedulePreparation(8000); return;}
-  const config = await settings(), c = await catalog(), k = await ensureKnowledge();
+  const config = await settings();
+  if (!config.useFastKeys) return;
+  const c = await catalog(), k = await ensureKnowledge();
   if (!config.aiEnabled || !c.templates.length || !config.providerOrder.some(id => config.providers[id].enabled && config.providers[id].apiKey)) return;
   if (k.nextAt > Date.now()) {schedulePreparation(Math.min(60000, k.nextAt - Date.now())); return;}
   const batch = knowledgeBatch(k, c); if (!batch.length) return;
@@ -190,7 +193,9 @@ if (chrome.alarms) {
 }
 function failureNotice(result) {
   if (!result.configured) return 'Yanıt üretimi için ayarlardan en az bir yapay zekâ anahtarı ekle. Hazır destek yanıtları kullanılabilir.';
-  if (result.failures.some(e => ['credentials', 'configuration', 'budget', 'paid'].includes(e.reason))) return 'Yapay zekâ bağlantılarının ayarlarını kontrol et. Bu sırada hazır destek yanıtları gösteriliyor.';
+  const reasons = {credentials: 'API anahtarını kontrol et', configuration: 'model veya erişim ayarını kontrol et', budget: 'aylık kredi sınırını kontrol et', paid: 'ücretli model iznini kontrol et'};
+  const details = result.failures.filter(e => reasons[e.reason]).map(e => `${NAMES[e.id]}: ${reasons[e.reason]}`).join(' · ');
+  if (details) return `AI yanıtı alınamadı. ${details}. Şimdilik görüşmeye uygun hazır destek yanıtları gösteriliyor.`;
   return 'Yapay zekâ bağlantıları şu anda uygun yanıt veremedi. Hazır destek yanıtlarını görüşmeye göre kontrol ederek kullanabilirsin.';
 }
 async function suggest(payload, tabId) {
@@ -218,9 +223,9 @@ async function suggest(payload, tabId) {
 async function suggestFresh(payload, messages, controller, key) {
   const c = await catalog(), config = await settings();
   if (payload.query) return {items: rankTemplates(c.templates, messages, payload.query).slice(0, 12), mode: 'search', notice: 'FastKeys arşivi · Orijinal metinler'};
-  const k = await ensureKnowledge();
-  if (!retrievalIndex) retrievalIndex = buildIndex(c.templates, k);
-  const input = composeInput(retrievalIndex, k, messages);
+  const k = config.useFastKeys ? await ensureKnowledge() : undefined;
+  if (config.useFastKeys && !retrievalIndex) retrievalIndex = buildIndex(c.templates, k);
+  const input = composeInput(retrievalIndex, k, messages, {useFastKeys: config.useFastKeys});
   Object.assign(input, selectExamples(await learnedMemory(), input, config.useExamples));
   const local = (notice, retryAfterMs = 0) => ({items: localReplies(input), mode: 'prepared', notice, retryAfterMs});
   if (!config.aiEnabled) return local('Yapay zekâ kapalı. Hazır destek yanıtları gösteriliyor; arşiv aramasını da kullanabilirsin.');
@@ -240,7 +245,7 @@ chrome.runtime.onMessage.addListener((message, sender, reply) => {
   if (!isOptions && !live) return false;
   const run = async () => {
     switch (message.type) {
-      case 'status': { const c = await catalog(), s = await settings(), k = await ensureKnowledge(); schedulePreparation(1000); return {count: c.templates.length, source: c.source, updatedAt: c.updatedAt, aiEnabled: s.aiEnabled, autoSync: s.autoSync, knowledge: knowledgeProgress(k), providers: pool.status(s), learning: await learningStatus(), revision}; }
+      case 'status': { const c = await catalog(), s = await settings(), k = await ensureKnowledge(); if (s.useFastKeys) schedulePreparation(1000); return {count: c.templates.length, source: c.source, updatedAt: c.updatedAt, aiEnabled: s.aiEnabled, autoSync: s.autoSync, useFastKeys: s.useFastKeys, knowledge: knowledgeProgress(k), providers: pool.status(s), learning: await learningStatus(), revision}; }
       case 'openOptions': await chrome.runtime.openOptionsPage(); return {};
       case 'suggest': if (!live) throw new Error('Bu işlem LiveChat ekranında kullanılabilir.'); return suggest(message, sender.tab.id);
       case 'cancel': if (live) running.get(sender.tab.id)?.abort(); return {};
@@ -275,6 +280,20 @@ chrome.runtime.onMessage.addListener((message, sender, reply) => {
         const memory = await learnedMemory();
         const offset = Math.max(0, Math.floor(Number(message.offset) || 0));
         return {learning: await learningStatus(), examples: memory.examples.slice(offset, offset + 20), hasMore: offset + 20 < memory.examples.length};
+      }
+      case 'exportLearning': {
+        if (!isOptions) throw new Error('Yedekler yalnızca asistan ayarlarından yönetilebilir.');
+        return learningTask(async () => ({backup: exportMemory(await learnedMemory()), learning: await learningStatus()}));
+      }
+      case 'importLearning': {
+        if (!isOptions) throw new Error('Yedekler yalnızca asistan ayarlarından yönetilebilir.');
+        const restored = await parseBackup(message.text);
+        return learningTask(async () => {
+          const result = mergeBackup(await learnedMemory(), restored);
+          await commitMemory(result.memory); revision++; pool.cache.cache.clear();
+          for (const controller of running.values()) controller.abort();
+          return {added: result.added, rejectedAdded: result.rejectedAdded, learning: await learningStatus()};
+        });
       }
       case 'teachReply': {
         if (!live) throw new Error('Bu işlem LiveChat ekranında kullanılabilir.');

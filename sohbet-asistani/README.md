@@ -1,8 +1,18 @@
-# Hızır Bey Sohbet Asistanı — 0.3.1
+# Hızır Bey Sohbet Asistanı — 0.3.2
 
-LiveChat görüşmesindeki mesajları okuyup müşteriye gönderilebilecek üç profesyonel Türkçe yanıt hazırlar: **Kısa ve net**, **Açıklayıcı**, **Empati ve çözüm**. FastKeys arşivi bilgi kaynağıdır. Yapay zekâ özgün yanıt yazabilir; arşivde eşleşme bulunması yanıt üretiminin ön şartı değildir.
+LiveChat görüşmesindeki mesajları okuyup müşteriye gönderilebilecek üç profesyonel Türkçe yanıt hazırlar: **Kısa ve net**, **Açıklayıcı**, **Empati ve çözüm**. FastKeys arşivi isteğe bağlı bilgi kaynağıdır; bu sürümde otomatik yanıtlarda kapalıdır. Yapay zekâ özgün yanıt yazabilir; arşivde eşleşme bulunması yanıt üretiminin ön şartı değildir.
 
 Panel yalnızca önerir ve kopyalar. Mesaj göndermez, LiveChat yazı alanını değiştirmez, FastKeys makrolarını çalıştırmaz. Süre takip eklentisi ayrı çalışır.
+
+## 0.3.2 öğrenilmiş örneklerle yanıt ve hafıza yedeği
+
+- **FastKeys’i otomatik yanıtlara kaynak olarak ekle** bu sürümde varsayılan kapalıdır; eski ayarlarda bu alan yoksa güncellemeden sonra kapalı kabul edilir. Mevcut arşiv ve API anahtarları korunur. Otomatik yanıtlar güncel görüşme ve ilgili öğrenilmiş yazım örnekleri üzerinden hazırlanır. FastKeys kapalıyken metinleri AI yanıt isteğine eklenmez ve arşiv için AI analizi yapılmaz. Arşivde açıkça yapılan kalıp araması ayrı bir elle arama işlemidir; kutu istenirse yeniden açılabilir.
+- Hesap kapatma, kumarı bırakma/ara verme ve sürekli kaybetme mesajları ayrı niyetlerdir. Kapatma talebi bekleme, öfke veya kayıp anlatımı arasında korunur; açık yeni bir işlem konusuna geçilirse yeni konu değerlendirilir. “Hesabım kapandı” veya kupon sonucu itirazı kapatma talebi sayılmaz.
+- Bu konularda alakasız öğrenilmiş örnekler elenir; eski sürümde genel olarak sınıflanmış örnekler de güncel talep üzerinden değerlendirilir. AI'ya kapatma talebini yeniden genel bir soruya dönüştürmemesi ve üyeyi bonus/yeniden oynamaya yönlendirmemesi söylenir. Bu anlam kontrolleri hatasız bir dil anlayışı garantisi değildir.
+- AI bağlantısı yanıt veremediğinde üç **Hazır destek yanıtı** gösterilir. Bu sürümde kapatma, bırakma ve kayıp şikâyetlerinde konuya uygun ayrı yanıtlar vardır. Bunlar model tarafından o anda üretilmiş cevap değildir. Anahtar/model/bütçe ayarı sorununda hangi bağlantının kontrol edileceği bildirilir; eklenti hatalı API anahtarını kendisi düzeltemez.
+- **Ayarlar → Öğrenme yedeği → Öğrenme yedeğini indir**, JSON dosyası indirir. Üye bağlamı, öğrenilmiş yanıtlar, düzeltme/onay bilgileri, uygun bulunmayan yanıtlar ve silinmiş örneklerin kimlikleri dahil edilir. Yedek model ağırlıkları veya tüm görüşme arşivi değildir. API ayarları, anahtarlar, FastKeys arşivi ve oturum dahil edilmez.
+- Aynı bölümde JSON seçip **Birleştirerek yükle** ile başka bir profil veya sonraki kuruluma geri yüklenebilir. Dosya en fazla 6 MB olabilir; şema, alanlar, roller ve kapasite doğrulanır, kişisel bilgi filtresi yeniden uygulanır. Geçersiz dosyada kayıtlar değiştirilmez. Aynı örnek çoğaltılmaz; mevcut düzeltme/onaylar ve silinmiş kayıt tercihleri korunur. 1.000 olumlu örnek / 1,5 MB ve geri bildirim sınırları geri yüklemede de uygulanır.
+- Yedek konuşma parçaları içerir. Temizleme sezgiseldir; dosyayı kendi cihazında saklayın. Yedek alma ayrıca API çağrısı yapmaz ve kişisel yedek ZIP/GitHub sürüm paketine eklenmez.
 
 ## 0.3.1 arama alanında asistan ve birlikte öğrenme
 
@@ -25,14 +35,14 @@ Panel yalnızca önerir ve kopyalar. Mesaj göndermez, LiveChat yazı alanını 
 - Ayarlardan örnekler görülebilir, tek tek silinebilir veya hafıza temizlenebilir. Silinen aynı örneğin pasif okumayla yeniden eklenmesi engellenir. Açık bir Beğendim/düzeltme işlemi örneği yeniden ekleyebilir. Hafıza temizliği API anahtarlarını ve FastKeys arşivini silmez.
 - En fazla 1.000 olumlu örnek ve olumlu örnekler için 1,5 MB tutulur; ayrıca en fazla 100 olumsuz örnek ve silinmiş örneklerin sınırlı kimlik listesi saklanır. Kapasite dolduğunda otomatik eski örnekler önce elenir; düzeltilmiş/onaylı örnekler korunmaya çalışılır.
 - Bilinen isim/kimlik alanları, iletişim bilgileri, uzun tanımlayıcılar, şifre alanları ve sayılar saklamadan önce maskelenir. Hesap sonucu iddiaları ayıklanır; değişken şirket koşulları yer tutucuya çevrilir. Bu sezgisel işlemler tam anonimleştirme veya hatasız sınıflandırma garantisi değildir. Kaydedilen metinler ayarlardan gözden geçirilebilir ve silinebilir.
-- Benzer bağlamdan seçilen en fazla üç sınırlı örnek ve bir uygun bulunmayan yanıt, yeni cevap isteğine yazım verisi olarak eklenir. Örnek toplamak ayrıca bir AI isteği yapmaz; örneklerin cevap istemine eklenmesi token kullanımını artırabilir. FastKeys, şirket kuralları için esas kaynak olarak kalır. Örnekler modele kalıcı eğitim/fine-tuning uygulamaz; uygulama geçmiş örnekleri saklar ve gerektiğinde sağlar.
+- Benzer bağlamdan seçilen en fazla üç sınırlı örnek ve bir uygun bulunmayan yanıt, yeni cevap isteğine yazım verisi olarak eklenir. Örnek toplamak ayrıca bir AI isteği yapmaz; örneklerin cevap istemine eklenmesi token kullanımını artırabilir. FastKeys açık olduğunda şirket kuralları için esas kaynak olur. Kapalıyken geçmiş yazım örneklerinden yeni şirket koşulu veya işlem sonucu üretilmez. Örnekler modele kalıcı eğitim/fine-tuning uygulamaz; uygulama geçmiş örnekleri saklar ve gerektiğinde sağlar.
 
 ## Mevcut eklentiyi güncelleme
 
 1. Eklentiyi Chrome'dan **kaldırmayın**.
 2. ZIP içindeki `extension` klasörünün **içeriğini**, Chrome'a daha önce yüklediğiniz mevcut `extension` klasörünün içine kopyalayın; aynı adlı dosyaları değiştirin.
 3. Mevcut klasörün yolunu koruyun. `chrome://extensions` ekranında Hızır Bey Sohbet Asistanı kartındaki yeniden yükle düğmesine basın.
-4. LiveChat sekmesini yenileyin. Panel sürümü **0.3.1** olmalı.
+4. LiveChat sekmesini yenileyin. Panel sürümü **0.3.2** olmalı.
 5. Ayarlarda kayıtlı Groq anahtarının bulunduğunu kontrol edin. Gemini ve OpenRouter anahtarlarını ekleyip ilgili bağlantıları etkinleştirin ve kaydedin.
 
 Aynı klasör ve eklenti kimliği korunursa önceki Groq anahtarı, içe aktarılan FastKeys arşivi ve Windows bağlantısı kullanılmaya devam eder. Yeni sağlayıcı ayarlarına geçiş eski anahtarı korur. Anahtar alanını boş bırakmak mevcut anahtarı silmez; silmek için o sağlayıcının ayrı kutusu gerekir. Windows yardımcısını yeniden kurmak gerekmez.
@@ -58,7 +68,7 @@ Model erişimi ve API kotaları hesaplara bağlıdır. Gemini model kimliği de�
 ## Kalıcı FastKeys bilgisi
 
 - Düz metinler, kaynak koşullar ve konu indeksi tarayıcı profilinde saklanır. Anahtar gerekmeden yerel hazırlık yapılır.
-- Yapay zekâ açık ve en az bir bağlantı hazır olduğunda arşiv **tam metinlerle küçük gruplar halinde** arka planda analiz edilir. Başlık, konu, eşanlamlılar ve kaynakta birebir bulunan koşul alıntıları saklanır. Makrolar ve iç not/komut kayıtları AI analizine alınmaz.
+- FastKeys kaynak olarak açık, yapay zekâ açık ve en az bir bağlantı hazır olduğunda arşiv **tam metinlerle küçük gruplar halinde** arka planda analiz edilir. Başlık, konu, eşanlamlılar ve kaynakta birebir bulunan koşul alıntıları saklanır. Makrolar ve iç not/komut kayıtları AI analizine alınmaz.
 - Hazırlık ilerlemesi ayarlarda ve panelde gösterilir. Yanıt üretimi, tüm analizin bitmesini beklemez. Canlı yanıtlar önceliklidir; son değerlendirmeden sonra en az 30 saniye boşluk varsa arşiv analizi ilerler.
 - Arşiv ve her kaydın SHA-256 özeti kullanılır. Aynı içerik yeniden içe aktarılırsa önceki analiz korunur. Değişen kayıtlar yeniden hazırlanır; diğer kayıtların analizi tekrar kullanılabilir.
 - Hazırlığın kaldığı nokta kalıcıdır. Servis çalışanı veya tarayıcı yeniden açıldığında devam edebilir. Chrome alarmı duraklamış işi tekrar kontrol eder; tarayıcı kapalıyken hazırlık çalışmaz.
@@ -101,7 +111,7 @@ Anahtarlar yalnızca güvenilen eklenti sayfalarına açık `chrome.storage.loca
 
 ## Doğrulama ve sınırlar
 
-`npm test` ile 85 Node testi geçer. Testlerde sahte API yanıtları kullanılır: servis geçişi, 429 beklemesi, zaman aşımı, bozuk çıktı, aylık ücret sınırı, anahtar geçişi, önbellek, iptal, kalıcı arşiv analizi, kaynak koruması ve özgün yanıt üretimi doğrulanır. Otomatik örnek toplama, tüm sekmelerde durdurma, eski isteklerin reddi, durdurulmuş mesajların geri toplanmaması, gizlilik filtreleri, düzeltme/onay/silme, örneklerin isteme eklenmesi ve kaydedilen örneklerin şirket kaynağı sayılmaması da test edilir. Arama alanına yerleşim, mesaj yazma alanının geometrik olarak korunması, panel kapalıyken üretimin durması ve öğrenmenin devam etmesi, kapalı tercihin yenilemede korunması ve selamla başlayan gerçek talepler de test edilir. Panel davranışı sahte DOM ve zamanlayıcılarla doğrulanır; gerçek tarayıcı görünümü bu testlere dahil değildir. Tüm JavaScript dosyaları sözdizimi kontrolünden geçer; ayar HTML kimlikleri ve script bağlantıları statik olarak kontrol edilir.
+`npm test` ile 100 Node testi geçer. Testlerde sahte API yanıtları kullanılır: servis geçişi, 429 beklemesi, zaman aşımı, bozuk çıktı, aylık ücret sınırı, anahtar geçişi, önbellek, iptal, kalıcı arşiv analizi, kaynak koruması ve özgün yanıt üretimi doğrulanır. Otomatik örnek toplama, tüm sekmelerde durdurma, eski isteklerin reddi, durdurulmuş mesajların geri toplanmaması, gizlilik filtreleri, düzeltme/onay/silme, örneklerin isteme eklenmesi ve kaydedilen örneklerin şirket kaynağı sayılmaması da test edilir. Arama alanına yerleşim, mesaj yazma alanının geometrik olarak korunması, panel kapalıyken üretimin durması ve öğrenmenin devam etmesi, kapalı tercihin yenilemede korunması ve selamla başlayan gerçek talepler de test edilir. Panel davranışı sahte DOM ve zamanlayıcılarla doğrulanır; gerçek tarayıcı görünümü bu testlere dahil değildir. FastKeys kapalıyken kaynak ve analiz isteği gönderilmemesi, ilgili destek niyetleri, yedek turu, hatalı dosyanın atomik reddi, alan izin listesi ve güvenli birleştirme de test edilir. Tüm JavaScript dosyaları sözdizimi kontrolünden geçer; ayar HTML kimlikleri ve script bağlantıları statik olarak kontrol edilir.
 
 Gerçek API anahtarıyla Groq/Gemini/OpenRouter üretimi ve Türkçe model kalitesi **bu ortamda denenmedi**. Chrome çalıştırıcısı bulunmadığı için görsel tarayıcı kontrolü tamamlanamadı. Gerçek LiveChat DOM'u, pano erişimi, Chrome servis çalışanının yaşam döngüsü ve Windows native host kurulumu kullanıcının ortamında kontrol edilmelidir. Sınırsız ücretsiz kullanım, her durumda doğru cevap veya tamamen kesintisiz servis garantisi verilmez.
 
@@ -109,4 +119,4 @@ Gerçek API anahtarıyla Groq/Gemini/OpenRouter üretimi ve Türkçe model kalit
 
 API sözleşmeleri: [Groq metin üretimi](https://console.groq.com/docs/text-chat), [Gemini generateContent](https://ai.google.dev/api/generate-content), [OpenRouter ücretsiz model yönlendirme](https://openrouter.ai/docs/guides/routing/routers/free-router), [OpenRouter kredi ve limitler](https://openrouter.ai/docs/api/reference/limits).
 
-`learning.js`: maskelenmiş örnek hafızası ve bağlama göre örnek seçimi. `capture.js`: görüşme bazında yeni temsilci mesajlarını takip etme. `core.js`: FastKeys ayrıştırma ve arama. `knowledge.js`: kalıcı bilgi hazırlığı. `retrieval.js`: konu ve koşul sıralaması. `composer.js`: profesyonel yanıt talimatı, doğrulama ve hazır destek yanıtları. `providers.js`: sağlayıcılar, geçiş, bekleme ve ücret kontrolü. `background.js`: güvenilen erişim ve hazırlık işleri. `reader.js`: LiveChat DOM okuma. `dock.js`: üst arama alanına yerleşim ve yalnızca asistana ait konumlandırma. `content.js`: öneri/kopyalama paneli. `windows/NativeHost.cs`: seçilen dosyanın yerel okunması.
+`backup.js`: kimlik bilgileri içermeyen örnek yedeği ve doğrulanmış birleştirme. `learning.js`: maskelenmiş örnek hafızası ve bağlama göre örnek seçimi. `capture.js`: görüşme bazında yeni temsilci mesajlarını takip etme. `core.js`: FastKeys ayrıştırma ve arama. `knowledge.js`: kalıcı bilgi hazırlığı. `retrieval.js`: konu ve koşul sıralaması. `composer.js`: profesyonel yanıt talimatı, doğrulama ve hazır destek yanıtları. `providers.js`: sağlayıcılar, geçiş, bekleme ve ücret kontrolü. `background.js`: güvenilen erişim ve hazırlık işleri. `reader.js`: LiveChat DOM okuma. `dock.js`: üst arama alanına yerleşim ve yalnızca asistana ait konumlandırma. `content.js`: öneri/kopyalama paneli. `windows/NativeHost.cs`: seçilen dosyanın yerel okunması.

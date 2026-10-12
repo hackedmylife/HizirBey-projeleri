@@ -10,7 +10,7 @@ function progress(data) {
   if (data.learning && !learningDirty) $('learningEnabled').checked = l.enabled;
   $('learningInfo').textContent = `${l.enabled ? 'Öğrenme açık' : 'Öğrenme durduruldu'} · ${l.count || 0} örnek\n${l.automatic || 0} otomatik, ${l.corrected || 0} düzeltilmiş, ${l.approved || 0} onaylı · ${l.rejected || 0} uygun bulunmayan yanıt`;
   const k = data.knowledge || {};
-  if (data.knowledge) $('knowledge').textContent = k.total ? `${k.total} metin bilgi tabanında · AI analizi ${k.done}/${k.total}${k.done === k.total ? ' · Tamamlandı' : data.aiEnabled === false || data.settings?.aiEnabled === false ? ' · AI kapalı; analiz bekliyor' : ' · Arka planda devam ediyor'}${k.error ? `\n${k.error}` : ''}` : 'Arşiv yüklenmedi. Genel destek yanıtları kullanılabilir.';
+  if (data.knowledge) $('knowledge').textContent = (data.useFastKeys ?? data.settings?.useFastKeys) === false ? 'FastKeys otomatik yanıtlarda kapalı. Yanıtlar görüşme ve öğrenilmiş örnekler üzerinden hazırlanır; arşiv için AI analizi yapılmaz.' : k.total ? `${k.total} metin bilgi tabanında · AI analizi ${k.done}/${k.total}${k.done === k.total ? ' · Tamamlandı' : data.aiEnabled === false || data.settings?.aiEnabled === false ? ' · AI kapalı; analiz bekliyor' : ' · Arka planda devam ediyor'}${k.error ? `\n${k.error}` : ''}` : 'Arşiv yüklenmedi. Genel destek yanıtları kullanılabilir.';
   for (const p of data.providers || []) {
     const names = {credentials: 'Anahtarı kontrol et', configuration: 'Modeli kontrol et', budget: 'Aylık sınırı kontrol et', credit: 'Kredi sınırı', quota: 'Diğer bağlantılar kullanılabilir', timeout: 'Yanıt bekleniyor', quality: 'Yanıt kontrolü', connection: 'Bağlantıyı kontrol et'};
     $(`${p.id}State`).textContent = !p.enabled ? 'Kapalı' : !p.hasKey ? 'Anahtar bekleniyor' : p.error ? names[p.error] || 'Kontrol gerekli' : p.waitMs > 0 ? 'Hazırlanıyor' : 'Kullanılabilir';
@@ -20,6 +20,7 @@ async function load() {
   const data = await ask({type: 'getSettings'}), config = data.settings;
   $('extensionId').textContent = data.extensionId;
   $('aiEnabled').checked = config.aiEnabled; $('autoSync').checked = config.autoSync;
+  $('useFastKeys').checked = config.useFastKeys;
   $('primaryProvider').value = config.providerOrder[0];
   learningDirty = false; $('learningEnabled').checked = config.learningEnabled; $('useExamples').checked = config.useExamples;
   $('allowPaid').checked = config.allowPaid; $('monthlyBudget').value = config.monthlyBudget;
@@ -44,7 +45,7 @@ $('save').onclick = async () => {
   $('save').disabled = true;
   try {
     const connections = Object.fromEntries(providers.map(id => [id, {enabled: $(`${id}Enabled`).checked, model: $(`${id}Model`).value, apiKey: $(`${id}Key`).value, clearKey: $(`${id}Clear`).checked}]));
-    await ask({type: 'saveSettings', settings: {aiEnabled: $('aiEnabled').checked, autoSync: $('autoSync').checked, learningEnabled: $('learningEnabled').checked, useExamples: $('useExamples').checked, providerOrder: orders[$('primaryProvider').value], providers: connections, allowPaid: $('allowPaid').checked, monthlyBudget: Number($('monthlyBudget').value)}});
+    await ask({type: 'saveSettings', settings: {aiEnabled: $('aiEnabled').checked, autoSync: $('autoSync').checked, useFastKeys: $('useFastKeys').checked, learningEnabled: $('learningEnabled').checked, useExamples: $('useExamples').checked, providerOrder: orders[$('primaryProvider').value], providers: connections, allowPaid: $('allowPaid').checked, monthlyBudget: Number($('monthlyBudget').value)}});
     for (const id of providers) {$(`${id}Key`).value = ''; $(`${id}Clear`).checked = false;}
     await load(); status('Ayarlar kaydedildi. LiveChat paneli yeni ayarlarla devam edecek.');
   } catch (error) {status(error.message);} finally {$('save').disabled = false;}
@@ -92,6 +93,34 @@ $('clearExamples').onclick = async () => {
   if (!confirm('Kaydedilmiş yanıt örnekleri ve beğenilmeyen yanıt kayıtları silinsin mi?')) return;
   try {await ask({type:'clearLearning'}); exampleOffset = 0; await showExamples(); status('Örnek hafızası temizlendi. Yeni mesajlarla yeniden örnek toplanabilir.');}
   catch (error) {status(error.message);}
+};
+$('exportLearning').onclick = async () => {
+  $('exportLearning').disabled = true;
+  try {
+    const data = await ask({type: 'exportLearning'});
+    const blob = new Blob([JSON.stringify(data.backup, null, 2)], {type: 'application/json;charset=utf-8'});
+    const url = URL.createObjectURL(blob), link = document.createElement('a');
+    const stamp = new Date().toISOString().replace(/[-:]/g, '').slice(0, 15);
+    link.href = url; link.download = `HizirBey-Ogrenme-Yedegi-${stamp}.json`;
+    document.body.append(link); link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+    $('backupStatus').textContent = `${data.learning.count} yanıt örneği için yedek indirme başlatıldı. Düzeltmeler, olumsuz örnekler ve silinmiş örnek kimlikleri de dahil.`;
+  } catch (error) {$('backupStatus').textContent = error.message;}
+  finally {$('exportLearning').disabled = false;}
+};
+$('backupFile').onchange = () => {
+  const file = $('backupFile').files[0]; $('importLearning').disabled = !file;
+  $('backupStatus').textContent = file ? `${file.name} seçildi. Birleştirerek yükle ile mevcut örneklere ekleyebilirsin.` : '';
+};
+$('importLearning').onclick = async () => {
+  const file = $('backupFile').files[0]; if (!file) return;
+  $('importLearning').disabled = true;
+  try {
+    if (file.size > 6000000) throw new Error('Öğrenme yedeği en fazla 6 MB olabilir.');
+    const result = await ask({type: 'importLearning', text: await file.text()});
+    exampleOffset = 0; await showExamples();
+    $('backupStatus').textContent = `Yedek birleştirildi: ${result.added} yeni yanıt ve ${result.rejectedAdded} olumsuz örnek eklendi. Toplam ${result.learning.count} yanıt örneği.`;
+    $('backupFile').value = '';
+  } catch (error) {$('backupStatus').textContent = error.message; $('importLearning').disabled = false;}
 };
 setInterval(async () => {if (!document.hidden) {try {progress(await ask({type: 'status'}));} catch { /* retain last status */ }}}, 10000);
 load().catch(error => status(error.message));

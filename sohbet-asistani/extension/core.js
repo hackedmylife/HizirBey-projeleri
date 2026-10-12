@@ -1,6 +1,15 @@
 export const normalize = (s) => String(s || '').toLocaleLowerCase('tr-TR').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/ı/g, 'i');
 const stop = new Set('bir bu ben bana benim sen siz sizin beni bunu bana icin ile ve de da mi mu ne nasil lutfen istiyorum rica ederim bey hanim'.split(' '));
 export const tokens = (s) => [...new Set(normalize(s).match(/[a-z0-9]{3,}/g) || [])].filter((t) => !stop.has(t));
+export function supportIntent(text) {
+  const q = normalize(text);
+  const account = '(?:hesa[bp](?:imi|im|inizi|iniz|ini|i|in|imizi|imiz)?|uyelig(?:imi|im|inizi|iniz|ini)|uyelik(?:imi|im|inizi|iniz)?)\\b';
+  const closing = new RegExp(`${account}.{0,35}(?:kapat|sil|sonlandir)|(?:kapat|sil|sonlandir).{0,35}${account}`).test(q);
+  if (closing && !/kapatmayin|silmeyin|(?:kapatmak|silmek|kapatilmasini|silinmesini|hesap kapatma) istemiyorum/.test(q)) return 'close_account';
+  if (/(?:kumar|bahis|oyna|oyun|casino|slot).{0,45}(?:birak|ara ver)|(?:birak|ara ver).{0,45}(?:kumar|bahis|oyna|oyun|casino|slot)|oynamak istemiyorum/.test(q) && !/(?:birakmak|ara vermek) istemiyorum/.test(q)) return 'gambling_break';
+  if (/kaybediyorum|kaybediyom|kaybettim|(?:hep|surekli|durmadan).{0,20}kayb|param bitti|butun parami kayb|zarar ediyorum/.test(q)) return 'gambling_distress';
+  return null;
+}
 export function needsConfirmation(text) {
   return /(?:ilettim|iletilmistir|aktariyorum|aktarildi|aktarilmistir|tanimlanmistir|tanimladim|eklenmistir|ekledim|kaldirildi|kaldirilmistir|aktif hale gel|kontrol sagladigimda|kontrol ettigimde|goruntulemekteyim|gormekteyim|yararlanmis|yararlandiginiz|hakkiniz (?:mevcut degil|bulunmuyor)|minimum yatirim tutarini karsilamadiginiz|mail adresiniz guncel|incelemenin devam ettigi|hesabinizda .*engel|hesabinizda bahis duzeltmesi|tarafiniza tanimlidir|tarafiniza tanimlanmis|yeterli yatiriminiz mevcuttur|bu bonusu son alisinizdan)/.test(normalize(text)) || /\b\d{1,2}[/.]\d{1,2}[/.]20\d{2}\b/.test(text);
 }
@@ -50,8 +59,13 @@ export function requestContext(messages) {
       && !/^(?:kullanici\s*(?:adim|adi)|kullanici\s*ismim|nick(?:im)?|username)\b/.test(text);
   });
   const topic = /sms.*(?:bonus|promosyon)|(?:bonus|promosyon).*sms|jest|geri\s*don.*bonus|kupon|bahis|sifre|parola|girem|yatirim\w*\s*(?:gel|gec|sorun)|cekim\w*\s*(?:talep|gel|gec|sorun|ist)|para.*(?:cek|gel|yatir)|telefon|e.?posta|kimlik|hesap.*kapat|oyun.*(?:sorun|id)/;
-  const anchor = meaningful.findLastIndex((m) => topic.test(normalize(m.text)));
-  return meaningful.slice(anchor < 0 ? -2 : anchor).slice(-4).map((m) => m.text).join(' ');
+  let anchor = meaningful.findLastIndex((m) => supportIntent(m.text) || topic.test(normalize(m.text)));
+  const closing = meaningful.findLastIndex(m => supportIntent(m.text) === 'close_account');
+  const decision = closing >= 0 ? closing : meaningful.findLastIndex(m => supportIntent(m.text) === 'gambling_break');
+  if (decision >= 0 && !meaningful.slice(decision + 1).some(m => !supportIntent(m.text) && topic.test(normalize(m.text)))) anchor = decision;
+  const relevant = meaningful.slice(anchor < 0 ? -2 : anchor);
+  const retained = anchor >= 0 && relevant.length > 4 ? [relevant[0], ...relevant.slice(-3)] : relevant.slice(-4);
+  return retained.map((m) => m.text).join(' ');
 }
 export function smsIntent(messages) {
   const text = normalize(requestContext(messages));

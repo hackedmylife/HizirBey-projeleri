@@ -1,4 +1,4 @@
-import {normalize, tokens, requestContext, needsConfirmation} from './core.js';
+import {normalize, tokens, requestContext, needsConfirmation, supportIntent} from './core.js';
 import {digest} from './knowledge.js';
 
 export const MEMORY_VERSION = 1;
@@ -34,6 +34,7 @@ export function styleResponse(text) {
   const pieces = String(text).split(/\n+|(?<=[.!?;])\s+/);
   return pieces.filter(piece => !accountOutcome(piece)).map(piece => {
     const q = normalize(piece);
+    if (piece.includes('[güncel FastKeys koşulu]')) return maskPrivate(piece);
     // Company eligibility and limits are never learned from an old conversation.
     if (/bonus|promosyon|cevrim/.test(q) && /yalnizca|sadece|minimum|maksimum|en az|en fazla|yararlan|kullanim|alinabil|alinamaz|sart|kosul|gecerli/.test(q)) {
       const index = q.search(/yalnizca|sadece|minimum|maksimum|en az|en fazla|yararlan|kullanim|alinabil|alinamaz|sart|kosul|gecerli/);
@@ -68,6 +69,7 @@ export function cleanContext(messages) {
   return contextWindow(result, 8);
 }
 function category(text) {
+  const priority = supportIntent(text); if (priority) return priority;
   const q = normalize(text);
   const rules = [['sms_bonus', /sms.*bonus|bonus.*sms/], ['return_bonus', /geri\s*don/], ['jest_bonus', /jest|teselli/], ['loss_bonus', /kayip.*bonus|discount/], ['password', /sifre|parola/], ['ip_block', /\bip\b/], ['withdrawal', /cekim|cekem|para.*cek/], ['deposit', /yatir|havale/], ['sports', /kupon|bahis|mac|spor/], ['casino', /oyun|casino|slot|tur id/], ['verification', /kimlik|hesap.*onay|belge/]];
   return rules.find(([, pattern]) => pattern.test(q))?.[0] || 'general';
@@ -111,8 +113,11 @@ export function selectExamples(raw, input, enabled = true) {
   const wanted = new Set(tokens(input.request)), topic = category(input.request);
   const score = e => {
     const overlap = tokens(e.request).filter(t => wanted.has(t)).length;
-    if (e.category !== topic && e.category !== 'general' && topic !== 'general') return -1;
-    return overlap * 3 + (e.category === topic ? 8 : 0) + (e.origin !== 'automatic' ? 5 : 0);
+    const kind = category(e.request);
+    if (supportIntent(input.request) && kind !== topic) return -1;
+    if (kind !== topic && kind !== 'general' && topic !== 'general') return -1;
+    if (!overlap && (kind !== topic || topic === 'general')) return -1;
+    return overlap * 3 + (kind === topic ? 8 : 0) + (e.origin !== 'automatic' ? 5 : 0);
   };
   const chosen = raw.examples.map(e => ({...e, score: score(e)})).filter(e => e.score > 0).sort((a, b) => b.score - a.score || b.updatedAt - a.updatedAt);
   const examples = [], distinct = new Set(); let size = 0;

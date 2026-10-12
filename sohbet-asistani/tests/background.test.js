@@ -22,7 +22,7 @@ test('untrusted origins cannot reach credentials and options return only key pre
 });
 test('legacy key works for generated replies; no template-ID-only selection or blank matching gate',async()=>{
   await send({type:'import',name:'test.fdb',text:'1•kupon*•Kupon bilgisi•Send•♥Spor kupon numarasını iletir misiniz?•2•\n∟'});
-  await send({type:'saveSettings',settings:{aiEnabled:true,model:'openai/gpt-oss-20b',apiKey:'test-only'}});
+  await send({type:'saveSettings',settings:{aiEnabled:true,useFastKeys:true,model:'openai/gpt-oss-20b',apiKey:'test-only'}});
   let sent;
   globalThis.fetch=async(_,opts)=>{sent=JSON.parse(opts.body);return response(generated());};
   const result=await send(payload,live);
@@ -192,4 +192,36 @@ test('clearing learned samples preserves provider keys and FastKeys catalog',asy
   const cleared=await send({type:'clearLearning'});
   assert.equal(cleared.data.learning.count,0);assert.equal(cleared.data.learning.rejected,0);
   assert.equal(data.settings.providers.groq.apiKey,key);assert.equal(data.catalog,catalog);
+});
+test('learning-only mode sends no FastKeys source and makes no catalog analysis request',async()=>{
+  const key=data.settings.providers.groq.apiKey;
+  await send({type:'saveSettings',settings:{useFastKeys:false}});
+  await send({type:'import',text:'1•sms*•SMS bonusu•Send•♥SMS bonusu yalnızca bir kere alınabilir.•2•\n∟'});
+  clock+=60000;let calls=0,input;
+  const texts=['SMS bonusu talebinizi anlıyorum. İsteğiniz üzerinden birlikte ilerleyebiliriz.','SMS bonusuyla ilgili talebiniz açık. İhtiyacınız olan desteği birlikte değerlendirebiliriz.','SMS bonusu isteğinizi anlıyorum. Talebiniz doğrultusunda size yardımcı olmak isterim.'];
+  globalThis.fetch=async(_,opts)=>{calls++;input=JSON.parse(JSON.parse(opts.body).messages[1].content);return response({replies:texts.map((text,i)=>({style:['concise','balanced','empathetic'][i],text,sourceIds:[],requiresVerification:false}))});};
+  await background.prepareOne();assert.equal(calls,0);
+  const result=await send({...payload,conversationId:'learning-only',messages:[{role:'user',text:'İkinci SMS bonusu istiyorum.'}]},live);
+  assert.equal(result.data.mode,'ai');assert.deepEqual(input.sources,[]);assert.equal(input.sourceMode,'learned_examples_only');
+  assert.equal(calls,1);assert.equal(data.settings.providers.groq.apiKey,key);assert.equal(data.catalog.templates.length,1);
+});
+test('credential failure identifies the connection and gives topical closure replies',async()=>{
+  await send({type:'saveSettings',settings:{providers:{gemini:{enabled:false},openrouter:{enabled:false}}}});
+  clock+=60000;globalThis.fetch=async()=>({ok:false,status:401,json:async()=>({})});
+  const result=await send({...payload,conversationId:'closure-no-api',messages:[{role:'user',text:'Hesabımı kapatın.'}]},live);
+  assert.equal(result.data.mode,'prepared');assert.ok(result.data.items.every(e=>/kapat/.test(e.text)));
+  assert.match(result.data.notice,/Groq: API anahtarını kontrol et/);assert.ok(!result.data.notice.includes('test-only'));
+});
+test('backup endpoints require options and merging preserves credentials, archive and collection preference',async()=>{
+  await send({type:'teachReply',messages:learningContext,text:humanReply,origin:'correction'},live);
+  assert.equal((await send({type:'exportLearning'},live)).ok,false);
+  assert.equal((await send({type:'importLearning',text:'{}'},live)).ok,false);
+  const exported=(await send({type:'exportLearning'})).data;
+  const text=JSON.stringify(exported.backup),before=data.learningMemory;
+  assert.ok(!text.includes('test-only'));assert.equal(exported.learning.count,1);
+  const broken=structuredClone(exported.backup);broken.memory.examples[0].context[0].role='system';
+  assert.equal((await send({type:'importLearning',text:JSON.stringify(broken)})).ok,false);assert.equal(data.learningMemory,before);
+  const savedSettings=data.settings,savedCatalog=data.catalog;
+  const result=await send({type:'importLearning',text});assert.equal(result.ok,true);assert.equal(result.data.added,0);assert.equal(result.data.learning.count,1);
+  assert.equal(data.settings,savedSettings);assert.equal(data.catalog,savedCatalog);assert.equal(result.data.learning.enabled,false);
 });

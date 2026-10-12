@@ -1,4 +1,4 @@
-import {normalize, tokens, needsConfirmation, requestContext, templatePolicy} from './core.js';
+import {normalize, tokens, needsConfirmation, requestContext, templatePolicy, supportIntent} from './core.js';
 
 const concepts = [
   ['sms_bonus', /sms.{0,35}(?:bonus|promosyon)|(?:bonus|promosyon).{0,25}sms/],
@@ -28,7 +28,7 @@ const stageRules = [
   ['conditions', /sart|kosul|cevrim|limit|kac|ne kadar|icerik|nasil|bir kere|tek sefer/],
   ['request', /istiyor|talep|alabilir|rica|ekler|verir/]
 ];
-function tags(text) { return concepts.filter(([, pattern]) => pattern.test(normalize(text))).map(([name]) => name); }
+function tags(text) { const priority = supportIntent(text); return priority ? [priority] : concepts.filter(([, pattern]) => pattern.test(normalize(text))).map(([name]) => name); }
 function stage(text) { return stageRules.find(([, pattern]) => pattern.test(normalize(text)))?.[0] || 'general'; }
 function sentences(text) { return String(text).split(/\n+|(?<=[.!?;])\s+/).map(s => s.trim()).filter(Boolean); }
 export function describeTemplate(t) {

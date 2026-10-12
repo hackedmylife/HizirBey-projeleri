@@ -4,7 +4,7 @@ Projelerin son erişilebilir kaynak sürümleri ve kurulum paketleri. Güncellem
 
 | Proje | Sürüm / durum | Dosyalar |
 |---|---|---|
-| Sohbet asistanı | 0.3.1; üst arama alanında bağımsız açılıp kapanan panel, üye–temsilci bağlamıyla öğrenme; 85 test geçti | [Kaynak ve güncelleme](sohbet-asistani/) · [Paket](paketler/Hizir-Bey-Sohbet-Asistani-0.3.1.zip) |
+| Sohbet asistanı | 0.3.2; FastKeys kapalı öğrenme modu, kapatma/kayıp bağlamı ve JSON hafıza yedeği; 100 test geçti | [Kaynak ve güncelleme](sohbet-asistani/) · [Paket](paketler/Hizir-Bey-Sohbet-Asistani-0.3.2.zip) |
 | Yatırım / çekim hesaplayıcı | Logolu sürüm; alt düğme yerleşimi düzeltildi | [Kaynak ve EXE oluşturma](hesaplayici/) · [Paket](paketler/HizirBey_EXE_Olusturma.zip) |
 | Sohbet tarayıcı | 1.1.0 | [Kaynak](sohbet-tarayici/) · [Paket](paketler/Hizir-Bey-Sohbet-Tarayici-1.1.0.zip) |
 | RAM takip | 2.0.1 | [Kaynak](ram-takip/) · [Paket](paketler/Hizir-Bey-RAM-Takip-2.0.1.zip) |
