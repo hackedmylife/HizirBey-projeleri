@@ -18,7 +18,7 @@
       for (let i = 0; i < messages.length; i++) {
         const m = messages[i];
         const marker = fingerprint(`${m.id || ''}|${m.role}|${m.text}`);
-        if (!seen.has(marker) && enabled && !needsBaseline && m.role === 'agent') records.push({marker, context: messages.slice(Math.max(0, i - 5), i), response: m.text});
+        if (!seen.has(marker) && enabled && !needsBaseline && m.role === 'agent') records.push({marker, context: messages.slice(Math.max(0, i - 20), i), response: m.text});
         seen.add(marker);
       }
       this.viewEpochs.set(key, epoch);

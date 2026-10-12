@@ -1,4 +1,4 @@
-HIZIR BEY SOHBET ASISTANI - 0.3.0
+HIZIR BEY SOHBET ASISTANI - 0.3.1
 
 MEVCUT EKLENTIYI GUNCELLEME
 1. Eklentiyi Chrome'dan KALDIRMA.
@@ -6,7 +6,7 @@ MEVCUT EKLENTIYI GUNCELLEME
    daha once yukledigin mevcut extension klasorunun ICINE kopyala.
 3. Ayni isimli dosyalari degistir. Mevcut klasorun yolunu degistirme.
 4. chrome://extensions > Hizir Bey Sohbet Asistani > Yeniden yukle.
-5. LiveChat sekmesini yenile. Panel surumu 0.3.0 olmali.
+5. LiveChat sekmesini yenile. Panel surumu 0.3.1 olmali.
 6. Ayarlar > mevcut Groq anahtarinin kayitli oldugunu kontrol et.
 7. Gemini ve OpenRouter anahtarlarini ekle, baglantilarini ac ve kaydet.
    Sirayi sec. Kaydedilen baglantiyi dene dugmeleriyle kontrol et.
@@ -26,13 +26,24 @@ ILK KURULUM
 6. Son mesaj temsilciden ise Yenile ile degerlendir.
 7. Oneriyi kontrol et > Kopyala > uygun gordugun yerde kendin yapistir.
 
+UST ORTA ARAMA ALANINDA ASISTAN
+Search alaninin yanindaki HIZIR BEY dugmesi paneli acip kapatir.
+Yer darsa dugme aramanin hemen altinda gorunur. Asil arama kullanilabilir.
+Paneldeki X yalnizca asistani kapatir; gorusme ve mesaj yazma alani devam eder.
+Panel kapaliyken yeni yanit uretilmez; bekleyen asistan istegi iptal edilir.
+Ayni sekmede sayfayi yenilesen de kapali tercih korunur.
+Ustteki OGRENMEYI DURDUR / BASLAT dugmesi panel kapaliyken de kullanilabilir.
+Bu dugme butun sekmelerde otomatik toplamayi kontrol eder.
+
 GORUSMELERDEN OTOMATIK OGRENME
 Bu surumde aciktir. Tum LiveChat sekmelerinde, ekrana yuklenmis gorusme
 alanlarindaki uygun temsilci yanitlari otomatik ornek olur.
+Uye talebi ve kisa uye/temsilci baglami, temsilcinin yanitiyla birlikte tutulur.
+Ayarlarda Kaydedilmis ornekleri goster ile uye mesajlarini da gorebilirsin.
 Panelde OGRENME ACIK ve ornek sayisi gorunur.
 DURDUR: tum sekmelerde yeni otomatik ornek toplamayi kapatir.
 BASLAT: yeni mesajlardan ornek toplamaya devam eder.
-Paneli kucultmek ogrenmeyi durdurmaz; dugme gorunur kalir.
+Paneli kapatmak ogrenmeyi durdurmaz; ustteki ogrenme dugmesi gorunur kalir.
 
 Kartlarda Begendim / Uygun degil / Duzelt ve ogret kullanilabilir.
 Duzeltme alani mesaj gondermez; istedigin cevap tarzini ornek olarak saklar.
@@ -56,7 +67,7 @@ OTOMATIK DOSYA TAKIBI
 1. Ayarlardan eklenti kimligini kopyala.
 2. windows/Kurulum.cmd dosyasini calistir, kimligi gir ve ASIL .fdb'yi sec.
 3. Baglantiyi kontrol et > Otomatik FastKeys baglantisini kullan > Kaydet.
-4. FastKeys'teki degisiklikleri kaydet. Gorunur LiveChat paneli yaklasik
+4. FastKeys'teki degisiklikleri kaydet. Gorunur LiveChat sekmesi yaklasik
    10 saniyede dosyayi kontrol eder.
 
 OTOMATIK AI GECISI

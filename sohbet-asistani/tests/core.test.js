@@ -91,3 +91,9 @@ test('an explicit new topic replaces the previous promotion context', () => {
   messages.push({role: 'user', text: 'Şifre sorunum var'});
   assert.equal(selectSmsPolicy(rankTemplates(smsTemplates, messages), messages), null);
 });
+test('greetings and courtesy prefixes do not swallow a real customer request', () => {
+  for (const text of ['Merhaba, ikinci SMS bonusu istiyorum.', 'İyi günler, kuponumun sonucu yanlış.', 'Teşekkürler, fakat çekim talebim gelmedi.']) {
+    assert.equal(requestContext([{role:'user',text}]),text);
+  }
+  assert.equal(requestContext([{role:'user',text:'Merhaba!'}]),'');
+});

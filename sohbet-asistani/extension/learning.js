@@ -42,17 +42,30 @@ export function styleResponse(text) {
     return maskPrivate(piece);
   }).join(' ').trim().slice(0, 1200);
 }
+function contextWindow(messages, limit) {
+  const request = requestContext(messages), selected = new Set();
+  const anchors = messages.map((m, i) => m.role === 'user' && request.includes(m.text) ? i : -1).filter(i => i >= 0);
+  for (const i of anchors.slice(-Math.min(4, Math.floor(limit / 2)))) selected.add(i);
+  for (const role of ['user', 'agent']) {
+    const i = messages.findLastIndex(m => m.role === role);
+    if (i >= 0 && selected.size < limit) selected.add(i);
+  }
+  for (let i = messages.length - 1; i >= 0 && selected.size < limit; i--) selected.add(i);
+  return [...selected].sort((a, b) => a - b).map(i => messages[i]);
+}
+const excerpt = (text, limit) => text.length <= limit ? text : `${text.slice(0, Math.floor((limit - 3) / 2))} … ${text.slice(-Math.ceil((limit - 3) / 2))}`;
 export function cleanContext(messages) {
   const result = []; let lastOriginalAgent = '';
-  for (const m of (Array.isArray(messages) ? messages : []).filter(m => m && ['user', 'agent'].includes(m.role) && typeof m.text === 'string').slice(-5)) {
+  for (const m of (Array.isArray(messages) ? messages : []).filter(m => m && ['user', 'agent'].includes(m.role) && typeof m.text === 'string').slice(-20)) {
     const previous = lastOriginalAgent;
+    lastOriginalAgent = m.role === 'agent' ? m.text : '';
     // A short answer following an identity request is not retained as training data.
     if (m.role === 'user' && /kullanici ad|nick|telefon|adiniz|soyadiniz/.test(normalize(previous)) && m.text.length < 100) continue;
-    if (m.role === 'agent') {lastOriginalAgent = m.text; if (accountOutcome(m.text)) continue;}
+    if (m.role === 'agent' && accountOutcome(m.text)) continue;
     const text = maskPrivate(m.text).slice(0, 350);
     if (text && !/^\[(?:kimlik|sifre|şifre)/.test(normalize(text))) result.push({role: m.role, text});
   }
-  return result;
+  return contextWindow(result, 8);
 }
 function category(text) {
   const q = normalize(text);
@@ -62,7 +75,7 @@ function category(text) {
 export async function makeExample(context, response, origin = 'automatic', now = Date.now()) {
   const cleaned = cleanContext(context), answer = styleResponse(response);
   if (!cleaned.some(m => m.role === 'user') || answer.length < 25 || !/[.!?…]$/.test(answer)) return null;
-  const request = requestContext(cleaned).slice(-600);
+  const request = excerpt(requestContext(cleaned), 600);
   if (!request || !tokens(request).length) return null;
   const id = await digest(JSON.stringify([cleaned, answer]));
   return {id, context: cleaned, request, response: answer, category: category(request), origin: origin === 'correction' || origin === 'approved' ? origin : 'automatic', createdAt: now, updatedAt: now};
@@ -106,8 +119,8 @@ export function selectExamples(raw, input, enabled = true) {
   for (const e of chosen) {
     if (examples.length >= 3) break;
     if (distinct.has(normalize(e.response))) continue;
-    const item = {context: e.context.slice(-3).map(m => ({...m, text: m.text.slice(0, 220)})), response: e.response.slice(0, 650), origin: e.origin, purpose: 'style_only'};
-    if (size + JSON.stringify(item).length > 2400) continue;
+    const item = {request: excerpt(e.request, 350), context: contextWindow(e.context, 4).map(m => ({...m, text: excerpt(m.text, 220)})), response: e.response.slice(0, 650), origin: e.origin, purpose: 'style_only'};
+    if (size + JSON.stringify(item).length > 2390) continue;
     examples.push(item); distinct.add(normalize(e.response)); size += JSON.stringify(item).length;
   }
   const unwantedExamples = (raw.rejected || []).filter(e => score(e) > 0).slice(-1).map(e => ({request: e.request.slice(0, 250), response: e.response.slice(0, 400), purpose: 'avoid_this_response'}));

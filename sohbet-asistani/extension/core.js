@@ -46,7 +46,7 @@ export function requestContext(messages) {
   const userMessages = messages.filter((m) => m.role === 'user');
   const meaningful = userMessages.filter((m) => {
     const text = normalize(m.text).trim();
-    return !/^(?:bekliyorum|hala bekliyorum|tamam|peki|evet|tesekkur.*|ok|okey|merhaba.*|selam.*|haba|kolay gelsin.*|iyi (?:gunler|aksamlar).*|ilgilenecek misiniz.*|ilgilenir misiniz.*|orada misiniz.*)[.!?\s]*$/.test(text)
+    return !/^(?:bekliyorum|hala bekliyorum|tamam|peki|evet|tesekkur(?:ler| ederim)?|ok|okey|merhaba(?:lar)?|selam(?:lar)?|haba|kolay gelsin|iyi (?:gunler|aksamlar)|ilgilenecek misiniz|ilgilenir misiniz|orada misiniz)[,.!?\s]*$/.test(text)
       && !/^(?:kullanici\s*(?:adim|adi)|kullanici\s*ismim|nick(?:im)?|username)\b/.test(text);
   });
   const topic = /sms.*(?:bonus|promosyon)|(?:bonus|promosyon).*sms|jest|geri\s*don.*bonus|kupon|bahis|sifre|parola|girem|yatirim\w*\s*(?:gel|gec|sorun)|cekim\w*\s*(?:talep|gel|gec|sorun|ist)|para.*(?:cek|gel|yatir)|telefon|e.?posta|kimlik|hesap.*kapat|oyun.*(?:sorun|id)/;

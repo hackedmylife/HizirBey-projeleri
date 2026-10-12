@@ -68,10 +68,19 @@ async function showExamples() {
     const card = document.createElement('article'); card.className = 'example';
     const title = document.createElement('small'); title.textContent = `${({automatic:'Otomatik', correction:'Düzeltilmiş', approved:'Onaylı'})[sample.origin]} · ${new Date(sample.updatedAt).toLocaleString('tr-TR')}`;
     const context = document.createElement('p'); context.textContent = sample.request;
+    const conversation = document.createElement('details'); conversation.className = 'example-context';
+    const summary = document.createElement('summary'); summary.textContent = 'Üye mesajları ve konuşma bağlamı';
+    conversation.append(summary);
+    for (const message of sample.context || []) {
+      const row = document.createElement('p');
+      const role = document.createElement('strong'); role.textContent = message.role === 'user' ? 'Üye: ' : 'Temsilci: ';
+      row.append(role, document.createTextNode(message.text)); conversation.append(row);
+    }
+    const answerLabel = document.createElement('small'); answerLabel.textContent = 'Öğrenilen temsilci yanıtı';
     const text = document.createElement('div'); text.className = 'example-text'; text.textContent = sample.response;
     const remove = document.createElement('button'); remove.textContent = 'Örneği sil';
     remove.onclick = async () => {remove.disabled = true; try {await ask({type:'deleteExample', id: sample.id}); await showExamples();} catch (error) {status(error.message); remove.disabled = false;}};
-    card.append(title, context, text, remove); $('examples').append(card);
+    card.append(title, context, conversation, answerLabel, text, remove); $('examples').append(card);
   }
   $('previousExamples').hidden = exampleOffset === 0; $('nextExamples').hidden = !data.hasMore;
   progress({learning: data.learning});

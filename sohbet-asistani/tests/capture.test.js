@@ -30,3 +30,9 @@ test('failed persistence can retry its batch without duplicating successfully st
   const first=t.observe(snapshot,true,0);assert.equal(first.length,1);
   t.retry(snapshot,first);assert.equal(t.observe(snapshot,true,0).length,1);
 });
+test('a customer request survives more than five intervening representative messages',()=>{
+  const messages=[user,...Array.from({length:7},(_,i)=>({id:`a${i+10}`,role:'agent',text:`Gerekli ayrıntıları birlikte değerlendirelim. Adım ${i+1}.`}))];
+  const records=new CaptureTracker().observe(view('long-turn',messages),true,0);
+  assert.ok(records.at(-1).context.some(m=>m.role==='user'&&m.text===user.text));
+  assert.ok(records.at(-1).context.length<=20);
+});

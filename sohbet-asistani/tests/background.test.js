@@ -157,6 +157,9 @@ test('manual correction and rejection influence the next generation but never be
   globalThis.fetch=async(_,opts)=>{input=JSON.parse(JSON.parse(opts.body).messages[1].content);return response(generated());};
   await send({...payload,conversationId:'learned-generation',messages:learningContext},live);
   assert.ok(input.examples.some(e=>e.origin==='correction'&&e.response===correction));
+  const learned=input.examples.find(e=>e.origin==='correction');
+  assert.equal(learned.request,learningContext[0].text);
+  assert.ok(learned.context.some(m=>m.role==='user'&&m.text===learningContext[0].text));
   assert.equal(input.unwantedExamples.length,1);
   assert.ok(!input.sources.some(s=>s.text===correction));
 });

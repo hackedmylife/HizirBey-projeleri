@@ -1,14 +1,24 @@
-# Hızır Bey Sohbet Asistanı — 0.3.0
+# Hızır Bey Sohbet Asistanı — 0.3.1
 
 LiveChat görüşmesindeki mesajları okuyup müşteriye gönderilebilecek üç profesyonel Türkçe yanıt hazırlar: **Kısa ve net**, **Açıklayıcı**, **Empati ve çözüm**. FastKeys arşivi bilgi kaynağıdır. Yapay zekâ özgün yanıt yazabilir; arşivde eşleşme bulunması yanıt üretiminin ön şartı değildir.
 
 Panel yalnızca önerir ve kopyalar. Mesaj göndermez, LiveChat yazı alanını değiştirmez, FastKeys makrolarını çalıştırmaz. Süre takip eklentisi ayrı çalışır.
 
-## 0.3.0 otomatik görüşme örnekleri
+## 0.3.1 arama alanında asistan ve birlikte öğrenme
+
+- **Hızır Bey** düğmesi LiveChat'in üst orta **Search** alanının yanına yerleşir. Yer yoksa aynı alanın hemen altında görünür. Arama alanı erişilebilir etiket, metin ve ekran konumuyla bulunur; bulunamazsa üst orta konum kullanılır. LiveChat'in Search alanı ve Ctrl+K kısayolu kullanılmaya devam eder.
+- Düğmeye basınca panel açılır/kapanır. Paneldeki **×** yalnızca asistanı gizler; görüşmeyi kapatmaz ve mesaj yazma alanını değiştirmez. Panel sayfayı kilitlemez; arka plan perdesi ve odak tuzağı yoktur. Mesaj alanının sınırına göre yüksekliği ayarlanır; mesaj yazma bölümünün üzerinde sona erer. Panelin içeriği kendi içinde kaydırılır.
+- Kapalı durumda yeni yanıt üretimi başlatılmaz ve bekleyen asistan yanıtı iptal edilir. Aynı sekmede sayfa yenilense de panelin kapalı durumu korunur; **Hızır Bey** ile yeniden açılır. Bu görüntü tercihi diğer sekmelerin panelini kapatmaz. FastKeys takibi görünür sekmede devam eder.
+- **Paneli kapatmak öğrenmeyi durdurmaz.** Üstte kalan **Öğrenmeyi durdur / başlat** düğmesi bütün sekmeler için otomatik toplamayı ayrıca yönetir.
+- Öğrenme yalnızca temsilci yanıtı değildir: **üye talebi + önceki üye/temsilci mesajları + gönderilmiş temsilci yanıtı** birlikte değerlendirilir. Yanıttan önceki en fazla 20 yüklü mesaj taranır; anlamlı üye talebi korunarak en fazla sekiz temizlenmiş bağlam mesajı saklanır. Temsilci art arda birkaç mesaj göndermiş olsa da erişilebilir üye talebi örnekten düşürülmez. Bunlar görüşmenin tamamını kaydeden bir arşiv değildir.
+- AI'ya verilen örnekte üye talebi ayrı `request` alanında ve rolü belirtilmiş kısa bağlamda yer alır. Böylece cevap, hangi talebe verildiğiyle birlikte bir yazım örneği olur. Ayarlarda **Kaydedilmiş örnekleri göster → Üye mesajları ve konuşma bağlamı** bölümünden kayıt gözden geçirilebilir. Eski örneklerde yalnızca önceki sürümün kaydettiği bağlam bulunur.
+- “Merhaba, ikinci SMS bonusu istiyorum” gibi selamla başlayan gerçek talepler artık sıradan selamlama diye elenmez. Bu iyileştirme yalnızca SMS için değildir; diğer konulara da uygulanır.
+
+## Otomatik görüşme örnekleri
 
 - Görüşmelerden öğrenme bu sürümde varsayılan açıktır. Eklentinin erişebildiği **tüm LiveChat sekmelerinde**, DOM'a yüklenmiş görüşme alanları okunur. İlk kullanımda yüklenmiş geçmişten de uygun örnekler alınabilir. Ekrana hiç yüklenmemiş görüşmeler ve sunucudaki kapalı arşiv bu yöntemle okunamaz; LiveChat API bağlantısı eklenmedi.
 - Temsilcinin gerçekten gönderilmiş yanıtı, öncesindeki kısa konuşma bağlamıyla yazım örneği olur. Bot mesajları ve asistanın son önerilerinin değişmeden gönderilmiş halleri otomatik örnek sayılmaz. Aynı örneğin tekrarı yeni bir eğitim sinyali olarak çoğaltılmaz.
-- Panelde **Öğrenme açık · N örnek** ve **Durdur / Başlat** kontrolü görünür. Bir sekmeden durdurma bütün sekmeler için geçerlidir ve tarayıcı yeniden açıldığında korunur. Paneli küçültmek örnek toplamayı kapatmaz; öğrenme düğmesi küçültülmüş panelde de görünür.
+- Panelde **Öğrenme açık · N örnek** ve **Durdur / Başlat** kontrolü görünür. Bir sekmeden durdurma bütün sekmeler için geçerlidir ve tarayıcı yeniden açıldığında korunur. Paneli kapatmak örnek toplamayı kapatmaz; öğrenme düğmesi üstteki asistan kontrolünde görünür kalır.
 - Yeniden başlatmada açık görüşmelerin başlangıç durumu alınır; durdurma sırasında gelen mesajlar sonradan otomatik örneğe dönüştürülmez. Yeni açılan bir sekmede de ilk geçmiş, durdurma/başlatma sonrasında yeniden toplama kaynağı yapılmaz. Mesaj yükleme sınırları ve tarayıcı arka plan zamanlayıcıları nedeniyle her olayın yakalanması garanti değildir.
 - **Durdur** yalnızca otomatik toplama içindir. Önceden öğrenilmiş örnekler kullanılabilir; ayarlardaki **Kaydedilmiş örnekleri yanıt üretiminde kullan** kutusu bu kullanımı ayrıca kapatır. Elle yapılan düzeltme veya onay, açık bir örnek ekleme işlemidir ve otomatik toplama durdurulmuşken de kullanılabilir.
 - Yanıt kartlarında **Beğendim**, **Uygun değil** ve **Düzelt ve öğret** bulunur. Düzeltme alanı yalnızca örneği kaydeder; LiveChat'e mesaj göndermez veya yazı alanını değiştirmez. Düzeltmeler/onaylar otomatik örneklerden önceliklidir. Beğenilmeyen cevap yaklaşımı ilgili sonraki değerlendirmeye olumsuz örnek olarak taşınır.
@@ -22,7 +32,7 @@ Panel yalnızca önerir ve kopyalar. Mesaj göndermez, LiveChat yazı alanını 
 1. Eklentiyi Chrome'dan **kaldırmayın**.
 2. ZIP içindeki `extension` klasörünün **içeriğini**, Chrome'a daha önce yüklediğiniz mevcut `extension` klasörünün içine kopyalayın; aynı adlı dosyaları değiştirin.
 3. Mevcut klasörün yolunu koruyun. `chrome://extensions` ekranında Hızır Bey Sohbet Asistanı kartındaki yeniden yükle düğmesine basın.
-4. LiveChat sekmesini yenileyin. Panel sürümü **0.3.0** olmalı.
+4. LiveChat sekmesini yenileyin. Panel sürümü **0.3.1** olmalı.
 5. Ayarlarda kayıtlı Groq anahtarının bulunduğunu kontrol edin. Gemini ve OpenRouter anahtarlarını ekleyip ilgili bağlantıları etkinleştirin ve kaydedin.
 
 Aynı klasör ve eklenti kimliği korunursa önceki Groq anahtarı, içe aktarılan FastKeys arşivi ve Windows bağlantısı kullanılmaya devam eder. Yeni sağlayıcı ayarlarına geçiş eski anahtarı korur. Anahtar alanını boş bırakmak mevcut anahtarı silmez; silmek için o sağlayıcının ayrı kutusu gerekir. Windows yardımcısını yeniden kurmak gerekmez.
@@ -79,7 +89,7 @@ Windows 10/11, Windows PowerShell 5.1 ve .NET Framework gerekir; Python gerekmez
 1. Ayarlardan eklenti kimliğini kopyalayın.
 2. `windows/Kurulum.cmd` dosyasını çalıştırıp kimliği girin ve kullanılan **asıl** FastKeys `.fdb` dosyasını seçin.
 3. Ayarlarda Bağlantıyı kontrol et düğmesine basın. Otomatik FastKeys bağlantısını kullan kutusunu açıp kaydedin.
-4. FastKeys değişikliklerini kaydedin. Görünür LiveChat paneli yaklaşık 10 saniyede dosyayı kontrol eder; kaydedilmemiş değişiklikler okunmaz.
+4. FastKeys değişikliklerini kaydedin. Görünür LiveChat sekmesi yaklaşık 10 saniyede dosyayı kontrol eder; kaydedilmemiş değişiklikler okunmaz.
 
 Yardımcı yalnızca seçilen dosyayı okur, dosyaya yazmaz. Dosya değişirken tutarsız okuma olursa veya bağlantı kurulamazsa son başarılı arşiv korunur. Başka klasöre taşınan eklentinin kimliği değişirse Windows bağlantısını yeni kimlikle tekrar kurun. Kaldırmak için `windows/Kaldir.ps1` kullanılabilir; asıl FastKeys dosyası silinmez.
 
@@ -91,7 +101,7 @@ Anahtarlar yalnızca güvenilen eklenti sayfalarına açık `chrome.storage.loca
 
 ## Doğrulama ve sınırlar
 
-`npm test` ile 73 Node testi geçer. Testlerde sahte API yanıtları kullanılır: servis geçişi, 429 beklemesi, zaman aşımı, bozuk çıktı, aylık ücret sınırı, anahtar geçişi, önbellek, iptal, kalıcı arşiv analizi, kaynak koruması ve özgün yanıt üretimi doğrulanır. Otomatik örnek toplama, tüm sekmelerde durdurma, eski isteklerin reddi, durdurulmuş mesajların geri toplanmaması, gizlilik filtreleri, düzeltme/onay/silme, örneklerin isteme eklenmesi ve kaydedilen örneklerin şirket kaynağı sayılmaması da test edilir. Tüm JavaScript dosyaları sözdizimi kontrolünden geçer; ayar HTML kimlikleri ve script bağlantıları statik olarak kontrol edilir.
+`npm test` ile 85 Node testi geçer. Testlerde sahte API yanıtları kullanılır: servis geçişi, 429 beklemesi, zaman aşımı, bozuk çıktı, aylık ücret sınırı, anahtar geçişi, önbellek, iptal, kalıcı arşiv analizi, kaynak koruması ve özgün yanıt üretimi doğrulanır. Otomatik örnek toplama, tüm sekmelerde durdurma, eski isteklerin reddi, durdurulmuş mesajların geri toplanmaması, gizlilik filtreleri, düzeltme/onay/silme, örneklerin isteme eklenmesi ve kaydedilen örneklerin şirket kaynağı sayılmaması da test edilir. Arama alanına yerleşim, mesaj yazma alanının geometrik olarak korunması, panel kapalıyken üretimin durması ve öğrenmenin devam etmesi, kapalı tercihin yenilemede korunması ve selamla başlayan gerçek talepler de test edilir. Panel davranışı sahte DOM ve zamanlayıcılarla doğrulanır; gerçek tarayıcı görünümü bu testlere dahil değildir. Tüm JavaScript dosyaları sözdizimi kontrolünden geçer; ayar HTML kimlikleri ve script bağlantıları statik olarak kontrol edilir.
 
 Gerçek API anahtarıyla Groq/Gemini/OpenRouter üretimi ve Türkçe model kalitesi **bu ortamda denenmedi**. Chrome çalıştırıcısı bulunmadığı için görsel tarayıcı kontrolü tamamlanamadı. Gerçek LiveChat DOM'u, pano erişimi, Chrome servis çalışanının yaşam döngüsü ve Windows native host kurulumu kullanıcının ortamında kontrol edilmelidir. Sınırsız ücretsiz kullanım, her durumda doğru cevap veya tamamen kesintisiz servis garantisi verilmez.
 
@@ -99,4 +109,4 @@ Gerçek API anahtarıyla Groq/Gemini/OpenRouter üretimi ve Türkçe model kalit
 
 API sözleşmeleri: [Groq metin üretimi](https://console.groq.com/docs/text-chat), [Gemini generateContent](https://ai.google.dev/api/generate-content), [OpenRouter ücretsiz model yönlendirme](https://openrouter.ai/docs/guides/routing/routers/free-router), [OpenRouter kredi ve limitler](https://openrouter.ai/docs/api/reference/limits).
 
-`learning.js`: maskelenmiş örnek hafızası ve bağlama göre örnek seçimi. `capture.js`: görüşme bazında yeni temsilci mesajlarını takip etme. `core.js`: FastKeys ayrıştırma ve arama. `knowledge.js`: kalıcı bilgi hazırlığı. `retrieval.js`: konu ve koşul sıralaması. `composer.js`: profesyonel yanıt talimatı, doğrulama ve hazır destek yanıtları. `providers.js`: sağlayıcılar, geçiş, bekleme ve ücret kontrolü. `background.js`: güvenilen erişim ve hazırlık işleri. `reader.js`: LiveChat DOM okuma. `content.js`: öneri/kopyalama paneli. `windows/NativeHost.cs`: seçilen dosyanın yerel okunması.
+`learning.js`: maskelenmiş örnek hafızası ve bağlama göre örnek seçimi. `capture.js`: görüşme bazında yeni temsilci mesajlarını takip etme. `core.js`: FastKeys ayrıştırma ve arama. `knowledge.js`: kalıcı bilgi hazırlığı. `retrieval.js`: konu ve koşul sıralaması. `composer.js`: profesyonel yanıt talimatı, doğrulama ve hazır destek yanıtları. `providers.js`: sağlayıcılar, geçiş, bekleme ve ücret kontrolü. `background.js`: güvenilen erişim ve hazırlık işleri. `reader.js`: LiveChat DOM okuma. `dock.js`: üst arama alanına yerleşim ve yalnızca asistana ait konumlandırma. `content.js`: öneri/kopyalama paneli. `windows/NativeHost.cs`: seçilen dosyanın yerel okunması.

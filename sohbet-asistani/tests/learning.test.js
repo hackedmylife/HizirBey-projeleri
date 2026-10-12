@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {emptyMemory, maskPrivate, makeExample, addExamples, removeExample, rejectResponse, selectExamples, MAX_EXAMPLES, MAX_BYTES} from '../extension/learning.js';
+import {emptyMemory, maskPrivate, makeExample, addExamples, removeExample, rejectResponse, selectExamples, cleanContext, MAX_EXAMPLES, MAX_BYTES} from '../extension/learning.js';
 const context=[{role:'user',text:'Kuponumun sonucu yanlış görünüyor.'}];
 const reply='Yaşadığınız durumu birlikte netleştirelim. İlgili kupon numarasını paylaşır mısınız?';
 test('private fields, names, contact details, passwords and values are masked before persistence',()=>{
@@ -51,4 +51,28 @@ test('step-by-step language remains intact while explicit name labels are masked
   assert.equal(maskPrivate('Sorunu adım adım değerlendirelim.'),'Sorunu adım adım değerlendirelim.');
   assert.ok(!maskPrivate('Adım Deneme, kuponumda sorun var.').includes('Deneme'));
   assert.ok(!maskPrivate('Merhaba, adım Deneme.').includes('Deneme'));
+});
+test('stored and prompted examples retain member intent and representative response through long turns',async()=>{
+  const request='İkinci SMS bonusu talep ediyorum.';
+  const messages=[{role:'user',text:request},...Array.from({length:7},()=>({role:'agent',text:'Talebin ayrıntılarını birlikte netleştirelim.'})),{role:'user',text:'Bekliyorum.'}];
+  const answer='Talebinizi anlıyorum. Uygunluk koşulları üzerinden birlikte ilerleyebiliriz.';
+  const sample=await makeExample(messages,answer);
+  assert.ok(sample.context.length<=8);
+  assert.ok(sample.context.some(m=>m.role==='user'&&m.text===request));
+  assert.ok(sample.context.some(m=>m.role==='agent'));
+  assert.equal(sample.response,answer); assert.equal(sample.category,'sms_bonus');
+  const prompt=selectExamples(addExamples(emptyMemory(),[sample]),{request});
+  assert.ok(prompt.examples[0].request.includes('İkinci SMS'));
+  assert.ok(prompt.examples[0].context.some(m=>m.role==='user'&&m.text.includes('İkinci SMS')));
+  assert.equal(prompt.examples[0].response,answer);
+});
+test('an identity response is excluded without discarding the following customer issue',()=>{
+  const cleaned=cleanContext([{role:'agent',text:'Kullanıcı adınızı paylaşır mısınız?'},{role:'user',text:'privateMemberName'},{role:'user',text:'Kuponumda sorun var.'}]);
+  assert.ok(!JSON.stringify(cleaned).includes('privateMemberName'));
+  assert.ok(cleaned.some(m=>m.text==='Kuponumda sorun var.'));
+});
+test('a request starting with a greeting is learned with its member intent intact',async()=>{
+  const sample=await makeExample([{role:'user',text:'Merhaba, ikinci SMS bonusu talep ediyorum.'}],'Talebinizi anlıyorum. Güncel kullanım koşulları doğrultusunda birlikte ilerleyebiliriz.');
+  assert.ok(sample); assert.equal(sample.category,'sms_bonus');
+  assert.match(sample.request,/ikinci SMS/);
 });
