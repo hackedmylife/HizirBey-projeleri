@@ -1,4 +1,4 @@
-HIZIR BEY SOHBET ASISTANI - 0.2.0
+HIZIR BEY SOHBET ASISTANI - 0.3.0
 
 MEVCUT EKLENTIYI GUNCELLEME
 1. Eklentiyi Chrome'dan KALDIRMA.
@@ -6,7 +6,7 @@ MEVCUT EKLENTIYI GUNCELLEME
    daha once yukledigin mevcut extension klasorunun ICINE kopyala.
 3. Ayni isimli dosyalari degistir. Mevcut klasorun yolunu degistirme.
 4. chrome://extensions > Hizir Bey Sohbet Asistani > Yeniden yukle.
-5. LiveChat sekmesini yenile. Panel surumu 0.2.0 olmali.
+5. LiveChat sekmesini yenile. Panel surumu 0.3.0 olmali.
 6. Ayarlar > mevcut Groq anahtarinin kayitli oldugunu kontrol et.
 7. Gemini ve OpenRouter anahtarlarini ekle, baglantilarini ac ve kaydet.
    Sirayi sec. Kaydedilen baglantiyi dene dugmeleriyle kontrol et.
@@ -25,6 +25,26 @@ ILK KURULUM
 5. LiveChat'i yenile. Uc profesyonel yanit onerisi hazirlanir.
 6. Son mesaj temsilciden ise Yenile ile degerlendir.
 7. Oneriyi kontrol et > Kopyala > uygun gordugun yerde kendin yapistir.
+
+GORUSMELERDEN OTOMATIK OGRENME
+Bu surumde aciktir. Tum LiveChat sekmelerinde, ekrana yuklenmis gorusme
+alanlarindaki uygun temsilci yanitlari otomatik ornek olur.
+Panelde OGRENME ACIK ve ornek sayisi gorunur.
+DURDUR: tum sekmelerde yeni otomatik ornek toplamayi kapatir.
+BASLAT: yeni mesajlardan ornek toplamaya devam eder.
+Paneli kucultmek ogrenmeyi durdurmaz; dugme gorunur kalir.
+
+Kartlarda Begendim / Uygun degil / Duzelt ve ogret kullanilabilir.
+Duzeltme alani mesaj gondermez; istedigin cevap tarzini ornek olarak saklar.
+Eski ornekler durduruldugunda da kullanilabilir. Bunu da kapatmak icin
+ayarlarda Kaydedilmis ornekleri yanit uretiminde kullan kutusunu kapat.
+Ayarlardan ornekleri gorebilir, tek tek silebilir veya hafizayi temizleyebilirsin.
+
+Ornekler tarayici profilinde saklanir. Bilinen kisisel bilgiler ve sayilar
+maskelenir; tum kisisel bilgilerin temizlenmesi garanti degildir.
+Ilgili temizlenmis ornekler AI istegine yazim verisi olarak eklenebilir.
+Sirket kurallari orneklerden ogrenilmez; guncel FastKeys esas kalir.
+Ekrana yuklenmemis kapali gorusme arsivi bu surumde okunmaz.
 
 FASTKEYS BILGI TABANI
 Icerikler kalici saklanir. AI analizi arka planda gruplarla ilerler.

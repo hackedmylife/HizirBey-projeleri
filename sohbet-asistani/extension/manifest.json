@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Hızır Bey Sohbet Asistanı",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "minimum_chrome_version": "116",
   "description": "LiveChat için FastKeys bilgisiyle profesyonel yanıtlar ve otomatik yapay zekâ geçişi. Yalnızca önerir ve kopyalar.",
   "permissions": [
@@ -31,6 +31,7 @@
       ],
       "js": [
         "reader.js",
+        "capture.js",
         "content.js"
       ],
       "run_at": "document_idle"

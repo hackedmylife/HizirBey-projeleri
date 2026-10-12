@@ -10,7 +10,7 @@ export function normalizeSettings(raw = {}) {
     ...(id === 'groq' && !raw.providers?.groq ? {apiKey: raw.apiKey || '', model: raw.model || MODELS.groq} : {})
   }]));
   const order = [...new Set((Array.isArray(raw.providerOrder) ? raw.providerOrder : PROVIDERS).filter(id => PROVIDERS.includes(id)))];
-  return {aiEnabled: Boolean(raw.aiEnabled), autoSync: Boolean(raw.autoSync), providers, providerOrder: [...order, ...PROVIDERS.filter(id => !order.includes(id))], allowPaid: Boolean(raw.allowPaid), monthlyBudget: Number(raw.monthlyBudget) || 5};
+  return {aiEnabled: Boolean(raw.aiEnabled), autoSync: Boolean(raw.autoSync), learningEnabled: raw.learningEnabled !== false, useExamples: raw.useExamples !== false, learningEpoch: Number(raw.learningEpoch) || 0, providers, providerOrder: [...order, ...PROVIDERS.filter(id => !order.includes(id))], allowPaid: Boolean(raw.allowPaid), monthlyBudget: Number(raw.monthlyBudget) || 5};
 }
 export function mergeSettings(oldRaw, patch) {
   const old = normalizeSettings(oldRaw), value = normalizeSettings({...old, ...patch, providers: old.providers});

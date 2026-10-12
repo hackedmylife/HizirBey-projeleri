@@ -1,4 +1,5 @@
-import test from 'node:test';
+import test, {mock} from 'node:test';
+mock.timers.enable({apis: ['setTimeout']});
 import assert from 'node:assert/strict';
 const data={}, session={};
 let clock=1000000, listener, onChanged;
@@ -113,4 +114,79 @@ test('replacing a catalog cancels in-flight analysis and cannot persist stale kn
   await assert.rejects(old,{name:'AbortError'});
   assert.equal(data.knowledge.entries[0].analysis,null);
   assert.equal(data.catalog.templates[0].shortcut,'new*');
+});
+const learningContext=[{role:'user',text:'Kuponumun sonucu yanlış görünüyor.'}];
+const humanReply='Yaşadığınız kupon sorununu birlikte netleştirelim. Sonuçta hangi farklılığı gördüğünüzü paylaşabilir misiniz?';
+const observe=async(text=humanReply,sender=live,conversationId='learning-one',epoch)=>send({type:'observeLearning',records:[{context:learningContext,response:text}],epoch:epoch??(await send({type:'status'},sender)).data.learning.epoch,conversationId},sender);
+test('automatic learning applies to all LiveChat tabs, deduplicates and persists sanitized examples',async()=>{
+  await send({type:'clearLearning'});
+  const one=await observe();assert.equal(one.data.added,1);
+  assert.equal((await observe()).data.added,0);
+  const two=await observe('Kupon bilgisini paylaşmanız durumunda işlemin hangi aşamasında sorun yaşadığınızı birlikte netleştirebiliriz.',{...live,tab:{id:2}},'learning-two');
+  assert.equal(two.data.learning.count,2);
+  const memory=(await send({type:'getLearning'})).data.examples;
+  assert.equal(memory.length,2);assert.ok(memory.every(e=>e.origin==='automatic'));
+  assert.equal((await send({type:'getLearning'},live)).ok,false);
+});
+test('global pause rejects capture from other tabs and stale requests after resume',async()=>{
+  const before=(await send({type:'status'},live)).data.learning;
+  const paused=(await send({type:'setLearning',enabled:false},live)).data;
+  assert.equal(paused.enabled,false);assert.ok(paused.epoch>before.epoch);
+  const blocked=await observe('Farklı bir yanıtla durumu birlikte değerlendirebiliriz. Ayrıntıları paylaşır mısınız?',{...live,tab:{id:2}},'paused',before.epoch);
+  assert.equal(blocked.data.added,0);assert.equal(blocked.data.learning.count,before.count);
+  const resumed=(await send({type:'setLearning',enabled:true},live)).data;
+  const stale=await observe('Yeni bir örnek hazırlamak için ayrıntıları paylaşabilir misiniz?',{...live,tab:{id:2}},'paused',before.epoch);
+  assert.equal(stale.data.resetBaseline,true);assert.equal(stale.data.added,0);
+  assert.equal((await observe('Sorunu adım adım değerlendirebilmek için gördüğünüz sonucu açıklayabilir misiniz?',live,'resumed',resumed.epoch)).data.added,1);
+});
+test('unchanged AI suggestions never feed themselves back into automatic learning',async()=>{
+  clock+=60000;globalThis.fetch=async()=>response(generated());
+  const p={...payload,conversationId:'self-feedback'};
+  const result=await send(p,live);
+  assert.equal(result.data.mode,'ai');
+  const epoch=(await send({type:'status'},live)).data.learning.epoch;
+  const captured=await send({type:'observeLearning',epoch,conversationId:p.conversationId,records:[{context:p.messages,response:result.data.items[0].text}]},live);
+  assert.equal(captured.data.added,0);
+});
+test('manual correction and rejection influence the next generation but never become company sources',async()=>{
+  const correction='Kupon talebinizi adım adım netleştirelim. Sonuçta hangi farklılığı gördüğünüzü açıklayabilir misiniz?';
+  const taught=await send({type:'teachReply',messages:learningContext,text:correction,origin:'correction'},live);
+  assert.equal(taught.ok,true);assert.equal(taught.data.learning.corrected,1);
+  await send({type:'rejectReply',messages:learningContext,text:humanReply},live);
+  clock+=60000;let input;
+  globalThis.fetch=async(_,opts)=>{input=JSON.parse(JSON.parse(opts.body).messages[1].content);return response(generated());};
+  await send({...payload,conversationId:'learned-generation',messages:learningContext},live);
+  assert.ok(input.examples.some(e=>e.origin==='correction'&&e.response===correction));
+  assert.equal(input.unwantedExamples.length,1);
+  assert.ok(!input.sources.some(s=>s.text===correction));
+});
+test('deleted samples cannot be recaptured and learned examples can be disabled independently',async()=>{
+  const rows=(await send({type:'getLearning'})).data.examples;
+  const sample=rows.find(e=>e.origin==='automatic');
+  assert.ok(sample);
+  await send({type:'deleteExample',id:sample.id});
+  const captured=await send({type:'observeLearning',epoch:(await send({type:'status'},live)).data.learning.epoch,conversationId:'deleted',records:[{context:sample.context,response:sample.response}]},live);
+  assert.equal(captured.data.added,0);
+  await send({type:'saveSettings',settings:{useExamples:false}});
+  clock+=60000;let input;
+  globalThis.fetch=async(_,opts)=>{input=JSON.parse(JSON.parse(opts.body).messages[1].content);return response(generated());};
+  await send({...payload,conversationId:'examples-disabled',messages:learningContext},live);
+  assert.deepEqual(input.examples,[]);assert.deepEqual(input.unwantedExamples,[]);
+  assert.equal((await send({type:'status'},live)).data.learning.enabled,true);
+  await send({type:'saveSettings',settings:{useExamples:true}});
+});
+test('pausing collection does not cancel an in-flight customer reply',async()=>{
+  clock+=60000;let started,finish,signal;
+  const ready=new Promise(resolve=>{started=resolve;});
+  globalThis.fetch=async(_,opts)=>{signal=opts.signal;started();return new Promise(resolve=>{finish=resolve;});};
+  const pendingReply=send({...payload,conversationId:'pause-during-reply'},live);await ready;
+  await send({type:'setLearning',enabled:false},live);
+  assert.equal(signal.aborted,false);finish(response(generated()));
+  assert.equal((await pendingReply).data.mode,'ai');
+});
+test('clearing learned samples preserves provider keys and FastKeys catalog',async()=>{
+  const key=data.settings.providers.groq.apiKey,catalog=data.catalog;
+  const cleared=await send({type:'clearLearning'});
+  assert.equal(cleared.data.learning.count,0);assert.equal(cleared.data.learning.rejected,0);
+  assert.equal(data.settings.providers.groq.apiKey,key);assert.equal(data.catalog,catalog);
 });

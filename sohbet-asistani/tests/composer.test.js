@@ -41,3 +41,6 @@ test('safe password privacy guidance is permitted while requesting a password is
   assert.equal(validateReplies(replies('Şifrenizi paylaşmanıza gerek yok. Ekranda görünen hata mesajını iletebilir misiniz?'),input).length,3);
   assert.throws(()=>validateReplies(replies('Şifrenizi paylaşır mısınız? Böylece hesabınızı kontrol edebiliriz.'),input));
 });
+test('redacted learning placeholders can never leak into a customer-facing reply',()=>{
+  assert.throws(()=>validateReplies(replies('SMS bonusu [güncel FastKeys koşulu] doğrultusunda kullanılabilir.'),{...input,intent:['sms_bonus']}));
+});
