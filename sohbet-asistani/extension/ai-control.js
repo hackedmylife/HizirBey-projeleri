@@ -1,7 +1,8 @@
 export class AiControl {
-  constructor({now = Date.now, interval = 8000} = {}) {
+  constructor({now = Date.now, interval = 8000, budget = 7000} = {}) {
     this.now = now;
     this.interval = interval;
+    this.budget = budget;
     this.nextAt = 0;
     this.cooldownAt = 0;
     this.active = false;
@@ -23,7 +24,7 @@ export class AiControl {
     this.usage = this.usage.filter((item) => item.at > now - 60000);
     let used = this.usage.reduce((n, item) => n + item.cost, 0), budgetWait = 0;
     for (const item of this.usage) {
-      if (used + cost <= 7000) break;
+      if (used + cost <= Math.max(this.budget, cost)) break;
       budgetWait = item.at + 60000 - now;
       used -= item.cost;
     }
@@ -69,19 +70,3 @@ export function retryDelay(response, now = Date.now()) {
   return 60000;
 }
 
-export function compactInput(messages, candidates) {
-  // Character ceilings bound Turkish input without requiring a tokenizer install.
-  const conversation = messages.filter((m) => m.role !== 'system').slice(-12).map((m) => ({...m, text: m.text.slice(0, 280)}));
-  const compact = candidates.slice(0, 12).map(t => ({
-    id: t.id,
-    title: `${t.label || ''} ${t.shortcut || ''}`.slice(0, 70),
-    text: t.text.slice(0, 180),
-    conditions: (t.profile?.conditions || []).slice(0, 3).map(s => s.slice(0, 130)),
-    topics: t.profile?.primary || [],
-    singleUse: Boolean(t.profile?.singleUse),
-    requiresVerification: Boolean(t.guarded)
-  }));
-  // Cap the whole candidate payload while preserving conditions separately.
-  while (JSON.stringify(compact).length > 5600 && compact.length > 1) compact.pop();
-  return {conversation, candidates: compact};
-}

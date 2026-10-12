@@ -52,10 +52,18 @@ export function describeTemplate(t) {
   const asksId = /(?:kupon|tur|bahis).{0,35}(?:id|numara)|(?:id|numara).{0,35}(?:kupon|tur|bahis)/.test(normalize(`${title} ${t.text}`)) && /ilet|alabilir|rica|paylas/.test(normalize(t.text));
   return {primary, conditions, guarded, asksId, singleUse: policy.singleUse, stage: stage(t.text), internal: /^\s*\/\//.test(t.text) || /^(?:deposit yazanlar|withdraw yazanlar)/.test(normalize(t.text))};
 }
-export function buildIndex(templates) {
+export function buildIndex(templates, knowledge) {
+  const prepared = new Map((knowledge?.entries || []).map(e => [e.id, e]));
   const documents = templates.map(t => {
-    const profile = describeTemplate(t);
-    const words = tokens(`${t.label} ${t.shortcut} ${t.text}`);
+    const entry = prepared.get(t.id);
+    const base = entry?.profile || describeTemplate(t);
+    const profile = {...base, primary: [...base.primary]};
+    const hints = entry?.analysis;
+    const words = tokens(`${t.label} ${t.shortcut} ${t.text} ${hints?.summary || ""} ${(hints?.keywords || []).join(" ")}`);
+    if (hints?.topics?.length && !profile.primary.some(t => bonusNames.has(t))) {
+      const inferred = hints.topics.filter(t => t !== 'general' && t !== 'sms_bonus');
+      profile.primary = [...new Set([...profile.primary.filter(t => t !== 'other_bonus' || !inferred.some(name => bonusNames.has(name))), ...inferred])];
+    }
     return {template: {...t, guarded: profile.guarded}, profile, words, title: normalize(`${t.label} ${t.shortcut}`), hay: normalize(t.text)};
   });
   const frequency = new Map();

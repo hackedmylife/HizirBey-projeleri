@@ -1,78 +1,89 @@
-# Hızır Bey Sohbet Asistanı — 0.1.3
+# Hızır Bey Sohbet Asistanı — 0.2.0
 
-LiveChat açık görüşmesindeki mesajları okuyarak FastKeys düz metin cevaplarından öneri gösterir. Yalnızca **Kopyala** düğmesi vardır. Mesaj göndermez, yazı alanını değiştirmez, makro çalıştırmaz. Süre takip eklentisi ayrı olarak çalışmaya devam eder.
+LiveChat görüşmesindeki mesajları okuyup müşteriye gönderilebilecek üç profesyonel Türkçe yanıt hazırlar: **Kısa ve net**, **Açıklayıcı**, **Empati ve çözüm**. FastKeys arşivi bilgi kaynağıdır. Yapay zekâ özgün yanıt yazabilir; arşivde eşleşme bulunması yanıt üretiminin ön şartı değildir.
 
-## 0.1.0 / 0.1.1 / 0.1.2 sürümünü güncelleme
+Panel yalnızca önerir ve kopyalar. Mesaj göndermez, LiveChat yazı alanını değiştirmez, FastKeys makrolarını çalıştırmaz. Süre takip eklentisi ayrı çalışır.
 
-Eklentiyi kaldırmayın. Bu ZIP içindeki `extension` klasörünün **içeriğini**, Chrome'a daha önce yüklediğiniz mevcut `extension` klasörünün içine kopyalayın ve dosyaları değiştirin. `chrome://extensions` ekranında Hızır Bey Sohbet Asistanı kartındaki yeniden yükle düğmesine basın, ardından LiveChat sekmesini yenileyin. Aynı klasör ve eklenti kimliği korununca mevcut API anahtarı, içe aktarılan arşiv ve Windows bağlantısı korunur. Yeni klasörü ayrı bir eklenti olarak yüklemeyin.
+## Mevcut eklentiyi güncelleme
 
-## 0.1.3 tüm arşivde aday seçimi
+1. Eklentiyi Chrome'dan **kaldırmayın**.
+2. ZIP içindeki `extension` klasörünün **içeriğini**, Chrome'a daha önce yüklediğiniz mevcut `extension` klasörünün içine kopyalayın; aynı adlı dosyaları değiştirin.
+3. Mevcut klasörün yolunu koruyun. `chrome://extensions` ekranında Hızır Bey Sohbet Asistanı kartındaki yeniden yükle düğmesine basın.
+4. LiveChat sekmesini yenileyin. Panel sürümü **0.2.0** olmalı.
+5. Ayarlarda kayıtlı Groq anahtarının bulunduğunu kontrol edin. Gemini ve OpenRouter anahtarlarını ekleyip ilgili bağlantıları etkinleştirin ve kaydedin.
 
-- Yalnızca SMS için değil, içe aktarılan tüm arşiv için konu ve koşul indeksi oluşturulur. Bonus türleri, şifre/IP, yatırım/çekim, kupon ve oyun ayrımları sıralamaya dahil edilir. Bu sezgisel sınıflandırmadır; modelin bütün kalıpları tek istekte okuduğu anlamına gelmez.
-- İlk değerlendirmede en fazla 12 adayın başlığı, özeti, koşulları ve doğrulama gereksinimi modele gönderilir. Uzun metnin sonundaki koşullar ayrıca taşınır. Aday JSON toplamı 5.600 karakterle sınırlanır; bu sınır aday sayısını azaltabilir.
-- Model boş veya geçersiz kimlik seçerse ilk boş sonuç önbelleğe alınmaz. Aynı görüşme için istek bütçesi izin verdiğinde farklı adaylarla bir ikinci değerlendirme yapılır. İkinci değerlendirme de boşsa konuya ait yerel adaylar kontrol uyarısıyla sunulur. Arşivde olmayan cevap üretilmez.
-- Hesap sonucu iddiası içeren adaylar artık tamamen elenmez; panelde doğrulama kutusuyla gösterilebilir. İç talimat/comment kalıpları otomatik öneriye alınmaz. Kopyalanan cevap arşivdeki tam metindir.
+Aynı klasör ve eklenti kimliği korunursa önceki Groq anahtarı, içe aktarılan FastKeys arşivi ve Windows bağlantısı kullanılmaya devam eder. Yeni sağlayıcı ayarlarına geçiş eski anahtarı korur. Anahtar alanını boş bırakmak mevcut anahtarı silmez; silmek için o sağlayıcının ayrı kutusu gerekir. Windows yardımcısını yeniden kurmak gerekmez.
 
-## 0.1.2 bağlam düzeltmeleri
+## İlk kurulum ve bağlantılar
 
-- Selamlaşma, bekleme ve kullanıcı adı bildirimleri önceki asıl talebi düşürmez. Yeni açık konu eski bonus bağlamını değiştirir.
-- SMS doğrulama bonusu ile geri dönüş bonusu kalıpları ayrılır. Genel SMS talebinde hesabı doğrulanmış gibi konuşan metin yerine arşivdeki genel şartlar seçilir.
-- İkinci/tekrar SMS talebinde kalıptaki tek kullanım şartı okunur. Arşivde ilgili önceki kullanım cevabı varsa doğrulama kutusu ile gösterilir; genel koşul kalıbı da sunulur. Bu öneri üyenin gerçekten bonus almış olduğuna kanıt değildir.
-- “Görmekteyim”, “tarafınıza tanımlıdır”, “yeterli yatırımınız mevcuttur” gibi hesap durumu iddiaları mevcut içe aktarılan arşivde de yeniden denetlenir. Önceki kullanım cevabı sen onaylamadan kopyalanamaz.
-- Bu belirgin SMS talep örnekleri mevcut kalıplardan yerel kuralla seçilir; uzaktaki AI gerekmemesi hem alakasız seçimleri hem API kullanımını azaltır. Yeni cevap üretilmez, arşivdeki tam metin gösterilir.
-- Kullanıcının gerçek 487 kalıplık arşivinde iki hata örneği yeniden üretildi ve düzeltmeden sonra ilgili SMS koşulu/tekrar kalıplarının seçildiği doğrulandı. Kullanıcı arşivi ve ekran görüntüleri pakete veya GitHub'a eklenmedi.
+1. ZIP'i kalıcı bir klasöre çıkarın. Chrome'da `chrome://extensions` açıp Geliştirici modunu etkinleştirin.
+2. Paketlenmemiş öğe yükle ile `extension` klasörünü seçin.
+3. Eklenti simgesinden ayarları açın. FastKeys `.fdb` dosyasını içe aktarın.
+4. Yapay zekâ ile yanıt üretimini açın. Kullanacağınız sağlayıcılara anahtar ekleyin, servisleri etkinleştirin ve sırayı seçin.
+5. Ayarları kaydedin. Her servis için **Kaydedilen bağlantıyı dene** düğmesi kullanılabilir. Bu test kısa bir gerçek API isteği yapar; kaydedilmiş anahtarı kullanır.
+6. LiveChat sekmesini yenileyip bir görüşme açın. Son mesaj üyedense yanıtlar otomatik hazırlanır. Son mesaj temsilci/bottansa Yenile ile değerlendirin.
+7. Cevabı kontrol edip Kopyala'ya basın. Arama kutusu FastKeys'in **orijinal metinlerini** gösterir.
 
-## 0.1.1 düzeltmeleri
+| Sağlayıcı | Varsayılan model | Anahtar sayfası |
+|---|---|---|
+| Groq | `openai/gpt-oss-20b` | https://console.groq.com/keys |
+| Gemini | `gemini-2.5-flash-lite` | https://aistudio.google.com/apikey |
+| OpenRouter | `openrouter/free` | https://openrouter.ai/settings/keys |
 
-- Aynı görüşmenin aynı mesajları için başarılı AI seçimi 5 dakika bellekte saklanır. Yenile veya sekmeye dönüş tekrar API çağrısı yapmaz. Arşiv veya ayar değişikliği önbelleği geçersiz kılar; servis çalışanı yeniden başladığında önbellek sıfırlanır.
-- Eşzamanlı aynı istekler birleştirilir. Tüm LiveChat sekmeleri için istekler arasında en az 8 saniye bırakılır; aynı anda yalnızca bir AI isteği çalışır. Son 60 saniyelik tahmini metin bütçesi de kontrol edilir; başarılı yanıttaki gerçek token kullanımı tahminin yerini alır. Groq yanıtındaki kalan token ve günlük istek başlıkları düşükse bildirilen yenilenme süresi beklenir. Bu uygulama tedbiridir, Groq limit garantisi değildir.
-- HTTP 429 durumunda `Retry-After` beklenir; başlık yoksa 60 saniye beklenir. Bekleme bilgisi tarayıcı oturumunda saklanır ve servis çalışanı yeniden başladığında korunur. Diğer HTTP hataları limit olarak etiketlenmez.
-- Bekleme, ağ hatası, eksik anahtar, zaman aşımı veya bozuk AI yanıtında yerel adaylar otomatik gösterilir. Yerel adaylar anahtar kelime eşleşmesidir, temsilci kontrolü gerekir. 120 saniyeyi aşmayan beklemelerde görünür ve değişmemiş görüşme için en fazla 3 otomatik tekrar denenir; sonrasında Yenile kullanılabilir.
-- Uzun istemler küçültüldü; yanıt üst sınırı 1.600 yerine 384 token. Modele gönderilen metin kısaltılabilir, kopyalanan kalıp her zaman arşivdeki tam metindir.
-- SMS/telefon doğrulaması belirtilmeyen taleplerde SMS kalıpları otomatik aday olmaz. Jest bonusu talebinde diğer bonus kalıpları elenir. Bekliyorum/tamam gibi kısa mesajlar önceki asıl talebi korur. Elle arama tüm kalıplara erişmeye devam eder.
-- Anahtar veya kullanıcı FastKeys dosyası pakete eklenmedi.
+Model erişimi ve API kotaları hesaplara bağlıdır. Gemini model kimliği değiştirilebilir. OpenRouter için belirli bir ücretsiz modelin `servis/model:free` kimliği kullanılabilir. `openrouter/free`, isteğin özelliklerine uygun ücretsiz modellerden seçer; hangi modelin seçileceği ve Türkçe yanıt kalitesi değişebilir. Aynı OpenRouter hesabının ortak limitleri model değiştirerek sınırsız hale gelmez.
 
-## İlk deneme
+## Kalıcı FastKeys bilgisi
 
-1. ZIP'i kalıcı bir klasöre çıkarın.
-2. Chrome'da `chrome://extensions` açın ve **Geliştirici modu**nu etkinleştirin.
-3. **Paketlenmemiş öğe yükle** ile bu paketteki `extension` klasörünü seçin.
-4. Eklenti simgesine tıklayın. FastKeys bölümünden bilgisayarınızdaki `.fdb` dosyasını içe aktarın.
-5. LiveChat sekmesini yenileyin. Bir görüşme açın. Sağ altta asistan paneli görünür.
-6. Son mesaj üyeden ise otomatik adaylar gösterilir. Son mesaj temsilci/bottan ise **Yenile** düğmesiyle değerlendirin. Arama kutusu kısayol veya metne göre arşivi tarar.
+- Düz metinler, kaynak koşullar ve konu indeksi tarayıcı profilinde saklanır. Anahtar gerekmeden yerel hazırlık yapılır.
+- Yapay zekâ açık ve en az bir bağlantı hazır olduğunda arşiv **tam metinlerle küçük gruplar halinde** arka planda analiz edilir. Başlık, konu, eşanlamlılar ve kaynakta birebir bulunan koşul alıntıları saklanır. Makrolar ve iç not/komut kayıtları AI analizine alınmaz.
+- Hazırlık ilerlemesi ayarlarda ve panelde gösterilir. Yanıt üretimi, tüm analizin bitmesini beklemez. Canlı yanıtlar önceliklidir; son değerlendirmeden sonra en az 30 saniye boşluk varsa arşiv analizi ilerler.
+- Arşiv ve her kaydın SHA-256 özeti kullanılır. Aynı içerik yeniden içe aktarılırsa önceki analiz korunur. Değişen kayıtlar yeniden hazırlanır; diğer kayıtların analizi tekrar kullanılabilir.
+- Hazırlığın kaldığı nokta kalıcıdır. Servis çalışanı veya tarayıcı yeniden açıldığında devam edebilir. Chrome alarmı duraklamış işi tekrar kontrol eder; tarayıcı kapalıyken hazırlık çalışmaz.
+- Bu, modeli kalıcı eğitmek değildir. Uygulama bilgi tabanını saklar ve her yanıt isteğinde ilgili kaynakları sağlar. Tüm arşiv her görüşmede gönderilmez.
 
-API anahtarı olmadan **yerel kelime eşleşmesi** çalışır; bu mod yapay zekâ değildir ve bağlamı tam değerlendirmez. Yapay zekâ için ayarlara kendi Groq API anahtarınızı girin, modeli seçin, yapay zekâyı etkinleştirip kaydedin. Anahtarın ve API hesabının sınırları size aittir; sınırsız kullanım veya gecikmesiz cevap garantisi yoktur.
+## Yanıt üretimi ve otomatik servis geçişi
+
+- Tek sistem talimatı tüm sağlayıcılarda aynı üslubu uygular: saygılı, sakin, müşteri ve çözüm odaklı, doğal Türkçe.
+- Üye, temsilci ve bot mesajları ayrı değerlendirilir. Üyenin talebi ve önceki bağlam korunur; verilmiş kupon/tur ID'si tekrar istenmemeye çalışılır.
+- Arşivde uygun kaynak yoksa AI özgün yardım veya netleştirme yanıtı yazabilir. Kaynakta bulunmayan şirket kuralı ve işlem sonucu yazmasına izin verilmez.
+- JSON biçimi, üç ayrı tamamlanmış yanıt, kaynak kimlikleri, sayılar, tutar/süre birimleri, bağlantılar, SMS tek kullanım şartı ve doğrulanmamış işlem iddiaları yerel olarak kontrol edilir. Geçersiz yanıt gösterilmeden sıradaki bağlantı denenir. Bu kontroller tüm anlam hatalarını tespit eden bir garanti değildir; temsilci incelemesi gerekir.
+- Kota, zaman aşımı, servis hatası veya geçersiz yanıtta yalnızca etkin ve anahtarı kayıtlı bağlantılar seçilen sırada denenir. Her sağlayıcının bekleme/istek bütçesi ayrıdır. Bir değerlendirmede her sağlayıcı en fazla bir kez denenir.
+- Kota beklemesi sonraki LiveChat sekmelerinde de uygulanır ve tarayıcı oturumunda korunur. Başarılı geçişte aradaki hata paneli kesmez; kullanılan sağlayıcı alt kısımda görünür.
+- Başarılı aynı görüşme sonucu 5 dakika önbelleğe alınır. Arşiv veya ayar değişikliği önbelleği temizler. Görüşme değişince önceki istek iptal edilir; kopyalama anında görüşme tekrar kontrol edilir.
+- Tüm bağlantılar kullanılamazsa üç **Hazır destek yanıtı** gösterilir. Bunlar yeni AI çıktısı değildir ve açıkça işaretlenir. Görünür, değişmemiş görüşmede 120 saniyeyi aşmayan beklemeler için en fazla üç otomatik yeniden deneme yapılır.
+- Kontrol gerektiren önerilerde kopyalama, doğrulama kutusu işaretlenene kadar kapalıdır. Orijinal hesap sonucu kalıpları arşiv aramasında da bu korumayı kullanır.
+
+## Ücretli OpenRouter seçeneği
+
+Varsayılan ücretli geçiş **kapalıdır**. Ücretli model kimliği girilirse ayrı izin kutusunu açın ve 1–100 USD arasında aylık sınır seçin. OpenRouter anahtar sayfasında aynı anahtara bu tutarı aşmayan **aylık kredi sınırı** tanımlayın.
+
+Ayar kaydedilirken ve her ücretli isteğin öncesinde anahtarın servis tarafındaki aylık limiti doğrulanır. Aylık limit yoksa, üst sınır seçilen bütçeden büyükse veya kalan kredi yoksa ücretli istek gönderilmez. Sınır OpenRouter tarafından uygulanır; uygulama hesabın limitini yükseltmez. Groq veya Gemini hesabında ücretli faturalama açıksa o servislerin kendi ücretleri/sınırları ayrıca geçerlidir. API erişimi ChatGPT/Gemini uygulama aboneliğiyle aynı ürün değildir.
 
 ## FastKeys dosyasını otomatik takip
 
-Windows 10/11, Windows PowerShell 5.1 ve .NET Framework gerekir; Python kurulumu gerekmez.
+Windows 10/11, Windows PowerShell 5.1 ve .NET Framework gerekir; Python gerekmez.
 
-1. Eklenti ayarlarından eklenti kimliğini kopyalayın.
-2. `windows/Kurulum.cmd` çalıştırın. Yönetici yetkisi gerekmez; kayıt yalnızca mevcut kullanıcı içindir.
-3. Kimliği girin ve FastKeys'te gerçekten kullanılan `.fdb` dosyasını seçin. İndirilmiş eski bir kopyayı seçmeyin.
-4. Eklenti ayarlarında **Bağlantıyı kontrol et** düğmesine basın, **Otomatik FastKeys bağlantısını kullan** seçeneğini açıp kaydedin.
-5. FastKeys'teki değişiklikleri kaydedin. Açık ve görünür LiveChat paneli yaklaşık 10 saniyede kontrol eder; kaydedilmemiş değişiklikler okunmaz.
+1. Ayarlardan eklenti kimliğini kopyalayın.
+2. `windows/Kurulum.cmd` dosyasını çalıştırıp kimliği girin ve kullanılan **asıl** FastKeys `.fdb` dosyasını seçin.
+3. Ayarlarda Bağlantıyı kontrol et düğmesine basın. Otomatik FastKeys bağlantısını kullan kutusunu açıp kaydedin.
+4. FastKeys değişikliklerini kaydedin. Görünür LiveChat paneli yaklaşık 10 saniyede dosyayı kontrol eder; kaydedilmemiş değişiklikler okunmaz.
 
-Yardımcı yalnızca yapılandırmada seçilen dosyayı okur. Dosya yolu sohbet sayfasından değiştirilemez. Dosya değişirken tutarsız okuma olursa önceki arşiv korunur. Bağlantı kurulamazsa son başarıyla yüklenen arşivle devam edilir ve panel uyarı verir. Başka klasöre taşınmış eklentinin kimliği değişirse kurulumu yeni kimlikle tekrarlayın. Yardımcı çalışırken yeniden kurulum yapacaksanız önce Chrome'u kapatın.
+Yardımcı yalnızca seçilen dosyayı okur, dosyaya yazmaz. Dosya değişirken tutarsız okuma olursa veya bağlantı kurulamazsa son başarılı arşiv korunur. Başka klasöre taşınan eklentinin kimliği değişirse Windows bağlantısını yeni kimlikle tekrar kurun. Kaldırmak için `windows/Kaldir.ps1` kullanılabilir; asıl FastKeys dosyası silinmez.
 
-Bağlantıyı kaldırmak için Windows PowerShell'de `windows/Kaldir.ps1` çalıştırılabilir. Seçilmiş FastKeys dosyası silinmez. Eklenti kaldırıldığında profilindeki asistan arşivi ve anahtar da Chrome tarafından kaldırılır.
+## Veri ve saklama
 
-## İlk sürümün davranışı
+AI analizi için kullanılabilir FastKeys metinleri; yanıt üretimi için son görüşme mesajları ve ilgili kaynaklar etkin API bağlantılarına gönderilir. Bir istek başarısız olduğunda aynı içerik sonraki etkin sağlayıcıya gidebilir. İsim/kullanıcı adı alanları DOM'dan ayrıca okunmaz; mesajdaki e-posta, uzun numara ve bağlantılar kısmen maskelenir. Bu tam anonimleştirme değildir.
 
-- Üye, temsilci, bot ve sistem mesajları ayrı okunur. Görünür DOM'daki son 30 mesaj kullanılır; ekrana yüklenmemiş eski geçmiş okunamaz.
-- Yeni görüşmeye geçiş veya yeni mesaj sonrasında eski öneriler temizlenir. Kopyalama anında görüşme tekrar kontrol edilir.
-- AI yalnızca aday kalıp kimliklerini seçebilir; kopyalanan metin FastKeys arşivindeki metindir. AI gerekçesi ayrı gösterilir, cevap metnine katılmaz.
-- Tüm arşiv konu ve koşullara göre sıralanır; en fazla 12 adayın özet bilgisi modele sunulur. Aday JSON toplamı 5.600, görüşme metinleri toplam 3.360 karakter ile sınırlanır. Doğru kalıp adaylar arasında yoksa arşiv araması gerekir; hiçbir model seçiminin hatasız olduğu varsayılmaz.
-- Karşılama ve bekletme tekrarlarını azaltmak için görüşme kontrol edilir. IP ve şifre blokesi ayrımı AI talimatına dahildir; doğruluğu gerçek kullanımda gözden geçirilmelidir.
-- Makrolar, bilgi giriş alanları, seçim menüleri ve devre dışı kalıplar elenir. Metin tekrarları tekilleştirilir.
-- İşlem tamamlandı iddiası ve belirli tarih içeren kalıplar doğrulama gerektirir. AI seçimi ve yerel adaylar bu işareti korur. İkinci SMS bonusu talebi için ilgili önceki kullanım metni, temsilci doğrulama kutusuyla ayrıca sunulabilir. Arşiv aramasında kopyalamak için **Bu metindeki işlem ve bilgileri doğruladım** kutusu gerekir. Bu sınıflandırma sezgiseldir; yeni kalıplar ayrıca gözden geçirilmelidir.
-- AI açıkken son mesajlar ve aday metinler Groq'a gönderilir. İsim/kullanıcı adı alanları okunmaz; mesaj içindeki e-posta, uzun numara ve bağlantılar kısmen maskelenir. Bu tam anonimleştirme değildir.
-- API anahtarı `chrome.storage.local` içinde, yalnızca güvenilen eklenti sayfalarına açık saklanır; şifreli kasa değildir. ZIP ve GitHub'a anahtar veya kullanıcı dosyası konmaz.
+Anahtarlar yalnızca güvenilen eklenti sayfalarına açık `chrome.storage.local` içinde saklanır; şifreli kasa değildir. Ayarlar ekranına bile anahtarın gerçek değeri geri verilmez; yalnızca kayıtlı olup olmadığı bildirilir. ZIP/GitHub'a anahtar, oturum, kullanıcı FastKeys dosyası veya oluşturulan kişisel bilgi tabanı eklenmez. Aynı kimlikle güncelleme yerel kayıtları korur; eklentiyi kaldırmak Chrome profilindeki kayıtlarını siler.
 
 ## Doğrulama ve sınırlar
 
-32 Node testi `npm test` ile geçer; önbellek, aynı anda tekrar istek, 429 bekleme, 401 ayrımı, istem sınırı ve jest/SMS bağlamı doğrulanır. Yeni indeks için konu ayrımı, geç koşullar, ID tekrarını önleme ve farklı adaylarla ikinci değerlendirme test edilir. 487 kalıplık gerçek arşivde örnek taleplerin yerel sıralaması da incelendi; kullanıcı arşivi pakete eklenmedi. Parser ve DOM ayrımı sağlanan örneklerle yerel olarak doğrulanır. Paket, Windows ve gerçek LiveChat oturumunda henüz denenmemiştir; native host kurulumu, gerçek pano erişimi ve gerçek Groq çağrısı ilk denemede doğrulanmalıdır. Bu sürüm üretim onayı değil, kontrollü ilk deneme sürümüdür.
+`npm test` ile 52 Node testi geçer. Testlerde sahte API yanıtları kullanılır: servis geçişi, 429 beklemesi, zaman aşımı, bozuk çıktı, aylık ücret sınırı, anahtar geçişi, önbellek, iptal, kalıcı arşiv analizi, kaynak koruması ve özgün yanıt üretimi doğrulanır. Tüm JavaScript dosyaları sözdizimi kontrolünden geçer; ayar HTML kimlikleri ve script bağlantıları statik olarak kontrol edilir.
 
-## Geliştirme
+Gerçek API anahtarıyla Groq/Gemini/OpenRouter üretimi ve Türkçe model kalitesi **bu ortamda denenmedi**. Chrome çalıştırıcısı bulunmadığı için görsel tarayıcı kontrolü tamamlanamadı. Gerçek LiveChat DOM'u, pano erişimi, Chrome servis çalışanının yaşam döngüsü ve Windows native host kurulumu kullanıcının ortamında kontrol edilmelidir. Sınırsız ücretsiz kullanım, her durumda doğru cevap veya tamamen kesintisiz servis garantisi verilmez.
 
-`extension/core.js`: FastKeys ayrıştırma ve aday sıralama. `extension/retrieval.js`: konu/koşul indeksi ve farklı aday seçimi. `reader.js`: DOM'dan mesaj okuma. `background.js`: güvenilen kaynak erişimi, Windows bağlantısı ve AI. `content.js`: salt okunur panel. `windows/NativeHost.cs`: çerçeveli stdio ile yerel dosya okuma. Kullanıcı verileri ve anahtarlar test fixture'ı veya paket içeriği olarak eklenmez.
+## Kaynaklar ve geliştirme
+
+API sözleşmeleri: [Groq metin üretimi](https://console.groq.com/docs/text-chat), [Gemini generateContent](https://ai.google.dev/api/generate-content), [OpenRouter ücretsiz model yönlendirme](https://openrouter.ai/docs/guides/routing/routers/free-router), [OpenRouter kredi ve limitler](https://openrouter.ai/docs/api/reference/limits).
+
+`core.js`: FastKeys ayrıştırma ve arama. `knowledge.js`: kalıcı bilgi hazırlığı. `retrieval.js`: konu ve koşul sıralaması. `composer.js`: profesyonel yanıt talimatı, doğrulama ve hazır destek yanıtları. `providers.js`: sağlayıcılar, geçiş, bekleme ve ücret kontrolü. `background.js`: güvenilen erişim ve hazırlık işleri. `reader.js`: LiveChat DOM okuma. `content.js`: öneri/kopyalama paneli. `windows/NativeHost.cs`: seçilen dosyanın yerel okunması.

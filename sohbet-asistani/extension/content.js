@@ -7,7 +7,7 @@
   shadow.innerHTML = `<style>
     :host{all:initial}*{box-sizing:border-box}section{font:13px/1.5 system-ui,-apple-system,Segoe UI,sans-serif;color:#edeef3;width:380px;max-width:calc(100vw - 32px);background:#14171e;border:1px solid #414034;border-radius:18px;box-shadow:0 20px 70px #0008;overflow:hidden}
     header{display:flex;align-items:center;gap:10px;padding:13px 16px;background:linear-gradient(120deg,#22252e,#191b22);border-bottom:1px solid #343641}header img{width:44px;height:44px;object-fit:contain}h1{font-size:15px;margin:0;font-weight:700}small{font-size:11px;color:#aaaebd}.grow{flex:1}button,input{font:inherit}button{cursor:pointer;border:1px solid #444753;border-radius:9px;background:#272b35;color:#f2f3f7;padding:7px 11px}button:hover{background:#353b48}button:disabled{opacity:.4;cursor:default}.icon{padding:5px 9px}.body{padding:14px}.body[hidden]{display:none}.badge{display:inline-block;background:#302e22;color:#e8ce84;font-size:10px;letter-spacing:.4px;border:1px solid #59503b;padding:3px 8px;border-radius:20px}.status{color:#aeb6c7;font-size:11px;margin:9px 0}.notice{color:#d2d7e1;font-size:12px;padding:10px;border-radius:10px;background:#202530;margin:10px 0;white-space:pre-wrap}.tools{display:flex;gap:8px}input[type=search]{min-width:0;flex:1;background:#0e1118;border:1px solid #353b49;color:#fff;border-radius:9px;padding:9px;outline:none}input:focus{border-color:#d2b66d}.cards{max-height:min(48vh,460px);overflow-y:auto;scrollbar-width:thin;margin-top:10px}.card{padding:13px;border:1px solid #363d4b;background:#1b202b;border-radius:12px;margin-bottom:10px}.top{display:flex;align-items:center;gap:8px}code{font-size:11px;color:#e3c981;background:#292c34;padding:3px 6px;border-radius:5px}.label{color:#aeb7c8;font-size:11px;margin:6px 0}.text{white-space:pre-wrap;overflow-wrap:anywhere;color:#f1f3f8;margin:9px 0;font-size:13px}.copy{background:#cfb672;color:#181b21;border:0;font-weight:650}.copy:hover{background:#e4cc89}.guard{display:block;color:#e6c785;font-size:11px;margin:10px 0}.guard input{margin-right:6px}footer{padding:10px 16px;border-top:1px solid #303642;color:#929bad;font-size:10px;display:flex;justify-content:space-between}.empty{padding:18px 6px;color:#acb5c6}a{color:inherit}
-  </style><section><header><img alt=""/><div class="grow"><h1>Hızır Bey</h1><small>Sohbet Asistanı · 0.1.3</small></div><button class="icon" id="settings" title="Ayarlar">⚙</button><button class="icon" id="minimize" title="Küçült">−</button></header><div class="body"><span class="badge">YALNIZCA ÖNERİ VE KOPYALAMA</span><div class="status" id="status">Arşiv kontrol ediliyor…</div><div class="tools"><input type="search" id="search" placeholder="Kalıp veya kısayol ara…" aria-label="Kalıp ara"/><button id="review" title="Görüşmeyi yeniden değerlendir">Yenile</button></div><div class="notice" id="notice">Açık görüşme bekleniyor.</div><div class="cards" id="cards"></div></div><footer><span>Gönderme kontrolü sende</span><span id="mode">Hazır</span></footer></section>`;
+  </style><section><header><img alt=""/><div class="grow"><h1>Hızır Bey</h1><small>Sohbet Asistanı · 0.2.0</small></div><button class="icon" id="settings" title="Ayarlar">⚙</button><button class="icon" id="minimize" title="Küçült">−</button></header><div class="body"><span class="badge">YALNIZCA ÖNERİ VE KOPYALAMA</span><div class="status" id="status">Arşiv kontrol ediliyor…</div><div class="tools"><input type="search" id="search" placeholder="Kalıp veya kısayol ara…" aria-label="Kalıp ara"/><button id="review" title="Görüşmeyi yeniden değerlendir">Yenile</button></div><div class="notice" id="notice">Açık görüşme bekleniyor.</div><div class="cards" id="cards"></div></div><footer><span>Gönderme kontrolü sende</span><span id="mode">Hazır</span></footer></section>`;
   document.documentElement.append(host);
   const $ = (id) => shadow.getElementById(id);
   shadow.querySelector('img').src = chrome.runtime.getURL('logo.png');
@@ -30,21 +30,21 @@
   function contextKey() { return `${location.pathname}|${JSON.stringify(globalThis.HizirReader.read().messages)}`; }
   function render(result, context) {
     clearCards(); copyContext = context;
-    $('notice').textContent = result.notice || (result.items.length ? 'Öneriyi kullanmadan önce görüşmeye uygunluğunu kontrol et.' : 'Uygun kalıp bulunamadı. Arşivde arama yapabilirsin.');
-    $('mode').textContent = ({ai: 'Yapay zekâ', local: 'Yerel eşleşme', search: 'Arşiv', empty: 'Arşiv gerekli'})[result.mode] || 'Hazır';
+    $('notice').textContent = result.notice || (result.items.length ? 'Öneriyi kullanmadan önce görüşmeye uygunluğunu kontrol et.' : 'Yanıt hazırlanamadı. Yenile ile tekrar deneyebilirsin.');
+    $('mode').textContent = ({ai: result.provider || 'Yapay zekâ', prepared: 'Hazır destek yanıtı', local: 'Yerel eşleşme', search: 'Arşiv', empty: 'Arşiv gerekli'})[result.mode] || 'Hazır';
     if (result.elapsed) $('mode').textContent += ` · ${(result.elapsed / 1000).toFixed(1)} sn`;
     for (const item of result.items) {
       const card = document.createElement('article'); card.className = 'card';
       const top = document.createElement('div'); top.className = 'top';
-      const code = document.createElement('code'); code.textContent = item.shortcut; top.append(code);
-      const label = document.createElement('div'); label.className = 'label'; label.textContent = item.label;
+      const code = document.createElement('code'); code.textContent = item.shortcut || 'Yanıt'; top.append(code);
+      const label = document.createElement('div'); label.className = 'label'; label.textContent = item.label || '';
       const text = document.createElement('div'); text.className = 'text'; text.textContent = item.text;
       const button = document.createElement('button'); button.className = 'copy'; button.textContent = 'Kopyala';
       card.append(top, label, text);
       if (item.guarded) {
         const guard = document.createElement('label'); guard.className = 'guard';
         const check = document.createElement('input'); check.type = 'checkbox';
-        guard.append(check, document.createTextNode('Bu metindeki işlem ve bilgileri doğruladım.'));
+        guard.append(check, document.createTextNode(item.verificationNote ? `${item.verificationNote} Kontrol ettim.` : 'Bu metindeki işlem ve bilgileri doğruladım.'));
         button.disabled = true; check.onchange = () => { button.disabled = !check.checked; };
         card.append(guard);
       }
@@ -63,8 +63,9 @@
         try { await ask({type: 'sync'}); status = await ask({type: 'status'}); }
         catch { $('status').textContent = `${status.count} kalıp · FastKeys bağlantısı yok; son arşiv kullanılıyor`; return; }
       }
-      const signature = JSON.stringify([status.count, status.updatedAt, status.aiEnabled]);
-      $('status').textContent = `${status.count} kalıp · ${status.aiEnabled ? 'Yapay zekâ açık' : 'Yerel eşleşme'} · ${status.autoSync ? 'Otomatik dosya takibi' : 'İçe aktarılan arşiv'}`;
+      const signature = JSON.stringify([status.count, status.updatedAt, status.aiEnabled, status.revision]);
+      const k = status.knowledge || {}, connections = (status.providers || []).filter(p => p.enabled && p.hasKey).length;
+      $('status').textContent = `${status.count} metin · ${status.aiEnabled ? `${connections} AI bağlantısı` : 'AI kapalı'}${k.total && k.done < k.total ? ` · Arşiv analizi ${k.done}/${k.total}` : ''} · ${status.autoSync ? 'Dosya takibi açık' : 'Arşiv kayıtlı'}`;
       if (signature !== lastStatus) { lastStatus = signature; lastSignature = ''; schedule(); }
     } catch (error) { showError(error); }
   }
@@ -88,7 +89,7 @@
       $('notice').textContent = 'Son mesaj temsilciden veya bottan. Yeni üye mesajı bekleniyor. İstersen Yenile ile görüşmeyi değerlendirebilirsin.';
       $('mode').textContent = 'Bekleniyor'; return;
     }
-    $('notice').textContent = query ? 'Arşiv aranıyor…' : 'Görüşme için kalıplar seçiliyor…';
+    $('notice').textContent = query ? 'Arşiv aranıyor…' : 'Görüşme için üç yanıt hazırlanıyor…';
     try {
       const result = await ask({type: 'suggest', messages: snapshot.messages, query, conversationId: path});
       if (mine !== generation || path !== location.pathname || signature !== `${location.pathname}|${$('search').value.trim().slice(0, 150)}|${JSON.stringify(globalThis.HizirReader.read().messages)}`) return;

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {buildIndex, retrieve, candidateBatch} from '../extension/retrieval.js';
-import {compactInput} from '../extension/ai-control.js';
+import {composeInput} from '../extension/composer.js';
 const template = (id, label, text) => ({id, label, shortcut: label, text});
 const user = text => [{role: 'user', text}];
 test('topic index distinguishes named bonuses and credential problems even on broader pass', () => {
@@ -30,13 +30,19 @@ test('conditions late in long templates and confirmation requirements reach the 
   const original = template('t1', 'Yatırım bonusu', 'Yatırım bonusumuzla ilgili açıklama. ' + 'Uzun açıklama. '.repeat(100) + 'Yalnızca 1 defa yararlanabilirsiniz. Bonus hesabınıza tanımlanmıştır.');
   const candidate = retrieve(buildIndex([original]), user('Yatırım bonusu ikinci kez alınır mı')).items[0];
   assert.equal(candidate.guarded, true);
-  const compact = compactInput(user('Yatırım bonusu ikinci kez alınır mı'), [candidate]).candidates[0];
+  const compact = composeInput(buildIndex([original]), undefined, user('Yatırım bonusu ikinci kez alınır mı')).sources[0];
   assert.ok(compact.conditions.some(s => /1 defa/.test(s)));
-  assert.equal(compact.requiresVerification, true);
+  assert.equal(compact.containsAccountAssertion, true);
   assert.equal(candidate.text, original.text);
 });
 test('already supplied coupon ID and internal comments are never suggested', () => {
   const index = buildIndex([template('ask', 'Kupon numarası', 'Kupon numarasını iletir misiniz?'), template('internal', 'Kupon', '// kupon için kontrol pls')]);
   const messages = [{role:'user',text:'Kuponumda sorun var'}, {role:'agent',text:'Kupon numarasını iletir misiniz?'}, {role:'user',text:'123456789'}];
   assert.equal(retrieve(index, messages).items.length, 0);
+});
+test('persisted AI topic analysis and synonyms help retrieve a policy without exact topic words', () => {
+  const t=template('t0','Telafi promosyonu','Telafi promosyonu talebiniz değerlendirilebilir.');
+  const knowledge={entries:[{id:'t0',profile:{primary:['other_bonus'],guarded:false,conditions:[],internal:false},analysis:{topics:['jest_bonus'],summary:'Jest talebi',keywords:['jest','teselli']}}]};
+  assert.equal(retrieve(buildIndex([t],knowledge),user('Jest bonusu istiyorum')).items[0].id,'t0');
+  assert.deepEqual(knowledge.entries[0].profile.primary,['other_bonus']);
 });

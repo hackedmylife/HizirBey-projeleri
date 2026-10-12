@@ -1,41 +1,51 @@
-0.1.0 / 0.1.1 / 0.1.2 KULLANANLAR ICIN GUNCELLEME
+HIZIR BEY SOHBET ASISTANI - 0.2.0
 
+MEVCUT EKLENTIYI GUNCELLEME
 1. Eklentiyi Chrome'dan KALDIRMA.
 2. Yeni ZIP'teki extension klasorunun ICINDEKI dosyalari,
    daha once yukledigin mevcut extension klasorunun ICINE kopyala.
-3. Ayni isimli dosyalari degistir. Mevcut klasorun yerini degistirme.
+3. Ayni isimli dosyalari degistir. Mevcut klasorun yolunu degistirme.
 4. chrome://extensions > Hizir Bey Sohbet Asistani > Yeniden yukle.
-5. LiveChat sekmesini yenile. Panel surumu 0.1.3 olmali.
+5. LiveChat sekmesini yenile. Panel surumu 0.2.0 olmali.
+6. Ayarlar > mevcut Groq anahtarinin kayitli oldugunu kontrol et.
+7. Gemini ve OpenRouter anahtarlarini ekle, baglantilarini ac ve kaydet.
+   Sirayi sec. Kaydedilen baglantiyi dene dugmeleriyle kontrol et.
 
-Ayni klasor/eklenti kimligi korundugunda API anahtari, arsiv ve Windows
-baglantisi korunur. Windows kurulumunu tekrar yapmak gerekmez.
-Pakette API anahtari, token veya kullanici FastKeys dosyasi yoktur.
+Bos bir anahtar alani mevcut anahtari silmez. Anahtar silme ayri kutudur.
+Ayni klasor ve eklenti kimligi korunursa eski Groq anahtari, arsiv ve
+Windows baglantisi korunur. Windows yardimcisini tekrar kurman gerekmez.
+Paket anahtar, token veya kullanici FastKeys dosyasi icermez.
 
-HIZIR BEY SOHBET ASISTANI - 0.1.3 ILK DENEME
-
+ILK KURULUM
 1. ZIP'i bilgisayarinda kalici bir klasore cikar.
-2. Chrome adres cubuguna chrome://extensions yaz.
-3. Gelistirici modu ac > Paketlenmemis oge yukle > extension klasorunu sec.
-4. Asistanin eklenti simgesine tikla ve bilgisayarindaki Hizir.fdb dosyasini sec.
-5. LiveChat sayfasini yenile. Sag altta asistan paneli acilir.
-6. Son mesaj temsilciden ise Yenile'ye bas. Kaliplari arama kutusundan da bulabilirsin.
-7. Oneriyi incele > Kopyala > uygun gordugun yerde kendin yapistir.
+2. Chrome'da chrome://extensions > Gelistirici modu >
+   Paketlenmemis oge yukle > extension klasorunu sec.
+3. Eklenti simgesinden ayarlari ac, FastKeys .fdb dosyasini yukle.
+4. Yapay zeka ile yanit uretimini ac. Anahtarlari ekleyip kaydet.
+5. LiveChat'i yenile. Uc profesyonel yanit onerisi hazirlanir.
+6. Son mesaj temsilciden ise Yenile ile degerlendir.
+7. Oneriyi kontrol et > Kopyala > uygun gordugun yerde kendin yapistir.
 
-API anahtari olmadan yerel kelime eslesmesi calisir; bu yapay zeka degildir.
-Yapay zeka icin eklenti ayarlarina kendi Groq API anahtarini gir,
-Yapay zeka secimini etkinlestir ve kaydet.
+FASTKEYS BILGI TABANI
+Icerikler kalici saklanir. AI analizi arka planda gruplarla ilerler.
+Ayni dosya yeniden analiz edilmez; degisen kayitlar guncellenir.
+Canli yanit uretimi onceliklidir. Analiz bitmeden de oneriler calisir.
+Arama kutusu orijinal FastKeys metinlerini gosterir.
 
-FASTKEYS DOSYASINI OTOMATIK GUNCEL TUTMA
-1. Asistan ayarlarindan eklenti kimligini kopyala.
-2. windows klasorundeki Kurulum.cmd dosyasini calistir.
-3. Eklenti kimligini gir ve FastKeys'in kullandigi ASIL .fdb dosyasini sec.
-4. Asistan ayarlarinda Baglantiyi kontrol et dugmesine bas.
-5. Otomatik FastKeys baglantisini kullan secenegini ac ve kaydet.
-6. FastKeys'te degisiklik yapinca kaydet. Gorunur LiveChat paneli yaklasik
+OTOMATIK DOSYA TAKIBI
+1. Ayarlardan eklenti kimligini kopyala.
+2. windows/Kurulum.cmd dosyasini calistir, kimligi gir ve ASIL .fdb'yi sec.
+3. Baglantiyi kontrol et > Otomatik FastKeys baglantisini kullan > Kaydet.
+4. FastKeys'teki degisiklikleri kaydet. Gorunur LiveChat paneli yaklasik
    10 saniyede dosyayi kontrol eder.
 
-Asistan hicbir mesaj gondermez, yazi alanina metin koymaz, makro calistirmaz.
-FastKeys dosyasi ve API anahtari bu pakete dahil degildir.
-Sifre/IP blokesi, finans yonlendirme ve bahis/tur ID orneklerini kontrollu dene.
-Windows yardimcisi, gercek Chrome pano erisimi ve gercek API baglantisi ilk
-denemede kontrol edilmelidir. Ayrintilar README.md dosyasindadir.
+OTOMATIK AI GECISI
+Kota veya baglanti hatasinda siradaki etkin ve anahtari kayitli servis
+denenir. Her servisin beklemesi ayridir. Tum servisler uygun yanit
+veremezse acikca isaretlenmis hazir destek yanitlari gosterilir.
+Ucretli OpenRouter gecisi varsayilan kapali. Acmak istersen servisin
+anahtar sayfasinda aylik kredi siniri gerekir; ayrintilar README.md'de.
+
+Asistan mesaj gondermez, yazi alanina metin koymaz, makro calistirmaz.
+Gercek LiveChat, pano, Windows yardimcisi ve gercek API yanit kalitesi
+kullanicinin ortaminda kontrol edilmelidir. Ayrintilar README.md'dedir.
