@@ -1,4 +1,4 @@
-HIZIR BEY SOHBET ASISTANI - 0.3.2
+HIZIR BEY SOHBET ASISTANI - 0.3.3
 
 MEVCUT EKLENTIYI GUNCELLEME
 1. Eklentiyi Chrome'dan KALDIRMA.
@@ -6,7 +6,7 @@ MEVCUT EKLENTIYI GUNCELLEME
    daha once yukledigin mevcut extension klasorunun ICINE kopyala.
 3. Ayni isimli dosyalari degistir. Mevcut klasorun yolunu degistirme.
 4. chrome://extensions > Hizir Bey Sohbet Asistani > Yeniden yukle.
-5. LiveChat sekmesini yenile. Panel surumu 0.3.2 olmali.
+5. LiveChat sekmesini yenile. Panel surumu 0.3.3 olmali.
 6. Ayarlar > mevcut Groq anahtarinin kayitli oldugunu kontrol et.
 7. Gemini ve OpenRouter anahtarlarini ekle, baglantilarini ac ve kaydet.
    Sirayi sec. Kaydedilen baglantiyi dene dugmeleriyle kontrol et.
@@ -25,6 +25,21 @@ ILK KURULUM
 5. LiveChat'i yenile. Uc profesyonel yanit onerisi hazirlanir.
 6. Son mesaj temsilciden ise Yenile ile degerlendir.
 7. Oneriyi kontrol et > Kopyala > uygun gordugun yerde kendin yapistir.
+
+GENIS OGRENME HAFIZASI
+Olumlu yanit ornekleri icin 10 MB ve en fazla 20.000 kayit kullanilir.
+Uye baglami ve yanit uzunluguna gore once dolan sinir uygulanir.
+Ayni klasor ve Chrome profili korunursa eski 1.000 ornek silinmez.
+Ayarlarda kullanilan MB, ornek sayisi ve kapasite cubugu gorunur.
+Panel de kullanilan alani gosterir. Kapasiteye yaklasinca yedek bilgisi gorunur.
+Kapasite tamamen dolunca eski otomatik ornekler yenileriyle degisebilir.
+Duzeltmeler ve onayli ornekler onceliklidir.
+
+Chrome yerel depolama izni guncellendi (unlimitedStorage).
+Uygulamanin kendi 10 MB siniri uygulanmaya devam eder.
+Yedek JSON dosyasi en fazla 25 MB olabilir. Eski yedekler de yuklenebilir.
+Her AI istegine butun hafiza gonderilmez; yalnizca ilgili sinirli ornekler secilir.
+Daha fazla ornek kapsam saglar; yanit hizi API servisinin durumuna da baglidir.
 
 YANIT KAYNAGI VE YEDEK
 FastKeys otomatik yanitlarda bu surumde KAPALI baslar.

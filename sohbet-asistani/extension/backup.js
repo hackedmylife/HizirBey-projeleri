@@ -1,7 +1,7 @@
-import {MEMORY_VERSION, MAX_EXAMPLES, MAX_BYTES, emptyMemory, makeExample, addExamples} from './learning.js';
+import {MEMORY_VERSION, MAX_EXAMPLES, MAX_BYTES, emptyMemory, makeExample, addExamples, exampleBytes} from './learning.js';
 
 export const BACKUP_FORMAT = 'hizir-bey-learning-backup';
-export const MAX_BACKUP_BYTES = 6000000;
+export const MAX_BACKUP_BYTES = 25000000;
 const hash = value => typeof value === 'string' && /^[a-f0-9]{64}$/.test(value);
 const timestamp = value => Number.isFinite(value) && value >= 0 && value <= 8640000000000000;
 const row = e => ({id: e.id, context: e.context.map(m => ({role: m.role, text: m.text})), request: e.request, response: e.response, category: e.category, origin: e.origin, createdAt: e.createdAt, updatedAt: e.updatedAt});
@@ -11,7 +11,7 @@ export function exportMemory(raw, now = Date.now()) {
   return {format: BACKUP_FORMAT, schemaVersion: 1, exportedAt: new Date(now).toISOString(), memory: {version: MEMORY_VERSION, examples: m.examples.map(row), rejected: m.rejected.map(row), blocked: [...m.blocked], updatedAt: m.updatedAt}};
 }
 export async function parseBackup(text) {
-  if (typeof text !== 'string' || new TextEncoder().encode(text).length > MAX_BACKUP_BYTES) throw new Error('Öğrenme yedeği en fazla 6 MB olabilir.');
+  if (typeof text !== 'string' || new TextEncoder().encode(text).length > MAX_BACKUP_BYTES) throw new Error('Öğrenme yedeği en fazla 25 MB olabilir.');
   let file; try {file = JSON.parse(text);} catch {throw new Error('Yedek geçerli bir JSON dosyası değil.');}
   if (file?.format !== BACKUP_FORMAT || file.schemaVersion !== 1 || file.memory?.version !== MEMORY_VERSION) throw new Error('Bu dosya desteklenen bir Hızır Bey öğrenme yedeği değil.');
   const m = file.memory;
@@ -27,7 +27,7 @@ export async function parseBackup(text) {
   const examples = [], rejected = [];
   for (const [index, sample] of m.examples.entries()) examples.push(await restore(sample, index));
   for (const [index, sample] of m.rejected.entries()) rejected.push(await restore(sample, index));
-  if (new TextEncoder().encode(JSON.stringify(examples)).length > MAX_BYTES) throw new Error('Yedekteki olumlu örnekler 1,5 MB sınırını aşıyor.');
+  if (exampleBytes(examples) > MAX_BYTES) throw new Error('Yedekteki olumlu örnekler 10 MB sınırını aşıyor.');
   return {version: MEMORY_VERSION, examples, rejected, blocked: [...new Set(m.blocked.map(id => ids.get(id) || id))], updatedAt: timestamp(m.updatedAt) ? m.updatedAt : null};
 }
 export function mergeBackup(raw, restored, now = Date.now()) {

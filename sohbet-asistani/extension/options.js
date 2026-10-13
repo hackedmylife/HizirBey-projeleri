@@ -1,3 +1,6 @@
+import {MAX_BYTES, MAX_EXAMPLES} from './learning.js';
+import {MAX_BACKUP_BYTES} from './backup.js';
+
 const $ = id => document.getElementById(id);
 const providers = ['groq', 'gemini', 'openrouter'];
 const orders = {groq: ['groq', 'gemini', 'openrouter'], gemini: ['gemini', 'groq', 'openrouter'], openrouter: ['openrouter', 'groq', 'gemini']};
@@ -9,6 +12,12 @@ function progress(data) {
   const l = data.learning || {};
   if (data.learning && !learningDirty) $('learningEnabled').checked = l.enabled;
   $('learningInfo').textContent = `${l.enabled ? 'Öğrenme açık' : 'Öğrenme durduruldu'} · ${l.count || 0} örnek\n${l.automatic || 0} otomatik, ${l.corrected || 0} düzeltilmiş, ${l.approved || 0} onaylı · ${l.rejected || 0} uygun bulunmayan yanıt`;
+  const used = Number(l.usedBytes) || 0, max = Number(l.maxBytes) || MAX_BYTES;
+  const format = value => (value / 1000000).toLocaleString('tr-TR', {maximumFractionDigits: 2});
+  $('memoryUsage').max = max; $('memoryUsage').value = Math.min(max, used);
+  $('memoryUsage').setAttribute('aria-label', `Öğrenme hafızası: ${format(used)} / ${format(max)} MB`);
+  $('memoryCapacity').textContent = `${format(used)} / ${format(max)} MB · ${(l.count || 0).toLocaleString('tr-TR')} / ${(l.maxExamples || MAX_EXAMPLES).toLocaleString('tr-TR')} örnek`;
+  $('memoryNotice').hidden = !l.nearCapacity;
   const k = data.knowledge || {};
   if (data.knowledge) $('knowledge').textContent = (data.useFastKeys ?? data.settings?.useFastKeys) === false ? 'FastKeys otomatik yanıtlarda kapalı. Yanıtlar görüşme ve öğrenilmiş örnekler üzerinden hazırlanır; arşiv için AI analizi yapılmaz.' : k.total ? `${k.total} metin bilgi tabanında · AI analizi ${k.done}/${k.total}${k.done === k.total ? ' · Tamamlandı' : data.aiEnabled === false || data.settings?.aiEnabled === false ? ' · AI kapalı; analiz bekliyor' : ' · Arka planda devam ediyor'}${k.error ? `\n${k.error}` : ''}` : 'Arşiv yüklenmedi. Genel destek yanıtları kullanılabilir.';
   for (const p of data.providers || []) {
@@ -114,8 +123,9 @@ $('backupFile').onchange = () => {
 $('importLearning').onclick = async () => {
   const file = $('backupFile').files[0]; if (!file) return;
   $('importLearning').disabled = true;
+  $('backupStatus').textContent = 'Yedek kontrol ediliyor ve mevcut kayıtlarla birleştiriliyor…';
   try {
-    if (file.size > 6000000) throw new Error('Öğrenme yedeği en fazla 6 MB olabilir.');
+    if (file.size > MAX_BACKUP_BYTES) throw new Error('Öğrenme yedeği en fazla 25 MB olabilir.');
     const result = await ask({type: 'importLearning', text: await file.text()});
     exampleOffset = 0; await showExamples();
     $('backupStatus').textContent = `Yedek birleştirildi: ${result.added} yeni yanıt ve ${result.rejectedAdded} olumsuz örnek eklendi. Toplam ${result.learning.count} yanıt örneği.`;
@@ -124,3 +134,4 @@ $('importLearning').onclick = async () => {
 };
 setInterval(async () => {if (!document.hidden) {try {progress(await ask({type: 'status'}));} catch { /* retain last status */ }}}, 10000);
 load().catch(error => status(error.message));
+

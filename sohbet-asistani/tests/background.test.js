@@ -225,3 +225,15 @@ test('backup endpoints require options and merging preserves credentials, archiv
   const result=await send({type:'importLearning',text});assert.equal(result.ok,true);assert.equal(result.data.added,0);assert.equal(result.data.learning.count,1);
   assert.equal(data.settings,savedSettings);assert.equal(data.catalog,savedCatalog);assert.equal(result.data.learning.enabled,false);
 });
+test('a saved legacy 1000-example profile retains its data and can capture the next example',async()=>{
+  const base=data.learningMemory.examples[0],examples=Array.from({length:1000},(_,i)=>({...base,id:i.toString(16).padStart(64,'0'),origin:'automatic'}));
+  await chrome.storage.local.set({learningMemory:{version:1,examples,rejected:[],blocked:[],updatedAt:clock}});
+  await send({type:'setLearning',enabled:true},live);
+  const keys=JSON.stringify(data.settings.providers),archive=data.catalog;
+  const state=(await send({type:'status'},live)).data.learning;
+  assert.equal(state.count,1000);assert.equal(state.maxBytes,10000000);assert.equal(state.maxExamples,20000);
+  const result=await observe('Kupon sonucundaki farkı birlikte değerlendirelim. Beklediğiniz sonucu açıklayabilir misiniz?',live,'after-capacity-update',state.epoch);
+  assert.equal(result.data.learning.count,1001);assert.equal(result.data.added,1);
+  assert.ok(examples.every(e=>data.learningMemory.examples.some(row=>row.id===e.id)));
+  assert.equal(JSON.stringify(data.settings.providers),keys);assert.equal(data.catalog,archive);
+});

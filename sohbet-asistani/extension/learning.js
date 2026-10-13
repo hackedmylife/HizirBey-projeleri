@@ -2,7 +2,18 @@ import {normalize, tokens, requestContext, needsConfirmation, supportIntent} fro
 import {digest} from './knowledge.js';
 
 export const MEMORY_VERSION = 1;
-export const MAX_EXAMPLES = 1000, MAX_BYTES = 1500000;
+export const MAX_EXAMPLES = 20000, MAX_BYTES = 10000000;
+const encoder = new TextEncoder();
+// Stored rows are immutable snapshots; cache work for rows that have not changed.
+const rowSizes = new WeakMap(), arraySizes = new WeakMap(), profiles = new WeakMap(), indexes = new WeakMap(), statsCache = new WeakMap();
+function rowBytes(row) {
+  if (!rowSizes.has(row)) rowSizes.set(row, encoder.encode(JSON.stringify(row)).length);
+  return rowSizes.get(row);
+}
+export function exampleBytes(examples) {
+  if (!arraySizes.has(examples)) arraySizes.set(examples, 2 + Math.max(0, examples.length - 1) + examples.reduce((size, row) => size + rowBytes(row), 0));
+  return arraySizes.get(examples);
+}
 export function emptyMemory() {return {version: MEMORY_VERSION, examples: [], rejected: [], blocked: [], updatedAt: null};}
 export function maskPrivate(text) {
   return String(text || '')
@@ -85,19 +96,27 @@ export async function makeExample(context, response, origin = 'automatic', now =
 export function addExamples(raw, incoming, now = Date.now()) {
   const memory = raw?.version === MEMORY_VERSION ? raw : emptyMemory();
   const blocked = new Set(memory.blocked || []), map = new Map(memory.examples.map(e => [e.id, e]));
-  let added = 0;
+  let updated = false;
   for (const item of incoming.filter(Boolean)) {
     if (blocked.has(item.id)) continue;
     const old = map.get(item.id);
-    if (!old) {map.set(item.id, item); added++;}
-    else if (item.origin !== 'automatic' && old.origin === 'automatic') map.set(item.id, {...item, createdAt: old.createdAt});
+    if (!old) map.set(item.id, item);
+    else if (item.origin !== 'automatic' && old.origin === 'automatic') {map.set(item.id, {...item, createdAt: old.createdAt}); updated = true;}
   }
-  const examples = [...map.values()].sort((a, b) => {
+  const ordered = [...map.values()].sort((a, b) => {
     const priority = e => e.origin === 'automatic' ? 0 : 1;
     return priority(b) - priority(a) || b.updatedAt - a.updatedAt;
-  }).slice(0, MAX_EXAMPLES);
-  while (new TextEncoder().encode(JSON.stringify(examples)).length > MAX_BYTES) examples.pop();
-  return {...memory, examples, updatedAt: added || incoming.some(e => e?.origin !== 'automatic') ? now : memory.updatedAt, added};
+  });
+  const examples = []; let bytes = 2;
+  for (const row of ordered) {
+    const cost = rowBytes(row) + (examples.length ? 1 : 0);
+    if (examples.length >= MAX_EXAMPLES || bytes + cost > MAX_BYTES) break;
+    examples.push(row); bytes += cost;
+  }
+  arraySizes.set(examples, bytes);
+  const oldIds = new Set(memory.examples.map(e => e.id));
+  const added = examples.filter(e => !oldIds.has(e.id)).length;
+  return {...memory, examples, updatedAt: added || updated ? now : memory.updatedAt, added};
 }
 export function removeExample(raw, id) {
   const memory = raw?.version === MEMORY_VERSION ? raw : emptyMemory();
@@ -108,33 +127,60 @@ export async function rejectResponse(raw, messages, response, now = Date.now()) 
   const sample = await makeExample(messages, response, 'automatic', now); if (!sample) return memory;
   return {...removeExample(memory, sample.id), rejected: [...memory.rejected.filter(e => e.id !== sample.id), sample].slice(-100), updatedAt: now};
 }
+function profile(example) {
+  if (!profiles.has(example)) profiles.set(example, {example, words: tokens(example.request), kind: category(example.request), responseKey: normalize(example.response)});
+  return profiles.get(example);
+}
+function exampleIndex(examples) {
+  if (indexes.has(examples)) return indexes.get(examples);
+  const byTopic = new Map(), byWord = new Map(), preferred = [];
+  for (const example of examples) {
+    const row = profile(example);
+    if (!byTopic.has(row.kind)) byTopic.set(row.kind, []);
+    byTopic.get(row.kind).push(row);
+    for (const word of row.words) {
+      if (!byWord.has(word)) byWord.set(word, []);
+      byWord.get(word).push(row);
+    }
+    if (example.origin !== 'automatic' && preferred.length < 20) preferred.push(example);
+  }
+  const value = {byTopic, byWord, preferred}; indexes.set(examples, value); return value;
+}
 export function selectExamples(raw, input, enabled = true) {
   if (!enabled || raw?.version !== MEMORY_VERSION) return {examples: [], unwantedExamples: [], writingPreferences: {}};
-  const wanted = new Set(tokens(input.request)), topic = category(input.request);
-  const score = e => {
-    const overlap = tokens(e.request).filter(t => wanted.has(t)).length;
-    const kind = category(e.request);
-    if (supportIntent(input.request) && kind !== topic) return -1;
+  const wanted = new Set(tokens(input.request)), topic = category(input.request), priority = supportIntent(input.request), index = exampleIndex(raw.examples);
+  const score = row => {
+    const overlap = row.words.filter(t => wanted.has(t)).length, kind = row.kind;
+    if (priority && kind !== topic) return -1;
     if (kind !== topic && kind !== 'general' && topic !== 'general') return -1;
     if (!overlap && (kind !== topic || topic === 'general')) return -1;
-    return overlap * 3 + (kind === topic ? 8 : 0) + (e.origin !== 'automatic' ? 5 : 0);
+    return overlap * 3 + (kind === topic ? 8 : 0) + (row.example.origin !== 'automatic' ? 5 : 0);
   };
-  const chosen = raw.examples.map(e => ({...e, score: score(e)})).filter(e => e.score > 0).sort((a, b) => b.score - a.score || b.updatedAt - a.updatedAt);
+  const candidates = new Set(topic === 'general' ? [] : index.byTopic.get(topic) || []);
+  if (!priority) for (const word of wanted) for (const row of index.byWord.get(word) || []) candidates.add(row);
+  const chosen = [...candidates].map(row => ({row, score: score(row)})).filter(e => e.score > 0).sort((a, b) => b.score - a.score || b.row.example.updatedAt - a.row.example.updatedAt);
   const examples = [], distinct = new Set(); let size = 0;
-  for (const e of chosen) {
+  for (const {row} of chosen) {
     if (examples.length >= 3) break;
-    if (distinct.has(normalize(e.response))) continue;
+    if (distinct.has(row.responseKey)) continue;
+    const e = row.example;
     const item = {request: excerpt(e.request, 350), context: contextWindow(e.context, 4).map(m => ({...m, text: excerpt(m.text, 220)})), response: e.response.slice(0, 650), origin: e.origin, purpose: 'style_only'};
     if (size + JSON.stringify(item).length > 2390) continue;
-    examples.push(item); distinct.add(normalize(e.response)); size += JSON.stringify(item).length;
+    examples.push(item); distinct.add(row.responseKey); size += JSON.stringify(item).length;
   }
-  const unwantedExamples = (raw.rejected || []).filter(e => score(e) > 0).slice(-1).map(e => ({request: e.request.slice(0, 250), response: e.response.slice(0, 400), purpose: 'avoid_this_response'}));
-  const preferred = raw.examples.filter(e => e.origin !== 'automatic').slice(0, 20);
-  const basis = preferred.length ? preferred : chosen.slice(0, 20);
+  const unwantedExamples = (raw.rejected || []).filter(e => score(profile(e)) > 0).slice(-1).map(e => ({request: e.request.slice(0, 250), response: e.response.slice(0, 400), purpose: 'avoid_this_response'}));
+  const preferred = index.preferred;
+  const basis = preferred.length ? preferred : chosen.slice(0, 20).map(e => e.row.example);
   const averageChars = basis.length ? Math.round(basis.reduce((n, e) => n + e.response.length, 0) / basis.length) : 0;
   return {examples, unwantedExamples, writingPreferences: {preferredLength: averageChars, source: preferred.length ? 'your_corrections' : 'observed_agent_replies'}};
 }
 export function memoryStats(raw) {
   const m = raw?.version === MEMORY_VERSION ? raw : emptyMemory();
-  return {count: m.examples.length, corrected: m.examples.filter(e => e.origin === 'correction').length, approved: m.examples.filter(e => e.origin === 'approved').length, automatic: m.examples.filter(e => e.origin === 'automatic').length, rejected: m.rejected.length, updatedAt: m.updatedAt};
+  if (!statsCache.has(m)) {
+    let corrected = 0, approved = 0, automatic = 0;
+    for (const e of m.examples) {if (e.origin === 'correction') corrected++; else if (e.origin === 'approved') approved++; else automatic++;}
+    const usedBytes = exampleBytes(m.examples), usagePercent = Math.min(100, Math.round(usedBytes / MAX_BYTES * 1000) / 10);
+    statsCache.set(m, {count: m.examples.length, corrected, approved, automatic, rejected: m.rejected.length, updatedAt: m.updatedAt, usedBytes, maxBytes: MAX_BYTES, maxExamples: MAX_EXAMPLES, usagePercent, nearCapacity: usedBytes >= MAX_BYTES * .95 || m.examples.length >= MAX_EXAMPLES * .95});
+  }
+  return {...statsCache.get(m)};
 }
