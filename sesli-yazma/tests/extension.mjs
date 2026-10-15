@@ -54,6 +54,10 @@ try {
   assert.ok(pending?.waiting, 'Microphone must produce a queued WAV request through the offscreen page'); checks++;
   assert.equal(pending.requests.filter(x => x.endsWith('/audio/transcriptions')).length, 2, 'A temporary 503 is retried once');
   assert.equal((await sessionStore()).status.phase, 'waiting'); checks++;
+  // Exceed the previous 25-second timeout in a real offscreen document.
+  await page.waitForTimeout(26000);
+  assert.equal((await qa('qa:get')).requests.filter(x => x.endsWith('/audio/transcriptions')).length, 2);
+  assert.equal((await sessionStore()).status.busy, true); checks++;
   await page.locator('#editor').focus(); await page.keyboard.press('Enter'); assert.equal(await page.evaluate(() => globalThis.sentCount), 0); checks++;
   await qa('qa:release');
   await page.waitForFunction(() => document.getElementById('editor').innerText.includes('henüz onaylanmadı'), {timeout: 15000});

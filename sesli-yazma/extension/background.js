@@ -139,7 +139,9 @@ async function handle(message, sender) {
       const settings = await getSettings();
       if (!settings.freeConfirmed || !settings.cloudConsent) throw new Error('Önce Free hesap ve ses işleme onayını kaydet.');
       const key = await getKey(); if (!key) throw new Error('Önce API anahtarını kaydet.');
-      const result = await request('/models', {key});
+      // The service worker has a 30-second fetch-response limit. Dictation's
+      // longer requests run in the offscreen document; this setup check does not.
+      const result = await request('/models', {key, timeout: 25000});
       const models = new Set((result.data || []).map(x => x.id));
       if (!models.has(settings.model)) throw new Error('Seçili konuşma modeli bu hesapta görünmüyor.');
       return {message: 'Anahtar kabul edildi; konuşma modeli erişilebilir.', correctionAvailable: models.has(TEXT_MODEL), note: 'Hesabın Free planını bu bağlantı testi doğrulamaz; hesap panelinden kontrol edilir.'};
