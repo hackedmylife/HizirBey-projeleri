@@ -44,7 +44,7 @@ function connection(s, kind, seconds = 0, signal = s.controller.signal) {
       s.requestState = {attempt, maxAttempts, waiting: attempt > 1}; meter(s, true);
     },
     onRetry({attempt, maxAttempts}) {s.requestState = {attempt, maxAttempts, waiting: true}; meter(s, true);},
-    onSlow() {if (active === s) {s.requestState = {...s.requestState, waiting: true}; meter(s, true);}}
+    onSlow() {if (active === s && !signal.aborted) {s.requestState = {...s.requestState, waiting: true}; meter(s, true);}}
   };
 }
 async function drain(s) {
