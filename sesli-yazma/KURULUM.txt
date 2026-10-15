@@ -41,6 +41,7 @@ Bu uygulama hesabın Free planını anahtardan otomatik doğrulayamaz.
 GÜNCELLEME
 Yeni extension dosyalarını aynı klasörde eskilerinin üzerine kopyala;
 chrome://extensions sayfasındaki bu uzantının Yenile düğmesine bas.
+Ardından açık LiveChat sekmesini de bir kez yenile.
 Uzantıyı kaldırma ve klasörü taşıma; mevcut API anahtarını korumak için
 aynı uzantı kimliği kullanılmalıdır. ZIP'te token/key dosyası bulunmaz.
 Sözlük/düzeltme yedeğini ayarlardan JSON olarak indirebilirsin; anahtar

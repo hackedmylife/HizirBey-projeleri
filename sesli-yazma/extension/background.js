@@ -4,7 +4,7 @@ import {request} from './lib/groq.js';
 const extensionOrigin = chrome.runtime.getURL('');
 const offscreenUrl = chrome.runtime.getURL('offscreen.html');
 let session = null, status = {phase: 'idle', message: 'Dikteye hazır', busy: false, recording: false, lastText: '', lastRaw: ''};
-let memoryCache = null, toggleChain = Promise.resolve(), ledgerChain = Promise.resolve(), offscreenCreation = null;
+let memoryCache = null, toggleChain = Promise.resolve(), ledgerChain = Promise.resolve(), offscreenCreation = null, offscreenClosing = null;
 const boot = (async () => {
   await chrome.storage.local.setAccessLevel({accessLevel: 'TRUSTED_CONTEXTS'});
   await chrome.storage.session.setAccessLevel({accessLevel: 'TRUSTED_CONTEXTS'});
@@ -23,9 +23,10 @@ async function tellTab(type, data = {}) {
 }
 async function publish(patch = {}, persist = true) {
   const expectedSession = session;
+  const stateChanged = ['phase', 'recording', 'busy'].some(key => key in patch && patch[key] !== status[key]);
   status = {...status, ...patch};
   const value = view();
-  if (persist) await chrome.storage.session.set({[STORE.runtime]: {session, status}});
+  if (persist || stateChanged) await chrome.storage.session.set({[STORE.runtime]: {session, status}});
   if (session !== expectedSession) return view();
   chrome.action.setBadgeText({text: status.recording ? 'MIC' : status.busy ? '…' : status.phase === 'error' ? '!' : ''}).catch(() => {});
   chrome.action.setBadgeBackgroundColor({color: status.phase === 'error' ? '#b0493d' : '#a78641'}).catch(() => {});
@@ -34,6 +35,7 @@ async function publish(patch = {}, persist = true) {
   return value;
 }
 async function ensureOffscreen() {
+  if (offscreenClosing) await offscreenClosing;
   const contexts = await chrome.runtime.getContexts({contextTypes: ['OFFSCREEN_DOCUMENT'], documentUrls: [offscreenUrl]});
   if (contexts.length) return;
   if (!offscreenCreation) offscreenCreation = chrome.offscreen.createDocument({url: 'offscreen.html', reasons: ['USER_MEDIA'], justification: 'Kullanıcının Alt+H ile başlattığı Türkçe mikrofon diktesi.'}).finally(() => {offscreenCreation = null;});
@@ -42,7 +44,12 @@ async function ensureOffscreen() {
 function offscreen(type, data = {}) {return chrome.runtime.sendMessage({target: 'offscreen', type, ...data});}
 async function closeIdleOffscreen() {
   if (session) return;
-  try {if ((await chrome.runtime.getContexts({contextTypes: ['OFFSCREEN_DOCUMENT']})).length) await chrome.offscreen.closeDocument();} catch { /* Already closed. */ }
+  try {
+    const contexts = await chrome.runtime.getContexts({contextTypes: ['OFFSCREEN_DOCUMENT']});
+    if (session || !contexts.length || offscreenClosing) return;
+    offscreenClosing = chrome.offscreen.closeDocument().finally(() => {offscreenClosing = null;});
+    await offscreenClosing;
+  } catch { /* Already closed. */ }
 }
 async function cancel(message = 'Dinleme durduruldu.', phase = 'idle') {
   const old = session; session = null; memoryCache = null;

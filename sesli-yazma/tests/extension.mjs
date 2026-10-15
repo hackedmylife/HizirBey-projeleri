@@ -46,7 +46,7 @@ try {
   await page.bringToFront();
   await page.locator('#hizir-voice-host').getByRole('button', {name: 'Başlat', exact: true}).click();
   await page.waitForFunction(() => {const root = document.querySelector('#hizir-voice-host').shadowRoot; if(root.getElementById('bar').dataset.error === 'true') throw new Error(root.getElementById('message').textContent); return root.getElementById('bar').dataset.live === 'true';}, undefined, {timeout: 15000}); checks++;
-  const sessionStore = () => worker.evaluate(async () => (await chrome.storage.session.get('hbVoice.runtime.v1'))['hbVoice.runtime.v1']);
+  const sessionStore = () => options.evaluate(async () => {const reply = await chrome.runtime.sendMessage({type: 'ui:get'}); const status = reply.data.status; return {status, session: status.sessionId ? {id: status.sessionId} : null};});
   assert.equal((await sessionStore()).status.recording, true);
   let pending;
   const until = Date.now() + 20000; while (Date.now() < until) {pending = await qa('qa:get').catch(() => null); if (pending?.waiting) break; await page.waitForTimeout(200);}
