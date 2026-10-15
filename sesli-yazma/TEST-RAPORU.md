@@ -1,18 +1,18 @@
-# Hızır Bey Sesli Yazma 0.1.2 — Doğrulama
+# Hızır Bey Sesli Yazma 0.1.3 — Doğrulama
 
 15 Ekim 2026
 
 | Kontrol | Sonuç | Kapsam |
 | --- | --- | --- |
-| Birim / DOM / oturum testleri | **43 / 43 geçti** | Türkçe düzeltme korumaları, WAV/VAD, kazanç, gecikme/yeniden deneme/iptal, tampon sınırı, anahtar geçişi, 10 MB yedek, hedef editör |
+| Birim / DOM / oturum testleri | **53 / 53 geçti** | MK/altyazı ve kalite ölçümü denetimi, son aktarım koruması, Türkçe anlam, WAV/VAD/kazanç, iptal, tampon sınırı, anahtar ve yedek |
 | ESLint | **Geçti** | Uygulama, testler ve JavaScript yardımcıları |
 | Sözdizimi ve manifest | **Geçti** | Alt + H sözleşmesi, kaynaklar, dar host listesi ve kimlik bilgisi taraması |
-| Chromium arayüz / editör | **23 kontrol geçti** | Logonun yüklenmesi, masaüstü/mobil taşma, simge paneli, gizli boşta görünüm, dinleme/işleme sırasında kırmızı nokta, geri al, mikrofon ayarları ve Enter davranışı |
-| Gerçek MV3 uzantısı + sahte mikrofon / API | **17 kontrol geçti** | Offscreen AudioWorklet → ses isteği → 503 sonrası tekrar → 26 saniye gecikme → düzeltme → tek ekleme → kullanıcının Enter'ı; kota sayacı, kırmızı noktanın görünmesi/kaybolması, tekrar başlatma, görüşme değişimi ve 429 |
+| Chromium arayüz / editör | **24 kontrol geçti** | Logonun yüklenmesi, masaüstü/mobil taşma, simge paneli, gizli boşta görünüm, dinleme/işleme sırasında kırmızı nokta, geri al, mikrofon ayarları ve Enter davranışı |
+| Gerçek MV3 uzantısı + sahte mikrofon / API | **19 kontrol geçti** | Offscreen AudioWorklet → ses isteği → 503 sonrası tekrar → 26 saniye gecikme → düzeltme → tek ekleme → kullanıcının Enter'ı; kota sayacı, şüpheli altyazı cevabının engellenmesi/mevcut yazının korunması, kırmızı nokta, görüşme değişimi ve 429 |
 
-Başarılı CI çalışması: [Sesli Yazma QA](https://github.com/hackedmylife/HizirBey-projeleri/actions/runs/38792814205). MV3 testinin çıktı günlüğü ayrıca okunmuş, 17 kontrolün tamamlandığı doğrulanmıştır.
+Başarılı CI çalışması: [Sesli Yazma QA](https://github.com/hackedmylife/HizirBey-projeleri/actions/runs/38795270003). MV3 testinin çıktı günlüğü ayrıca okunmuş, 19 kontrolün tamamlandığı doğrulanmıştır.
 
-Doğrulanan uygulama kaynak commit'i: `f9e525b17894931406216a63c30f2a1b257d5e23`. Teslimdeki 20 uygulama dosyası bu kaynakla bayt düzeyinde eşleştirilmiştir; daha sonraki teslim commit'i rapor, proje özeti ve kurulum arşivini ekler.
+Doğrulanan uygulama kaynak commit'i: `d272d0b4a8b323fa351870ea2583688543255521`. Teslimdeki 21 uygulama dosyası bu kaynakla bayt düzeyinde eşleştirilmiştir; daha sonraki teslim commit'i rapor, proje özeti ve kurulum arşivini ekler.
 
 ## Gerçek olarak doğrulananlar
 
@@ -30,17 +30,25 @@ Doğrulanan uygulama kaynak commit'i: `f9e525b17894931406216a63c30f2a1b257d5e23`
 - Güncelleme sırasında API anahtarı ve kişisel sözlük korunur. Eski varsayılan eşik taşınır; diğer özel eşikler korunur.
 - 10 MB'a yakın hafıza JSON yedeği aynı kapasite sınırında yeniden içe alınır. Anahtar bu yedekte yoktur.
 
-## 0.1.2 görünüm değişikliği
+## 0.1.3 şüpheli dikte koruması
+
+- Bilinen altyazı/kapanış kalıpları ile MK/M.K. varyantları, yüksek güven ölçümleriyle gelse bile otomatik yazılmaz. Şüpheli parçanın tamamı reddedilir; kısmen silinerek farklı metin kurulmaz.
+- Ses tanıma cevabında segment güven verileri zorunlu tutulur. Ortalama log olasılığı < -1, konuşma olmama olasılığı > 0,6 veya sıkıştırma oranı > 2,4 olan tek bir segment bile karışık parçanın aktarımını durdurur. Bütün segmentler sessizlik koşulunu sağlıyorsa metin atlanır.
+- Aynı metin denetimi dil düzeltmesi adayında ve editöre son aktarımda uygulanır. Şüpheli düzeltme yerine yalnızca temiz, denetlenmiş temel metin kullanılabilir.
+- Gerçek MV3 uzantısı testinde API'ye bilinen altyazı hatası döndürülür. Mevcut yazının aynen kaldığı, bu sonucun hiç eklenmediği, mesaj gönderilmediği ve mikrofonun kapanarak uyarı ürettiği doğrulanır.
+- Eski düzeltme uyarısı kritik reddetme mesajının önüne geçmez. Son sessizlik kırpması, yeni bir bulut isteği veya ek bekleme gerektirmez.
+- Görseldeki kullanıcının orijinal ses kaydı mevcut değildir. Görselden hata biçimi teşhis edilmiştir; gerçek seste aynı olayın yeniden üretildiği iddia edilmez. Bu bir kelime doğruluğu garantisi değildir; özellikle özel adlar ve sayılar yine okunmalıdır.
+
+## Panel ve görünüm kontrolleri
 
 - Sayfa boşta hiçbir panel veya düğme göstermez. Dinleme ve metin hazırlanırken sağ üstte 10 px kırmızı nokta görünür; nokta tıklamaları engellemez. Enter ile gönderim veya iptalde gizlenir.
 - Eklenti simgesinden açılan küçük panelde logo, Başlat/Durdur/İptal, geri al, ayarlar, süre/seviye ve isteğe bağlı son metin kopyası doğrulanmıştır. Panel ekran görüntüleri ayrıca incelenmiştir.
 - Gizli sayfa görünümünde işlem sürerken Enter koruması devam eder. Hazır dikte geri alınabilir; elle değiştirilmiş metin geri alınmaz.
-- Konuşma, dil düzeltme, mikrofon ve ağ işlem dosyaları önceki sürümle bayt düzeyinde aynıdır. Bu güncelleme çalışma panelini değiştirir.
 - Win + H, Chrome'un desteklemediği Windows tuşu nedeniyle yardımcı eşleştirmeyle sunulur. Manifestte çalışan Alt + H komutu korunur. AutoHotkey v2 yardımcısı yalnızca Chrome öndeyken tuş yönlendirir; otomatik kurulmaz/başlatılmaz. FastKeys yönergesi mevcut şablonların genel ayarlarını değiştirmez.
 
 ## Henüz ölçülmeyenler
 
-- Kullanıcının kendi mikrofonunda Türkçe kelime hata oranı, şive/ortam gürültüsü ve gecikme.
+- Kullanıcının kendi mikrofonunda Türkçe kelime hata oranı, şive/ortam gürültüsü ve gecikme; yeni kalite eşiklerinin gereksiz reddetme oranı. Gerçek bir MK baş harfi/kod veya video kalıbı amaçlanmışsa filtre fazla sıkı davranabilir.
 - Güncel canlı LiveChat uygulamasının kendi Lexical durum yönetimiyle son kabul testi. Test sayfası gerçek editörün bilinen seçicilerini ve tarayıcı metin düzenlemesini kullanır; uygulamanın tüm iç mantığını çalıştırmaz.
 - Gerçek Free Groq hesabının kişiye özgü kotaları, model erişimi veya canlı servis gecikmesi.
 - Kullanıcının Workspace bağlantısının tüm kesinti/yeniden bağlanma biçimleri. Test kontrollü gecikme ve geçici hata üretir; kalıcı internet kesintisini giderdiği iddia edilmez.
@@ -51,4 +59,4 @@ Doğrulanan uygulama kaynak commit'i: `f9e525b17894931406216a63c30f2a1b257d5e23`
 
 ## Paket kontrolü
 
-Kurulum arşivi yalnızca 20 uzantı dosyası, dört yönerge/rapor belgesi ve iki Windows yardımcı/yönerge dosyası içerir. Paketleme betiği uzantı kaynaklarını ve ZIP içeriğini kimlik bilgisi desenleri için tarar; ZIP CRC kontrolü ve SHA-256 özeti üretir. Anahtar, token dosyası, oturum, kullanıcı hafızası, test profili veya ses dosyası paketlenmez.
+Kurulum arşivi yalnızca 21 uzantı dosyası, dört yönerge/rapor belgesi ve iki Windows yardımcı/yönerge dosyası içerir. Paketleme betiği uzantı kaynaklarını ve ZIP içeriğini kimlik bilgisi desenleri için tarar; ZIP CRC kontrolü ve SHA-256 özeti üretir. Anahtar, token dosyası, oturum, kullanıcı hafızası, test profili veya ses dosyası paketlenmez.

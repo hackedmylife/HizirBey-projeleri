@@ -4,7 +4,7 @@ Projelerin son erişilebilir kaynak sürümleri ve kurulum paketleri. Güncellem
 
 | Proje | Sürüm / durum | Dosyalar |
 |---|---|---|
-| Sesli yazma | 0.1.2; simgeden açılan küçük panel, yalnızca kırmızı etkinlik noktası ve Windows için Win + H yönlendirmesi | [Kaynak ve kurulum](sesli-yazma/) · [Paket](paketler/Hizir-Bey-Sesli-Yazma-0.1.2.zip) |
+| Sesli yazma | 0.1.3; şüpheli altyazı/MK ve düşük güvenli dikteyi engelleme, küçük panel ve kırmızı etkinlik noktası | [Kaynak ve kurulum](sesli-yazma/) · [Paket](paketler/Hizir-Bey-Sesli-Yazma-0.1.3.zip) |
 | Sohbet asistanı | 0.3.3; 10 MB / 20.000 örnek hafızası, kapasite göstergesi, hızlı yerel örnek seçimi ve büyük JSON yedeği; 108 test geçti | [Kaynak ve güncelleme](sohbet-asistani/) · [Paket](paketler/Hizir-Bey-Sohbet-Asistani-0.3.3.zip) |
 | Yatırım / çekim hesaplayıcı | Logolu sürüm; alt düğme yerleşimi düzeltildi | [Kaynak ve EXE oluşturma](hesaplayici/) · [Paket](paketler/HizirBey_EXE_Olusturma.zip) |
 | Sohbet tarayıcı | 1.1.0 | [Kaynak](sohbet-tarayici/) · [Paket](paketler/Hizir-Bey-Sohbet-Tarayici-1.1.0.zip) |
