@@ -1,0 +1,8 @@
+node_modules/
+.qa/
+dist/
+*.log
+.env*
+*token*
+*credentials*
+*api-key*

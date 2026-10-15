@@ -1,0 +1,205 @@
+import {STORE, cleanSettings, emptyMemory, validateMemory, addCorrection, relevantExamples, serializeBackup, textBytes, MEMORY_LIMIT, liveChatUrl, quotaReservation, TEXT_MODEL} from './lib/core.js';
+import {request} from './lib/groq.js';
+
+const extensionOrigin = chrome.runtime.getURL('');
+const offscreenUrl = chrome.runtime.getURL('offscreen.html');
+let session = null, status = {phase: 'idle', message: 'Dikteye hazır', busy: false, recording: false, lastText: '', lastRaw: ''};
+let memoryCache = null, toggleChain = Promise.resolve(), ledgerChain = Promise.resolve(), offscreenCreation = null;
+const boot = (async () => {
+  await chrome.storage.local.setAccessLevel({accessLevel: 'TRUSTED_CONTEXTS'});
+  await chrome.storage.session.setAccessLevel({accessLevel: 'TRUSTED_CONTEXTS'});
+  const saved = (await chrome.storage.session.get(STORE.runtime))[STORE.runtime];
+  const contexts = await chrome.runtime.getContexts({contextTypes: ['OFFSCREEN_DOCUMENT']});
+  if (saved?.session && contexts.length) {session = saved.session; status = saved.status;}
+  else await chrome.storage.session.remove(STORE.runtime);
+})();
+const getSettings = async () => cleanSettings((await chrome.storage.local.get(STORE.settings))[STORE.settings]);
+const getKey = async () => (await chrome.storage.local.get(STORE.credentials))[STORE.credentials]?.key || '';
+async function getMemory() {return memoryCache || (await chrome.storage.local.get(STORE.memory))[STORE.memory] || emptyMemory();}
+function view() {return {...status, sessionId: session?.id || null, tabId: session?.tabId || null};}
+async function tellTab(type, data = {}) {
+  if (!session) return null;
+  return chrome.tabs.sendMessage(session.tabId, {type, sessionId: session.id, ...data}, {frameId: 0});
+}
+async function publish(patch = {}, persist = true) {
+  const expectedSession = session;
+  status = {...status, ...patch};
+  const value = view();
+  if (persist) await chrome.storage.session.set({[STORE.runtime]: {session, status}});
+  if (session !== expectedSession) return view();
+  chrome.action.setBadgeText({text: status.recording ? 'MIC' : status.busy ? '…' : status.phase === 'error' ? '!' : ''}).catch(() => {});
+  chrome.action.setBadgeBackgroundColor({color: status.phase === 'error' ? '#b0493d' : '#a78641'}).catch(() => {});
+  chrome.runtime.sendMessage({type: 'voice:status', target: 'ui', data: value}).catch(() => {});
+  if (session) {const id = session.id; tellTab('voice:status', {data: value}).catch(() => {if (session?.id === id) return cancel('LiveChat bağlantısı kesildi.');});}
+  return value;
+}
+async function ensureOffscreen() {
+  const contexts = await chrome.runtime.getContexts({contextTypes: ['OFFSCREEN_DOCUMENT'], documentUrls: [offscreenUrl]});
+  if (contexts.length) return;
+  if (!offscreenCreation) offscreenCreation = chrome.offscreen.createDocument({url: 'offscreen.html', reasons: ['USER_MEDIA'], justification: 'Kullanıcının Alt+H ile başlattığı Türkçe mikrofon diktesi.'}).finally(() => {offscreenCreation = null;});
+  await offscreenCreation;
+}
+function offscreen(type, data = {}) {return chrome.runtime.sendMessage({target: 'offscreen', type, ...data});}
+async function closeIdleOffscreen() {
+  if (session) return;
+  try {if ((await chrome.runtime.getContexts({contextTypes: ['OFFSCREEN_DOCUMENT']})).length) await chrome.offscreen.closeDocument();} catch { /* Already closed. */ }
+}
+async function cancel(message = 'Dinleme durduruldu.', phase = 'idle') {
+  const old = session; session = null; memoryCache = null;
+  if (old) {
+    chrome.tabs.sendMessage(old.tabId, {type: 'voice:release', sessionId: old.id, message}, {frameId: 0}).catch(() => {});
+    await offscreen('capture:cancel', {sessionId: old.id}).catch(() => {});
+  }
+  if (session) return view();
+  await publish({phase, recording: false, busy: false, level: 0, message});
+  setTimeout(closeIdleOffscreen, 400);
+}
+async function finish() {
+  if (!session) return view();
+  await publish({phase: 'finishing', message: 'Son cümle hazırlanıyor…', recording: false, busy: true});
+  await offscreen('capture:finish', {sessionId: session.id});
+  return view();
+}
+async function start(tabId) {
+  const settings = await getSettings(), key = await getKey();
+  if (!key || !settings.freeConfirmed || !settings.cloudConsent || !settings.microphoneReady) {
+    await chrome.runtime.openOptionsPage();
+    throw new Error('Önce Free hesap anahtarını ve mikrofon iznini ayarlardan tamamla.');
+  }
+  const tab = await chrome.tabs.get(tabId);
+  if (!liveChatUrl(tab.url)) throw new Error('Önce açık LiveChat görüşmesine geç, sonra Alt + H kullan.');
+  const id = crypto.randomUUID();
+  let binding;
+  try {binding = await chrome.tabs.sendMessage(tabId, {type: 'voice:bind', sessionId: id}, {frameId: 0});} catch {throw new Error('LiveChat sayfasını bir kez yenile ve tekrar dene.');}
+  if (!binding?.ok) throw new Error(binding?.error || 'LiveChat mesaj alanı bulunamadı.');
+  session = {id, tabId, startedAt: Date.now()};
+  const mine = session;
+  memoryCache = await getMemory();
+  if (session !== mine) return view();
+  await publish({phase: 'starting', recording: false, busy: true, lastText: '', lastRaw: '', message: 'Mikrofon açılıyor…', startedAt: mine.startedAt, level: 0});
+  try {
+    await ensureOffscreen();
+    if (session?.id !== id) return view();
+    const result = await offscreen('capture:start', {sessionId: id, config: {...settings, key, terms: memoryCache.terms}});
+    if (session?.id !== id) {await offscreen('capture:cancel', {sessionId: id}).catch(() => {}); return view();}
+    if (!result?.ok) throw new Error(result?.error || 'Mikrofon başlatılamadı.');
+  } catch (error) {if (session?.id === id) await cancel(error.message, 'error'); throw error;}
+  return view();
+}
+async function toggle(tabId) {
+  if (session) return ['finishing', 'starting'].includes(status.phase) ? cancel('Dikte iptal edildi.') : finish();
+  if (!tabId) {const [tab] = await chrome.tabs.query({active: true, currentWindow: true}); tabId = tab?.id;}
+  if (!tabId) throw new Error('Aktif LiveChat sekmesi bulunamadı.');
+  return start(tabId);
+}
+function serializedToggle(tabId) {const operation = toggleChain.then(() => toggle(tabId)); toggleChain = operation.catch(() => {}); return operation;}
+async function reserve(kind, seconds) {
+  const operation = ledgerChain.then(async () => {
+    const usage = (await chrome.storage.local.get(STORE.usage))[STORE.usage];
+    const next = quotaReservation(usage, kind, seconds);
+    await chrome.storage.local.set({[STORE.usage]: next});
+    return true;
+  });
+  ledgerChain = operation.catch(() => {}); return operation;
+}
+function contentSender(sender) {return sender.id === chrome.runtime.id && sender.tab && sender.frameId === 0 && liveChatUrl(sender.url);}
+function uiSender(sender) {return sender.id === chrome.runtime.id && !sender.tab?.url?.startsWith('http') && ['popup.html', 'options.html'].some(path => sender.url === extensionOrigin + path);}
+function audioSender(sender) {return sender.id === chrome.runtime.id && sender.url === offscreenUrl;}
+async function handle(message, sender) {
+  await boot;
+  if (message.type?.startsWith('ui:')) {
+    if (!uiSender(sender)) throw new Error('Bu işlem yalnızca eklenti ayarlarından yapılabilir.');
+    if (message.type === 'ui:get') {
+      const settings = await getSettings(), memory = await getMemory();
+      const commands = await chrome.commands.getAll();
+      const usage = (await chrome.storage.local.get(STORE.usage))[STORE.usage] || {};
+      return {settings, hasKey: Boolean(await getKey()), terms: memory.terms, memory: {count: memory.pairs.length, bytes: textBytes(memory), maxBytes: MEMORY_LIMIT}, usage, shortcut: commands.find(x => x.name === 'toggle-dictation')?.shortcut || '', status: view()};
+    }
+    if (message.type === 'ui:save') {
+      const previous = await getSettings();
+      const settings = cleanSettings({...previous, ...message.settings, microphoneReady: previous.microphoneReady});
+      const key = typeof message.key === 'string' ? message.key.trim() : '';
+      if (key && (key.length < 20 || key.length > 250 || /\s/.test(key))) throw new Error('API anahtarının tamamını boşluksuz yapıştır.');
+      if (session) await cancel('Ayarlar değişti; dikteyi yeniden başlat.');
+      await chrome.storage.local.set({[STORE.settings]: settings, ...(key ? {[STORE.credentials]: {key}} : {})});
+      return {saved: true};
+    }
+    if (message.type === 'ui:microphone') {await chrome.storage.local.set({[STORE.settings]: {...await getSettings(), microphoneReady: true}}); return true;}
+    if (message.type === 'ui:removeKey') {await cancel('Anahtar kaldırıldı.'); await chrome.storage.local.remove(STORE.credentials); return true;}
+    if (message.type === 'ui:check') {
+      const settings = await getSettings();
+      if (!settings.freeConfirmed || !settings.cloudConsent) throw new Error('Önce Free hesap ve ses işleme onayını kaydet.');
+      const key = await getKey(); if (!key) throw new Error('Önce API anahtarını kaydet.');
+      const result = await request('/models', {key});
+      const models = new Set((result.data || []).map(x => x.id));
+      if (!models.has(settings.model)) throw new Error('Seçili konuşma modeli bu hesapta görünmüyor.');
+      return {message: 'Anahtar kabul edildi; konuşma modeli erişilebilir.', correctionAvailable: models.has(TEXT_MODEL), note: 'Hesabın Free planını bu bağlantı testi doğrulamaz; hesap panelinden kontrol edilir.'};
+    }
+    if (message.type === 'ui:terms') {
+      const memory = await getMemory();
+      const next = validateMemory({...memory, terms: message.terms});
+      await chrome.storage.local.set({[STORE.memory]: next}); memoryCache = session ? next : null; return true;
+    }
+    if (message.type === 'ui:export') return serializeBackup(await getMemory());
+    if (message.type === 'ui:import') {
+      if (typeof message.data !== 'string' || new TextEncoder().encode(message.data).byteLength > MEMORY_LIMIT) throw new Error('Yedek 10 MB sınırını aşıyor.');
+      let data; try {data = JSON.parse(message.data);} catch {throw new Error('JSON yedeği okunamadı.');}
+      const next = validateMemory(data); await chrome.storage.local.set({[STORE.memory]: next}); memoryCache = session ? next : null; return true;
+    }
+    if (message.type === 'ui:clearMemory') {const next = {...await getMemory(), pairs: []}; await chrome.storage.local.set({[STORE.memory]: next}); memoryCache = session ? next : null; return true;}
+    if (message.type === 'ui:shortcuts') return chrome.tabs.create({url: 'chrome://extensions/shortcuts'});
+    if (message.type === 'ui:options') return chrome.runtime.openOptionsPage();
+    if (message.type === 'ui:toggle') return serializedToggle();
+    if (message.type === 'ui:cancel') return cancel();
+  }
+  if (message.type?.startsWith('content:')) {
+    if (!contentSender(sender)) throw new Error('Geçersiz LiveChat bağlantısı.');
+    if (message.type === 'content:toggle') return serializedToggle(sender.tab.id);
+    if (message.type === 'content:options') return chrome.runtime.openOptionsPage();
+    if (!session || session.id !== message.sessionId || session.tabId !== sender.tab.id) return false;
+    const mine = session;
+    if (message.type === 'content:cancel') return cancel(message.reason || 'Görüşme değişti; dikte durduruldu.');
+    if (message.type === 'content:sent') {
+      const settings = await getSettings();
+      if (settings.learn && typeof message.from === 'string' && typeof message.to === 'string') {
+        const next = addCorrection(await getMemory(), message.from, message.to);
+        await chrome.storage.local.set({[STORE.memory]: next});
+      }
+      if (session !== mine) return false;
+      return cancel('Mesaj kontrolü LiveChat’e bırakıldı. Yeni dikte için Alt + H.');
+    }
+  }
+  if (message.type?.startsWith('audio:')) {
+    if (!audioSender(sender) || !session || session.id !== message.sessionId) return false;
+    if (message.type === 'audio:reserve') return reserve(message.kind, message.seconds || 0);
+    if (message.type === 'audio:examples') return relevantExamples(String(message.text || '').slice(0, 10000), (await getMemory()).pairs);
+    if (message.type === 'audio:meter') return publish({phase: message.processing ? (message.recording ? 'processing' : 'finishing') : message.buffered ? 'listening' : 'ready', recording: message.recording, busy: message.processing || message.buffered, level: message.level, seconds: message.seconds, message: message.processing ? 'Metin hazırlanıyor…' : message.buffered ? 'Seni dinliyorum…' : 'Konuşabilirsin · Hazır metni Enter ile gönder'}, false);
+    if (message.type === 'audio:result') {
+      const mine = session;
+      const data = {text: message.text, raw: message.raw, warning: message.warning || ''};
+      // Keep a temporary recovery copy if an editor rejects insertion. Never auto-replay it.
+      await publish({lastText: data.text, lastRaw: data.raw, message: data.warning || 'Metin yazı alanına eklendi.'});
+      if (session !== mine) return false;
+      const response = await tellTab('voice:insert', {data});
+      if (session !== mine) return false;
+      if (!response?.ok) {await cancel(response?.error || 'Metin aktarılmadı. Son dikteyi eklenti penceresinden kopyalayabilirsin.', 'error'); return false;}
+      return true;
+    }
+    if (message.type === 'audio:error') {await cancel(message.error || 'Dikte durduruldu.', 'error'); return true;}
+    if (message.type === 'audio:done') {await cancel(message.reason || 'Dikte tamamlandı. Metni okuyup Enter ile gönderebilirsin.'); return true;}
+  }
+  throw new Error('Bilinmeyen eklenti işlemi.');
+}
+chrome.runtime.onMessage.addListener((message, sender, respond) => {
+  if (!message || message.target === 'offscreen' || message.target === 'ui' || !/^(ui|content|audio):/.test(message.type || '')) return false;
+  handle(message, sender).then(data => respond({ok: true, data}), error => respond({ok: false, error: error.message || 'İşlem tamamlanamadı.'}));
+  return true;
+});
+chrome.commands.onCommand.addListener(command => {
+  if (command !== 'toggle-dictation') return;
+  boot.then(() => serializedToggle()).catch(error => publish({phase: 'error', busy: false, recording: false, message: error.message}));
+});
+chrome.tabs.onActivated.addListener(info => {boot.then(() => {if (session && info.tabId !== session.tabId) return cancel('Sekme değişti; mikrofon kapatıldı.');}).catch(() => {});});
+chrome.tabs.onRemoved.addListener(tabId => {boot.then(() => {if (session?.tabId === tabId) return cancel('LiveChat sekmesi kapandı.');}).catch(() => {});});
+chrome.tabs.onUpdated.addListener((tabId, change) => {boot.then(() => {if (session?.tabId === tabId && (change.status === 'loading' || change.url)) return cancel('Sayfa değişti; mikrofon kapatıldı.');}).catch(() => {});});
+chrome.runtime.onInstalled.addListener(details => {if (details.reason === 'install') chrome.runtime.openOptionsPage();});

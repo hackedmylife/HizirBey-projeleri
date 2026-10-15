@@ -1,0 +1,53 @@
+name: Sesli Yazma QA
+on:
+  push:
+    paths:
+      - 'sesli-yazma/**'
+      - '.github/workflows/test-sesli-yazma.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    defaults:
+      run:
+        working-directory: sesli-yazma
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: sesli-yazma/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      - run: npm run check
+      - run: npx playwright install --with-deps chromium
+      - name: Browser UI and editor checks
+        run: node tests/browser.mjs
+      - name: Prepare deterministic local microphone input
+        run: |
+          python3 - <<'PY'
+          import math, struct, wave
+          with wave.open('/tmp/hizir-qa-voice.wav','wb') as f:
+              f.setparams((1,2,16000,0,'NONE','not compressed'))
+              for i in range(16000*7):
+                  t=i/16000
+                  value=.12*math.sin(2*math.pi*440*t) if 1<t<3 else 0
+                  f.writeframesraw(struct.pack('<h',int(value*32767)))
+          PY
+      - name: MV3 microphone and mocked API checks
+        env:
+          TEST_AUDIO: /tmp/hizir-qa-voice.wav
+        run: node tests/extension.mjs
+      - name: QA screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sesli-yazma-qa
+          path: sesli-yazma/.qa/
+          if-no-files-found: ignore
+          retention-days: 7

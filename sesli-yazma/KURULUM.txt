@@ -1,0 +1,51 @@
+HIZIR BEY SESLİ YAZMA — 0.1.0
+
+1) ZIP'i bilgisayarında sabit bir klasöre çıkar. Örnek: Belgeler\HizirBey-Sesli-Yazma
+2) Chrome adres çubuğuna chrome://extensions yaz.
+3) Sağ üstten Geliştirici modu'nu aç.
+4) Paketlenmemiş öğe yükle'ye bas; çıkardığın paketteki extension klasörünü seç.
+5) Açılan logolu ayar ekranında Groq Free hesabının API anahtarını kaydet.
+   Ücretsiz anahtar: https://console.groq.com/keys
+   Hesabın FREE olmalı. Kart ekleme veya Developer plana yükseltme.
+6) Free hesap ve ses işleme kutularını işaretle, Ayarları kaydet.
+7) Mikrofonu dene'ye bas, Chrome mikrofon izni sorarsa izin ver.
+   Bu test yereldir; ses kaydı tutulmaz ve gönderilmez. 15 saniyede kapanır.
+8) Bağlantıyı kontrol et ile model erişimini denetleyebilirsin.
+9) LiveChat sekmesini bir kez yenile ve bir müşteri görüşmesi aç.
+10) ALT + H ile konuşmaya başla. Metin yazım/noktalama işleminden sonra
+    doğrudan LiveChat mesaj alanına eklenir.
+11) Metni oku. Hazır olduğunda ENTER ile kendin gönder.
+
+KULLANIM
+- ALT + H'ye yeniden basmak dinlemeyi bitirir; son cümle hazırlanır.
+- Hazırlanıyor durumunda Enter eksik metni göndermesin diye bekletilir.
+  Metin hazır olunca Enter'a yeniden bas. Otomatik gönderim yapılmaz.
+- Enter ile gönderdiğinde mikrofon oturumu biter. Yeni mesaj için ALT + H.
+- İç not modundan müşteriye mesaj moduna geç; iç nota dikte aktarılmaz.
+- Görüşme veya sekme değişiminde kayıt kapanır.
+- Alanı elle değiştirirsen geç gelen sonuç mevcut yazını ezmez.
+  Gerekirse eklenti simgesinden Son dikte metnini kopyala.
+- Yazım/noktalama düzeltmesi doğruluğu artırmayı hedefler; tutarları,
+  özel isimleri ve işlemin durumunu göndermeden önce kontrol et.
+
+KISAYOL ÇALIŞMIYORSA
+chrome://extensions/shortcuts adresini aç. Hızır Bey Sesli Yazma altında
+Türkçe dikteyi başlat/durdur alanını ALT + H olarak ayarla. Başka bir
+eklenti aynı kısayolu kullanıyorsa onun atamasını değiştir.
+
+ÜCRETSİZ KOTA
+Groq Free planındaki ses ve metin sınırları geçerlidir. Kota dolunca
+eklenti uyarır ve durur; ücretli sağlayıcıya geçmez veya hesap yükseltmez.
+Bu uygulama hesabın Free planını anahtardan otomatik doğrulayamaz.
+
+GÜNCELLEME
+Yeni extension dosyalarını aynı klasörde eskilerinin üzerine kopyala;
+chrome://extensions sayfasındaki bu uzantının Yenile düğmesine bas.
+Uzantıyı kaldırma ve klasörü taşıma; mevcut API anahtarını korumak için
+aynı uzantı kimliği kullanılmalıdır. ZIP'te token/key dosyası bulunmaz.
+Sözlük/düzeltme yedeğini ayarlardan JSON olarak indirebilirsin; anahtar
+bu yedeğe dahil edilmez.
+
+İLK DENEME
+Önce test görüşmesinde kısa bir cümleyle dene. Test raporunda canlı
+LiveChat ve kişisel mikrofon doğrulamasının durumu açıkça belirtilir.
