@@ -45,8 +45,12 @@ try {
   const qa = type => worker.evaluate(type => chrome.runtime.sendMessage({target: 'qa', type}), type);
   page = await context.newPage(); await page.goto('https://my.livechatinc.com/chats/DEMOCHAT01');
   await page.bringToFront();
-  await page.locator('#hizir-voice-host').getByRole('button', {name: 'Başlat', exact: true}).click();
-  await page.waitForFunction(() => {const root = document.querySelector('#hizir-voice-host').shadowRoot; if(root.getElementById('bar').dataset.error === 'true') throw new Error(root.getElementById('message').textContent); return root.getElementById('bar').dataset.live === 'true';}, undefined, {timeout: 15000}); checks++;
+  assert.equal(await page.locator('#hizir-voice-host').isVisible(), false); checks++;
+  // Invoke the same privileged request used by the toolbar popup without
+  // activating the background options tab (which intentionally cancels capture).
+  const toggle = async () => {const reply = await options.evaluate(() => chrome.runtime.sendMessage({type: 'ui:toggle'})); assert.equal(reply.ok, true, reply.error);};
+  const listening = () => page.waitForFunction(() => {const host = document.getElementById('hizir-voice-host'); return !host.hidden && host.shadowRoot.getElementById('indicator').dataset.phase === 'listening';}, undefined, {timeout: 15000});
+  await toggle(); await listening(); checks++;
   const sessionStore = () => options.evaluate(async () => {const reply = await chrome.runtime.sendMessage({type: 'ui:get'}); const status = reply.data.status; return {status, session: status.sessionId ? {id: status.sessionId} : null};});
   assert.equal((await sessionStore()).status.recording, true);
   let pending;
@@ -58,6 +62,7 @@ try {
   await page.waitForTimeout(26000);
   assert.equal((await qa('qa:get')).requests.filter(x => x.endsWith('/audio/transcriptions')).length, 2);
   assert.equal((await sessionStore()).status.busy, true); checks++;
+  assert.equal(await page.locator('#hizir-voice-host').locator('#indicator').isVisible(), true); checks++;
   await page.locator('#editor').focus(); await page.keyboard.press('Enter'); assert.equal(await page.evaluate(() => globalThis.sentCount), 0); checks++;
   await qa('qa:release');
   await page.waitForFunction(() => document.getElementById('editor').innerText.includes('henüz onaylanmadı'), {timeout: 15000});
@@ -68,16 +73,15 @@ try {
   const readyUntil = Date.now() + 5000; while ((await sessionStore()).status.busy && Date.now() < readyUntil) await page.waitForTimeout(100);
   await page.keyboard.press('Enter'); await page.waitForTimeout(400);
   assert.equal(await page.evaluate(() => globalThis.sentCount), 1); assert.equal((await sessionStore()).session, null); checks++;
+  assert.equal(await page.locator('#hizir-voice-host').isVisible(), false); checks++;
   // Repeated recordings exercise close/reopen and mic cleanup.
   await page.locator('#editor').fill(''); await page.waitForTimeout(500);
-  await page.locator('#hizir-voice-host').getByRole('button', {name: 'Başlat', exact: true}).click();
-  await page.waitForFunction(() => document.querySelector('#hizir-voice-host').shadowRoot.getElementById('bar').dataset.live === 'true', {timeout: 10000});
+  await toggle(); await listening();
   await page.locator('main').evaluate(x => {x.dataset.chatId = 'DIFFERENTCHAT02';});
   await page.waitForTimeout(700); assert.equal((await sessionStore()).session, null); checks++;
   const before = await page.locator('#editor').innerText(); await page.waitForTimeout(1500); assert.equal(await page.locator('#editor').innerText(), before); checks++;
   // Fail closed at provider quota, without another provider or upgrade request.
-  await page.locator('#hizir-voice-host').getByRole('button', {name: 'Başlat', exact: true}).click();
-  await page.waitForFunction(() => document.querySelector('#hizir-voice-host').shadowRoot.getElementById('bar').dataset.live === 'true');
+  await toggle(); await listening();
   await qa('qa:quota');
   const failureUntil = Date.now() + 20000;
   while (Date.now() < failureUntil) {const state = await sessionStore(); if (state.status.phase === 'error') break; await page.waitForTimeout(200);}
@@ -87,7 +91,7 @@ try {
 } catch (error) {
   const state = await worker?.evaluate(async () => (await chrome.storage.session.get('hbVoice.runtime.v1'))['hbVoice.runtime.v1']).catch(() => null);
   console.error('MV3 QA diagnostics:', JSON.stringify({checks, state, errors}));
-  if (page) console.error('Toolbar:', await page.locator('#hizir-voice-host').evaluate(x => x.shadowRoot.getElementById('message').textContent).catch(() => 'unavailable'));
+  if (page) console.error('Indicator:', await page.locator('#hizir-voice-host').evaluate(x => ({hidden: x.hidden, phase: x.shadowRoot.getElementById('indicator').dataset.phase})).catch(() => 'unavailable'));
   console.error('Setup:', await worker?.evaluate(async () => (await chrome.storage.local.get('hbVoice.settings.v1'))['hbVoice.settings.v1']).catch(() => 'unavailable'));
   throw error;
 } finally {await context.close(); await rm(profile, {recursive: true, force: true});}

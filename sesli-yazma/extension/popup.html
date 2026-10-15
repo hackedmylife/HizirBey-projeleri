@@ -1,1 +1,17 @@
-<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark"><title>Hızır Bey Sesli Yazma</title><link rel="stylesheet" href="ui.css"></head><body class="popup-page"><header class="popup-head"><img src="logo.png" alt="Hızır Bey"><div><strong>Sesli Yazma</strong><small>Türkçe dikte · <span id="version"></span></small><div><span class="free-tag">GROQ FREE</span></div></div></header><h1 class="popup-title">Kelimen hazır.<br><span>Kontrol sende.</span></h1><div class="popup-status"><span class="popup-dot" id="statusDot" aria-hidden="true"></span><span id="status" role="status" aria-live="polite">Bağlantı kontrol ediliyor…</span></div><div class="popup-shortcut"><span>LiveChat’te başlat / durdur</span><kbd id="shortcut">Alt + H</kbd></div><div class="popup-actions"><button class="button primary" id="toggle" type="button">Dikteyi başlat</button><button class="button secondary" id="options" type="button">Ayarlar</button></div><p id="error" class="popup-error" role="alert" hidden></p><section id="last" class="last-text" hidden><label for="lastText">Son dikte · geçici kurtarma kopyası</label><textarea id="lastText" rows="3" readonly></textarea><button id="copy" class="text-button" type="button">Metni kopyala</button></section><footer class="popup-footer"><span>Sen okuyup Enter ile gönderirsin.</span><span id="setup">Kurulum</span></footer><script type="module" src="popup.js"></script></body></html>
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark"><title>Hızır Bey Sesli Yazma</title><link rel="stylesheet" href="ui.css"></head>
+<body class="popup-page">
+  <main class="voice-panel" aria-label="Hızır Bey sesli yazma kontrolü">
+    <img class="panel-logo" src="logo.png" alt="Hızır Bey">
+    <div class="panel-copy"><div class="panel-title"><span class="popup-dot" id="statusDot" aria-hidden="true"></span><strong>Sesli yazma</strong><kbd id="shortcut">Alt + H</kbd></div><p id="status" role="status" aria-live="polite">Bağlantı kontrol ediliyor…</p></div>
+    <div class="panel-meter" aria-hidden="true"><div id="meter"><i></i><i></i><i></i><i></i><i></i></div><span id="timer">00:00</span></div>
+    <button class="button primary" id="toggle" type="button">Başlat</button>
+    <button class="panel-icon" id="undo" type="button" aria-label="Son dikteyi geri al" title="Son dikteyi geri al" disabled>↶</button>
+    <button class="panel-icon" id="options" type="button" aria-label="Ayarlar" title="Ayarlar">⚙</button>
+  </main>
+  <p id="error" class="popup-error" role="alert" hidden></p>
+  <div class="popup-meta"><span>Win + H: Windows yardımcısıyla</span><span id="setup">Kurulum</span></div>
+  <details id="last" class="last-text" hidden><summary>Son dikteyi göster / kopyala</summary><label for="lastText" class="sr-only">Son dikte · geçici kurtarma kopyası</label><textarea id="lastText" rows="3" readonly></textarea><button id="copy" class="text-button" type="button">Metni kopyala</button></details>
+  <footer class="popup-footer"><span>Oku, Enter ile gönder.</span><span>Hızır Bey · <span id="version"></span></span></footer>
+  <script type="module" src="popup.js"></script>
+</body></html>

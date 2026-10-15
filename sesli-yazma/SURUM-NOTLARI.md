@@ -1,3 +1,13 @@
+# 0.1.2 — Küçük kontrol paneli ve sessiz sayfa görünümü
+
+15 Ekim 2026
+
+- Sayfadaki geniş kontrol çubuğu kaldırıldı. Dinleme veya metin hazırlanırken sağ üstte yalnızca 10 px kırmızı nokta görünür; tıklamaları engellemez.
+- Logolu küçük panel yalnızca eklenti simgesine tıklanınca açılır. Başlat/Durdur, geri al, ayarlar, süre/seviye ve geçici son dikte kopyası buraya taşındı. Panelin kapanması dikteyi durdurmaz.
+- Chrome'un Win tuşu kısıtı nedeniyle doğrudan komut Alt + H olarak korunur. Win + H için yalnızca Chrome öndeyken çalışan AutoHotkey v2 yardımcısı ve mevcut FastKeys ile eşleştirme yönergesi eklendi.
+- Windows yardımcısı otomatik kurulmaz/başlatılmaz; başlangıç veya kayıt defteri değişikliği yapmaz. Windows/FastKeys ilk kabul testi kullanıcının cihazında yapılmalıdır.
+- Konuşma modeli, ses güçlendirme, gecikme yönetimi, saklanan anahtar ve sözlük korunur.
+
 # 0.1.1 — Bağlantı bekleme ve mikrofon güçlendirme
 
 15 Ekim 2026

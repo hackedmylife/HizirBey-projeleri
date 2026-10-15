@@ -58,7 +58,7 @@ async function cancel(message = 'Dinleme durduruldu.', phase = 'idle') {
     await offscreen('capture:cancel', {sessionId: old.id}).catch(() => {});
   }
   if (session) return view();
-  await publish({phase, recording: false, busy: false, level: 0, message});
+  await publish({phase, recording: false, busy: false, canUndo: false, level: 0, message});
   setTimeout(closeIdleOffscreen, 400);
 }
 async function finish() {
@@ -83,7 +83,7 @@ async function start(tabId) {
   const mine = session;
   memoryCache = await getMemory();
   if (session !== mine) return view();
-  await publish({phase: 'starting', recording: false, busy: true, lastText: '', lastRaw: '', message: 'Mikrofon açılıyor…', startedAt: mine.startedAt, level: 0});
+  await publish({phase: 'starting', recording: false, busy: true, canUndo: false, warning: '', lastText: '', lastRaw: '', message: 'Mikrofon açılıyor…', startedAt: mine.startedAt, level: 0});
   try {
     await ensureOffscreen();
     if (session?.id !== id) return view();
@@ -161,6 +161,13 @@ async function handle(message, sender) {
     if (message.type === 'ui:shortcuts') return chrome.tabs.create({url: 'chrome://extensions/shortcuts'});
     if (message.type === 'ui:options') return chrome.runtime.openOptionsPage();
     if (message.type === 'ui:toggle') return serializedToggle();
+    if (message.type === 'ui:undo') {
+      if (!session || status.busy || !status.canUndo) throw new Error('Şu anda geri alınabilecek hazır dikte yok.');
+      const mine = session, response = await tellTab('voice:undo');
+      if (session !== mine) return false;
+      if (!response?.ok) throw new Error(response?.error || 'Son dikte geri alınamadı.');
+      await publish({canUndo: false, warning: '', message: 'Son dikte geri alındı.'}); return true;
+    }
     if (message.type === 'ui:cancel') return cancel();
   }
   if (message.type?.startsWith('content:')) {
@@ -198,11 +205,12 @@ async function handle(message, sender) {
       mine.lastSegment = message.segmentId;
       const data = {segmentId: message.segmentId, text: message.text, raw: message.raw, warning: message.warning || ''};
       // Keep a temporary recovery copy if an editor rejects insertion. Never auto-replay it.
-      await publish({lastText: data.text, lastRaw: data.raw, message: data.warning || 'Metin yazı alanına eklendi.'});
+      await publish({lastText: data.text, lastRaw: data.raw, warning: data.warning, message: data.warning || 'Metin yazı alanına eklendi.'});
       if (session !== mine) return false;
       const response = await tellTab('voice:insert', {data});
       if (session !== mine) return false;
       if (!response?.ok) {await cancel(response?.error || 'Metin aktarılmadı. Son dikteyi eklenti penceresinden kopyalayabilirsin.', 'error'); return false;}
+      await publish({canUndo: true}, false);
       return true;
     }
     if (message.type === 'audio:error') {await cancel(message.error || 'Dikte durduruldu.', 'error'); return true;}

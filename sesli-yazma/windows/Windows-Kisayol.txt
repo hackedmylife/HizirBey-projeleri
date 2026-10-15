@@ -1,0 +1,47 @@
+HIZIR BEY SESLİ YAZMA — WIN + H
+
+Chrome uzantılarında Windows tuşu doğrudan kısayol olamaz. Windows'un
+Win + H diktesiyle çakışmamak için Win + H, Chrome'da uzantının Alt + H
+komutuna yönlendirilir. Mesaj gönderme hâlâ yalnızca senin Enter'ınla olur.
+
+SEÇENEK 1 — MEVCUT FASTKEYS İLE
+1) FastKeys > Shortcuts / Kısayollar bölümüne yeni kayıt ekle.
+2) Tür: Send / Gönder. Gönderilecek tuş: !h
+   ! karakteri Alt anlamındadır. Raw Text / Ham metin kapalı olmalı.
+   Özel tuş/modifier tanıma kapalıysa aç; !h yazı olarak eklenmemelidir.
+3) Kısayol alanına Win + H ata (gelişmiş gösterim: #h).
+4) More options / Diğer seçenekler > Context window / Bağlam penceresi:
+   ahk_exe chrome.exe
+   Gerekirse Window Information ile kendi Chrome pencereni seç.
+5) Native / ~ seçeneğini açma; Windows'un kendi diktesi aynı anda açılmamalı.
+6) Kaydet. Chrome > chrome://extensions/shortcuts içinde Hızır Bey Sesli
+   Yazma'nın komutu Alt + H olmalı. LiveChat açıkken Win + H'yi dene.
+
+SEÇENEK 2 — ÜCRETSİZ AUTOHOTKEY V2 YARDIMCISI
+- AutoHotkey v2 kuruluysa Hizir-Bey-Win-H.ahk dosyasına çift tıkla.
+- V2 yoksa resmî adres: https://www.autohotkey.com/
+- Yardımcı çalışırken yalnızca Chrome öndeyken Win + H, Alt + H'ye çevrilir.
+- Tuşları bıraktığında bir kez çalışır; basılı tutmak tekrar tekrar başlatmaz.
+- Kapatmak için sistem tepsisindeki AutoHotkey simgesine sağ tık > Exit.
+- Başlangıca otomatik eklenmez; kayıt defterini veya sistem izinlerini değiştirmez.
+- Anahtar, metin, ses veya panoyu okumaz; internete bağlanmaz.
+
+İki yöntemi aynı anda kullanma. Bu dosya, FastKeys'in mevcut kısayollarını
+veya sözlüğünü değiştirmez. Windows dışında doğrudan Chrome kısayolunu kullan.
+
+GÖRÜNÜM
+Eklenti simgesine tıklayınca küçük logolu kontrol paneli açılır. Dışarıya
+tıklayınca kapanır; bu hareket tek başına dikteyi durdurmaz. LiveChat
+sayfasında yalnızca dinleme veya metin hazırlanması sırasında sağ üstte
+kırmızı nokta görünür. İşlem bittiğinde nokta kaybolur.
+
+DOĞRULAMA SINIRI
+Chrome uzantısının panel/dikte/Enter akışı otomatik kontrol edilir. Bu
+Windows yönlendirmesi ve FastKeys ayarı kendi Windows bilgisayarında
+ilk kez denenmelidir; Linux'taki Chrome testleri Windows tuşunu doğrulamaz.
+
+RESMÎ KAYNAKLAR
+https://developer.chrome.com/docs/extensions/reference/api/commands
+https://support.microsoft.com/en-us/windows/hardware/input-devices/open-the-dictation-toolbar
+https://www.fastkeysautomation.com/documentation6/Shortcuts.html
+https://www.fastkeysautomation.com/documentation6/Send.html

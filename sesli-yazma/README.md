@@ -1,8 +1,10 @@
 # Hızır Bey Sesli Yazma
 
-Chrome / LiveChat için logolu Türkçe dikte uzantısı. Güncel sürüm: **0.1.1**.
+Chrome / LiveChat için logolu Türkçe dikte uzantısı. Güncel sürüm: **0.1.2**.
 
-**Alt + H → konuş → düzeltilmiş metin LiveChat yazı alanına eklenir → oku → Enter ile gönder.**
+**Win + H (Windows yönlendirmesiyle) → konuş → metni oku → Enter ile gönder.**
+
+Chrome’un doğrudan komutu Alt + H olarak kalır. Win tuşu Chrome uzantı komutlarında desteklenmediği için Windows’ta FastKeys veya paketteki ücretsiz AutoHotkey v2 yardımcısı gerekir. [Windows-Kisayol.txt](windows/Windows-Kisayol.txt) adımları içerir; yardımcı kendiliğinden kurulmaz veya başlatılmaz.
 
 ## Kurulum
 
@@ -12,15 +14,16 @@ Groq hesabını **Free** planında tut, ödeme yöntemi ekleme ve Developer plan
 
 ## Davranış
 
-- Başlatma/durdurma: Alt + H. Durdururken son ses parçası tamamlanır.
+- Başlatma/durdurma: Windows yönlendirmesi açıkken Win + H; doğrudan Chrome komutu Alt + H. Durdururken son ses parçası tamamlanır.
+- Sayfada geniş çubuk yoktur. Dinleme veya metin hazırlanması sürerken sağ üstte tıklamaları engellemeyen 10 px kırmızı nokta görünür; işlem bitince kaybolur. Logolu Başlat/Durdur, geri al ve ayarlar paneli yalnızca Chrome eklenti simgesine tıklanınca açılır. Paneli kapatmak dikteyi durdurmaz.
 - Ses, Whisper Large v3 (veya seçilirse Turbo) ile Türkçe yazıya çevrilir. Metin düzeltme açıksa Groq'taki GPT OSS 20B, kontrollü yazım/noktalama düzeltmesi yapar.
-- Tutar, sayı, olumsuzluk ve işlem türü değişimleri denetlenir. Şüpheli düzeltmede temel metin korunur ve durum çubuğunda uyarı gösterilir.
+- Tutar, sayı, olumsuzluk ve işlem türü değişimleri denetlenir. Şüpheli düzeltmede temel metin korunur ve eklenti panelinde uyarı gösterilir.
 - Gerçek LiveChat Lexical editörü hedeflenir. İç not modunda aktarım engellenir.
 - Eklenti mesaj göndermez. Kullanıcının normal Enter / Send eylemi sırasında mikrofon oturumu kapanır. İşlem sürerken Enter engellenir; hazır olduğunda yeniden basılır. İlk basış daha sonra kendiliğinden gönderime dönüşmez.
 - Mevcut yazıyı silmez. Kullanıcı alanı elle değiştirmişse geç gelen sonuç eklenmez; son metin popup'tan kurtarılabilir.
 - Sohbet, sekme veya sayfa değişiminde mikrofon kapanır. 90 saniye sessizlikte ve 15 dakikalık oturum sınırında kayıt sonlandırılır.
 - Bağlantı isteği başına 45 saniyeye kadar beklenir. Ağ hatası, zaman aşımı veya geçici sunucu hatasında toplam en fazla 3 deneme yapılır. Yeniden denemeler de yerel ücretsiz kotaya sayılır; 400/401/403/429 hataları tekrar edilmez.
-- Ses parçaları sırayla işlenir; tekrar teslim edilen aynı parça iki kez eklenmez. Bekleme durumu ve sıradaki ses süresi çubukta görünür. Bekleyen ses yaklaşık 106 saniyeye ulaştığında mikrofon kapanır; alınmış ses sırayla tamamlanır. Böylece RAM'deki bekleme yaklaşık iki dakikayla sınırlanır. İptal için Alt + H kullanılabilir. Kalıcı internet kesintisini ortadan kaldırmaz; denemeler tükenirse eldeki yazı korunarak hata gösterilir.
+- Ses parçaları sırayla işlenir; tekrar teslim edilen aynı parça iki kez eklenmez. Bekleme durumu ve sıradaki ses süresi eklenti panelinde görünür. Bekleyen ses yaklaşık 106 saniyeye ulaştığında mikrofon kapanır; alınmış ses sırayla tamamlanır. Böylece RAM'deki bekleme yaklaşık iki dakikayla sınırlanır. İptal için Alt + H kullanılabilir. Kalıcı internet kesintisini ortadan kaldırmaz; denemeler tükenirse eldeki yazı korunarak hata gösterilir.
 - Mikrofon güçlendirme varsayılan **%135**, aralık **%100–200**. Yüksek seslerde yumuşak sınırlama uygulanır. Konuşma eşiği **0,005** ile daha hassastır. Gürültü bastırma, yankı giderme ve tarayıcı otomatik kazancı istenir; destek donanıma/tarayıcıya bağlıdır. Güçlendirme konuşma algılamasından sonra uygulanır; tek başına ortam gürültüsünü konuşma saydırmaz.
 - Özel terim sözlüğü ve isteğe bağlı yerel düzeltme örnekleri vardır. Öğrenme açıkken, boş alanla başlayan aktif dikteyi Enter ile gönderirken yapılan düzenlemeler örnek olarak kaydedilir. Alt + H ile dinleme bitirildikten sonra yapılan düzenlemeler bu sürümde otomatik kaydedilmez.
 - Hafıza 10 MB UTF-8 sınırıyla yönetilir; sabit 1000 örnek kesintisi yoktur. Dışa aktarma ve içe aktarma yalnızca sözlük/düzeltmeler içindir.

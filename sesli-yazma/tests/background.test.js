@@ -49,6 +49,11 @@ test('only current-session offscreen results can reach the editor', async () => 
   assert.equal(messages.filter(x => x.type === 'voice:insert').length, 1);
   assert.equal((await send('audio:result', {sessionId: state.sessionId, segmentId: 1, text: 'Merhaba.', raw: 'merhaba'}, audio)).data, true);
   assert.equal(messages.filter(x => x.type === 'voice:insert').length, 1, 'Duplicate delivery must not insert twice');
+  await send('audio:meter', {sessionId: state.sessionId, recording: true, processing: false, buffered: false}, audio);
+  assert.equal((await send('ui:undo', {}, content)).ok, false, 'Page scripts cannot use privileged popup actions');
+  assert.equal((await send('ui:undo')).data, true);
+  assert.equal(messages.filter(x => x.type === 'voice:undo').length, 1);
+  assert.equal((await send('ui:undo')).ok, false, 'The same segment cannot be undone twice');
   await send('content:cancel', {sessionId: state.sessionId, reason: 'Görüşme değişti.'}, content);
   assert.equal((await send('audio:result', {sessionId: state.sessionId, text: 'Geç yanıt.', raw: 'geç yanıt'}, audio)).data, false);
   assert.equal(messages.filter(x => x.type === 'voice:insert').length, 1);

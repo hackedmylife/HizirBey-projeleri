@@ -17,10 +17,11 @@ SECRET = re.compile(rb'\b(?:gsk_[A-Za-z0-9]{20,}|ghp_[A-Za-z0-9]{20,}|sk-or-[A-Z
 def main():
     files = sorted(path for path in EXTENSION.rglob('*') if path.is_file())
     files += [ROOT / name for name in ('KURULUM.txt', 'README.md', 'SURUM-NOTLARI.md', 'TEST-RAPORU.md')]
+    files += [ROOT / 'windows' / name for name in ('Hizir-Bey-Win-H.ahk', 'Windows-Kisayol.txt')]
     for path in files:
         if not path.is_file():
             raise RuntimeError(f'Missing release document: {path.name}')
-        if path.suffix.lower() not in ('.js', '.json', '.html', '.css', '.png', '.md', '.txt'):
+        if path.suffix.lower() not in ('.js', '.json', '.html', '.css', '.png', '.md', '.txt', '.ahk'):
             raise RuntimeError(f'Unexpected extension asset: {path.name}')
         if re.search(r'(?:credential|token|api.?key|\.env)', path.name, re.I):
             raise RuntimeError(f'Credential-like file name: {path.name}')
