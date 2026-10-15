@@ -52,6 +52,9 @@ try {
   const toggle = async () => {const reply = await options.evaluate(() => chrome.runtime.sendMessage({type: 'ui:toggle'})); assert.equal(reply.ok, true, reply.error);};
   const listening = () => page.waitForFunction(() => {const host = document.getElementById('hizir-voice-host'); return !host.hidden && host.shadowRoot.getElementById('indicator').dataset.phase === 'listening';}, undefined, {timeout: 15000});
   await toggle(); await listening(); checks++;
+  const dotRect = await page.locator('#hizir-voice-host').boundingBox(), viewport = page.viewportSize();
+  assert.ok(Math.abs(dotRect.x + dotRect.width / 2 - viewport.width / 2) < 1);
+  assert.ok(Math.abs(dotRect.y + dotRect.height / 2 - viewport.height / 2) < 1); checks++;
   const sessionStore = () => options.evaluate(async () => {const reply = await chrome.runtime.sendMessage({type: 'ui:get'}); const status = reply.data.status; return {status, session: status.sessionId ? {id: status.sessionId} : null};});
   assert.equal((await sessionStore()).status.recording, true);
   let pending;
@@ -72,6 +75,8 @@ try {
   assert.equal(usage.speech, 2); assert.equal(usage.text, 1); checks++;
   assert.equal(await page.evaluate(() => globalThis.sentCount), 0); checks++;
   const readyUntil = Date.now() + 5000; while ((await sessionStore()).status.busy && Date.now() < readyUntil) await page.waitForTimeout(100);
+  const latency = (await sessionStore()).status.lastLatencyMs;
+  assert.ok(Number.isFinite(latency) && latency >= 26000, 'Transfer timing includes deliberate network delay'); checks++;
   await page.keyboard.press('Enter'); await page.waitForTimeout(400);
   assert.equal(await page.evaluate(() => globalThis.sentCount), 1); assert.equal((await sessionStore()).session, null); checks++;
   assert.equal(await page.locator('#hizir-voice-host').isVisible(), false); checks++;

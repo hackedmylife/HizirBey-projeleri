@@ -10,6 +10,8 @@ function render(state) {
   $('timer').textContent = `${String(Math.floor((state.seconds || 0) / 60)).padStart(2, '0')}:${String((state.seconds || 0) % 60).padStart(2, '0')}`;
   document.querySelectorAll('#meter i').forEach((item, i) => {item.style.height = `${4 + Math.round((state.level || 0) * (i === 2 ? 13 : i % 2 ? 9 : 5))}px`;});
   $('last').hidden = !state.lastText; $('lastText').value = state.lastText || '';
+  $('latency').hidden = !Number.isFinite(state.lastLatencyMs);
+  $('latency').textContent = Number.isFinite(state.lastLatencyMs) ? `Son aktarım: ${(state.lastLatencyMs / 1000).toLocaleString('tr-TR', {minimumFractionDigits: 1, maximumFractionDigits: 1})} sn` : '';
 }
 async function load() {const data = await ask({type: 'ui:get'}); render(data.status); $('shortcut').textContent = data.shortcut || 'Kısayol atanmalı'; $('setup').textContent = data.hasKey && data.settings.microphoneReady && data.settings.freeConfirmed && data.settings.cloudConsent ? 'Kurulum tamam' : 'Ayarları tamamla';}
 $('version').textContent = VERSION;

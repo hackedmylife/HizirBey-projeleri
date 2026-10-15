@@ -4,7 +4,7 @@ const $ = id => document.getElementById(id);
 let micStream = null, audioContext = null, micFrame = null, micTimer = null, toastTimer;
 const ask = async message => {const result = await chrome.runtime.sendMessage(message); if (!result?.ok) throw new Error(result?.error || 'Eklentiyle bağlantı kurulamadı.'); return result.data;};
 function toast(text, error = false) {clearTimeout(toastTimer); $('toast').textContent = text; $('toast').classList.toggle('error', error); $('toast').hidden = false; toastTimer = setTimeout(() => {$('toast').hidden = true;}, error ? 8000 : 4000);}
-function settings() {return {model: $('model').value, correction: $('correction').checked, freeConfirmed: $('freeConfirmed').checked, cloudConsent: $('cloudConsent').checked, deviceId: $('deviceId').value, sensitivity: Number($('sensitivity').value), micGain: Number($('micGain').value), pauseMs: Number($('pauseMs').value), learn: $('learn').checked};}
+function settings() {return {model: $('model').value, correction: $('correction').checked, fastMode: $('fastMode').checked, freeConfirmed: $('freeConfirmed').checked, cloudConsent: $('cloudConsent').checked, deviceId: $('deviceId').value, sensitivity: Number($('sensitivity').value), micGain: Number($('micGain').value), pauseMs: Number($('pauseMs').value), learn: $('learn').checked};}
 function renderMetadata(data) {
   const ready = data.hasKey && data.settings.freeConfirmed && data.settings.cloudConsent && data.settings.microphoneReady;
   $('setupChip').textContent = ready ? 'Kurulum tamam · LiveChat’e geçebilirsin' : 'Kurulum bekleniyor'; $('setupChip').classList.toggle('ready', ready);
@@ -28,7 +28,7 @@ async function load() {
     if (name === 'deviceId' && value && ![...control.options].some(x => x.value === value)) control.add(new Option('Kaydedilmiş mikrofon', value));
     control.value = value;
   }
-  for (const name of ['correction', 'freeConfirmed', 'cloudConsent', 'learn']) $(name).checked = data.settings[name];
+  for (const name of ['correction', 'fastMode', 'freeConfirmed', 'cloudConsent', 'learn']) $(name).checked = data.settings[name];
   $('terms').value = data.terms.join('\n');
   $('sensitivityValue').textContent = Number($('sensitivity').value).toFixed(3);
   $('micGainValue').textContent = `%${Math.round(Number($('micGain').value) * 100)}`;

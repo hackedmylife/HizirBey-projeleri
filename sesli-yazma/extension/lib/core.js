@@ -1,16 +1,18 @@
-export const VERSION = '0.1.3';
+export const VERSION = '0.1.4';
 export const MEMORY_LIMIT = 10_000_000;
 export const SPEECH_MODELS = ['whisper-large-v3', 'whisper-large-v3-turbo'];
 export const TEXT_MODEL = 'openai/gpt-oss-20b';
 export const STORE = Object.freeze({settings: 'hbVoice.settings.v1', credentials: 'hbVoice.credentials.v1', memory: 'hbVoice.memory.v1', usage: 'hbVoice.usage.v1', runtime: 'hbVoice.runtime.v1'});
-export const DEFAULTS = Object.freeze({model: SPEECH_MODELS[0], correction: true, freeConfirmed: false, cloudConsent: false, microphoneReady: false, deviceId: '', sensitivity: 0.005, micGain: 1.35, audioRevision: 2, pauseMs: 1000, learn: false});
+export const DEFAULTS = Object.freeze({model: SPEECH_MODELS[0], correction: true, fastMode: true, freeConfirmed: false, cloudConsent: false, microphoneReady: false, deviceId: '', sensitivity: 0.005, micGain: 1.35, audioRevision: 2, latencyRevision: 1, pauseMs: 500, learn: false});
 export const DEFAULT_TERMS = ['Hızır Bey', 'LiveChat', 'EveryMatrix', 'FastKeys'];
 
 export function cleanSettings(value = {}) {
   const sensitivity = !value.audioRevision && Number(value.sensitivity) === 0.008 ? DEFAULTS.sensitivity : Number(value.sensitivity);
+  const pauseMs = !value.latencyRevision && Number(value.pauseMs) === 1000 ? DEFAULTS.pauseMs : Number(value.pauseMs);
   return {
     model: SPEECH_MODELS.includes(value.model) ? value.model : DEFAULTS.model,
     correction: value.correction !== false,
+    fastMode: value.fastMode !== false,
     freeConfirmed: value.freeConfirmed === true,
     cloudConsent: value.cloudConsent === true,
     microphoneReady: value.microphoneReady === true,
@@ -18,7 +20,8 @@ export function cleanSettings(value = {}) {
     sensitivity: Math.max(0.002, Math.min(0.04, sensitivity || DEFAULTS.sensitivity)),
     micGain: Math.max(1, Math.min(2, Number(value.micGain) || DEFAULTS.micGain)),
     audioRevision: DEFAULTS.audioRevision,
-    pauseMs: Math.max(650, Math.min(1800, Number(value.pauseMs) || DEFAULTS.pauseMs)),
+    latencyRevision: DEFAULTS.latencyRevision,
+    pauseMs: Math.max(350, Math.min(1800, pauseMs || DEFAULTS.pauseMs)),
     learn: value.learn === true
   };
 }
@@ -91,14 +94,18 @@ export function addCorrection(memory, from, to, now = Date.now()) {
 }
 export function serializeBackup(memory) {return JSON.stringify(validateMemory(memory));}
 export function liveChatUrl(url) {try {const u = new URL(url); return u.protocol === 'https:' && ['my.livechatinc.com', 'my.livechat.com'].includes(u.hostname);} catch {return false;}}
+export class QuotaWaitError extends Error {
+  constructor(waitMs) {super('İstekler ücretsiz sınır için bekletildi. Kısa bir süre sonra tekrar dene.'); this.name = 'QuotaWaitError'; this.waitMs = waitMs;}
+}
 export function quotaReservation(usage, kind, seconds = 0, now = Date.now()) {
   const day = new Date(now).toISOString().slice(0, 10);
   const state = usage?.day === day ? {...usage, recent: (usage.recent || []).filter(x => now - x.at < 60_000)} : {day, speech: 0, text: 0, audio: 0, recent: []};
   if (!['speech', 'text'].includes(kind)) throw new Error('Geçersiz kota işlemi.');
   const perMinute = kind === 'speech' ? 18 : 25, perDay = kind === 'speech' ? 1800 : 900;
   if ((state[kind] || 0) >= perDay) throw new Error('Ücretsiz günlük uygulama sınırı doldu. Yeni kota dönemini bekle.');
-  if (state.recent.filter(x => x.kind === kind).length >= perMinute) throw new Error('İstekler ücretsiz sınır için bekletildi. Kısa bir süre sonra tekrar dene.');
   if (kind === 'speech' && (state.audio || 0) + seconds > 27_000) throw new Error('Ücretsiz ses kullanım sınırına ulaşıldı.');
+  const recent = state.recent.filter(x => x.kind === kind).sort((a, b) => a.at - b.at);
+  if (recent.length >= perMinute) throw new QuotaWaitError(Math.max(1, recent[recent.length - perMinute].at + 60_050 - now));
   state[kind] = (state[kind] || 0) + 1;
   state.audio = (state.audio || 0) + (kind === 'speech' ? Math.max(0, seconds) : 0);
   state.recent = [...state.recent, {at: now, kind}];

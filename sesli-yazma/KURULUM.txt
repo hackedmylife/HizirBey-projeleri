@@ -1,4 +1,4 @@
-HIZIR BEY SESLİ YAZMA — 0.1.3
+HIZIR BEY SESLİ YAZMA — 0.1.4
 
 1) ZIP'i bilgisayarında sabit bir klasöre çıkar. Örnek: Belgeler\HizirBey-Sesli-Yazma
 2) Chrome adres çubuğuna chrome://extensions yaz.
@@ -24,7 +24,7 @@ Chrome, Win tuşunu doğrudan uzantı kısayolu olarak kabul etmez.
 
 GÖRÜNÜM
 Sayfada geniş çubuk görünmez. Eklenti simgesine tıklayınca logolu küçük
-kontrol paneli açılır. Dinleme ve yazım sırasında sağ üstte yalnızca
+kontrol paneli açılır. Dinleme ve yazım sırasında ekranın tam ortasında tek bir
 kırmızı nokta görünür. Paneli kapatmak tek başına mikrofonu durdurmaz.
 
 KULLANIM
@@ -52,7 +52,13 @@ Türkçe dikteyi başlat/durdur alanını ALT + H olarak ayarla. Başka bir
 eklenti aynı kısayolu kullanıyorsa onun atamasını değiştir.
 
 GECİKME VE MİKROFON
-- Yavaş bağlantıda ses sıraya alınır. Geçici hatalarda 45 saniyelik yanıt
+- Cümle sonu bekleme artık 0,5 saniye. İstekler arasındaki sabit 3,5
+  saniyelik ara kaldırıldı. Dakikalık uygulama sınırında sıra beklenir.
+- Hızlı aktarım varsayılan açık: dil düzeltmesi 2,5 saniyede yetişmezse
+  denetlenmiş temel metin uyarıyla yazılır. Daha uzun düzeltme beklemek
+  istersen bu ayarı kapat; bütçe 10 saniyeye çıkar. Bu süreler ses tanıma
+  ve ağ gecikmesini içermez. Son aktarım süresi küçük panelde görünür.
+- Yavaş bağlantıda ses sıraya alınır. Ses tanımada 45 saniyelik yanıt
   süresiyle en fazla 3 deneme yapılır; yeniden denemeler kotaya dahildir.
 - “Bağlantı bekleniyor” sırasında metni tekrar dikte etmene gerek yoktur.
   İşlem tamamlanınca oku ve Enter'a bas. Beklerken basılan Enter sonradan
@@ -68,8 +74,8 @@ GECİKME VE MİKROFON
 - Yazılımsal güçlendirme, bilgisayarının sistem mikrofon sesini değiştirmez.
 
 ÜCRETSİZ KOTA
-Groq Free planındaki ses ve metin sınırları geçerlidir. Kota dolunca
-eklenti uyarır ve durur; ücretli sağlayıcıya geçmez veya hesap yükseltmez.
+Groq Free planındaki ses ve metin sınırları geçerlidir. Dakikalık yerel
+sınırda bekler; günlük veya sağlayıcı kotası dolunca uyarır ve durur; ücretli sağlayıcıya geçmez veya hesap yükseltmez.
 Bu uygulama hesabın Free planını anahtardan otomatik doğrulayamaz.
 
 GÜNCELLEME

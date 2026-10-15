@@ -1,7 +1,7 @@
 (() => {
   if (document.getElementById('hizir-voice-host')) return;
   const host = document.createElement('div'); host.id = 'hizir-voice-host'; host.hidden = true;
-  host.style.cssText = 'all:initial!important;position:fixed!important;top:16px!important;right:16px!important;width:10px!important;height:10px!important;z-index:2147483001!important;pointer-events:none!important;display:none!important';
+  host.style.cssText = 'all:initial!important;position:fixed!important;top:50%!important;left:50%!important;transform:translate(-50%,-50%)!important;width:10px!important;height:10px!important;z-index:2147483001!important;pointer-events:none!important;display:none!important';
   const shadow = host.attachShadow({mode: 'open'});
   shadow.innerHTML = `<style>:host{color-scheme:dark}.dot{display:block;width:10px;height:10px;border-radius:50%;background:#ef4444;box-shadow:0 0 0 2px #171a21,0 0 9px #ef444450}</style><span class="dot" id="indicator" role="img" aria-label="Hızır Bey sesli yazma etkin"></span>`;
   document.documentElement.append(host);

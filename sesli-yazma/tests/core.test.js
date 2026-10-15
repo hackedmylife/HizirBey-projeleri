@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {cleanSettings, basicText, guardCorrection, emptyMemory, validateMemory, addCorrection, serializeBackup, relevantExamples, quotaReservation, liveChatUrl, MEMORY_LIMIT, textBytes} from '../extension/lib/core.js';
+import {cleanSettings, basicText, guardCorrection, emptyMemory, validateMemory, addCorrection, serializeBackup, relevantExamples, quotaReservation, QuotaWaitError, liveChatUrl, MEMORY_LIMIT, textBytes} from '../extension/lib/core.js';
 
 test('only supported models and explicit free consent survive configuration', () => {
   const settings = cleanSettings({model: 'paid-unlisted-model', freeConfirmed: 'true', cloudConsent: true, sensitivity: 100, pauseMs: 0});
@@ -16,6 +16,15 @@ test('audio defaults migrate while custom choices and Free consent are preserved
 test('Turkish capitalization and local terms preserve financial text', () => {
   assert.equal(basicText('istanbul için 500 TL yatırılmadı , henüz bekliyoruz', []), 'İstanbul için 500 TL yatırılmadı, henüz bekliyoruz.');
   assert.equal(basicText('livechat açık', ['LiveChat']), 'LiveChat açık.');
+});
+test('latency defaults migrate while deliberate pauses and fast-mode choices survive', () => {
+  assert.equal(cleanSettings().pauseMs, 500);
+  const migrated = cleanSettings({pauseMs: 1000, microphoneReady: true, freeConfirmed: true, cloudConsent: true});
+  assert.equal(migrated.pauseMs, 500); assert.equal(migrated.latencyRevision, 1); assert.equal(migrated.fastMode, true);
+  assert.equal(migrated.microphoneReady, true); assert.equal(migrated.freeConfirmed, true); assert.equal(migrated.cloudConsent, true);
+  assert.equal(cleanSettings({pauseMs: 750}).pauseMs, 750);
+  assert.equal(cleanSettings({pauseMs: 1000, latencyRevision: 1, fastMode: false}).pauseMs, 1000);
+  assert.equal(cleanSettings({fastMode: false}).fastMode, false);
 });
 test('critical negative meaning cannot be inverted', () => {
   assert.equal(guardCorrection('Çekiminiz henüz onaylanmadı.', 'Çekiminiz onaylandı.').ok, false);
@@ -62,4 +71,13 @@ test('local free quota fails closed and resets by day', () => {
 test('host access is limited to the actual LiveChat hosts', () => {
   assert.equal(liveChatUrl('https://my.livechatinc.com/chats/demo'), true);
   for (const url of ['https://my.livechatinc.com.attacker.test/', 'http://my.livechat.com/', 'https://evil.test/']) assert.equal(liveChatUrl(url), false);
+});
+test('burst quota waits for the oldest rolling slot without weakening hard limits', () => {
+  const now = Date.UTC(2026, 9, 15, 10); let usage;
+  for (let i = 0; i < 18; i++) usage = quotaReservation(usage, 'speech', 1, now + i * 100);
+  assert.throws(() => quotaReservation(usage, 'speech', 1, now + 2000), error => error instanceof QuotaWaitError && error.waitMs === 58050);
+  assert.equal(usage.speech, 18);
+  assert.equal(quotaReservation(usage, 'speech', 1, now + 60050).speech, 19);
+  assert.throws(() => quotaReservation({...usage, speech: 1800}, 'speech', 1, now + 2000), error => !(error instanceof QuotaWaitError) && /günlük/.test(error.message));
+  assert.throws(() => quotaReservation({...usage, audio: 27000}, 'speech', 1, now + 2000), error => !(error instanceof QuotaWaitError) && /ses kullanım/.test(error.message));
 });

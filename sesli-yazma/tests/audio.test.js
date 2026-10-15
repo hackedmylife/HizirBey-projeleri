@@ -37,3 +37,19 @@ test('segment callbacks can safely stop and flush without duplicating audio', ()
   let calls = 0; const s = new Segmenter({sampleRate: 1000, onSegment() {calls++; s.flush();}});
   s.push(new Float32Array(500).fill(0.04)); s.flush(); assert.equal(calls, 1);
 });
+test('default half-second pause emits without waiting a full second', () => {
+  const segments = [], s = new Segmenter({sampleRate: 1000, onSegment: (samples, meta) => segments.push({samples, meta})});
+  s.push(new Float32Array(400).fill(0.03));
+  for (let i = 0; i < 4; i++) s.push(new Float32Array(100));
+  assert.equal(segments.length, 0);
+  s.push(new Float32Array(100));
+  assert.equal(segments.length, 1); assert.equal(segments[0].meta.silenceMs, 500); assert.equal(segments[0].samples.length, 650);
+});
+test('long speech splits at a short natural pause or an eight-second maximum', () => {
+  const segments = [], s = new Segmenter({sampleRate: 1000, onSegment: x => segments.push(x)});
+  for (let i = 0; i < 40; i++) s.push(new Float32Array(100).fill(0.03));
+  assert.equal(segments.length, 0);
+  s.push(new Float32Array(250)); assert.equal(segments.length, 1); assert.equal(segments[0].length, 4250);
+  for (let i = 0; i < 80; i++) s.push(new Float32Array(100).fill(0.03));
+  assert.equal(segments.length, 2); assert.equal(segments[1].length, 8000);
+});

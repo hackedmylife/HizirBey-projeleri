@@ -1,8 +1,13 @@
-import test from 'node:test';
+import test, {afterEach} from 'node:test';
 import assert from 'node:assert/strict';
 const id = 'audio-test', origin = `chrome-extension://${id}/`, events = [], worklets = [], tracks = [], contexts = [];
-let listener, waiting = null, unsafeSpeech = false;
-globalThis.chrome = {runtime: {id, getURL: path => origin + path, onMessage: {addListener(fn) {listener = fn;}}, async sendMessage(message) {events.push(message); return {ok: true, data: message.type === 'audio:examples' ? [] : true};}}};
+let listener, waiting = null, unsafeSpeech = false, quotaWait = null, correctionWait = null, latestSession;
+const fetchEvents = [];
+globalThis.chrome = {runtime: {id, getURL: path => origin + path, onMessage: {addListener(fn) {listener = fn;}}, async sendMessage(message) {
+  events.push(message);
+  if (message.type === 'audio:reserve' && message.kind === 'speech' && quotaWait?.sessionId === message.sessionId && quotaWait.remaining-- > 0) return {ok: true, data: {waitMs: quotaWait.waitMs}};
+  return {ok: true, data: message.type === 'audio:examples' ? [] : true};
+}}};
 Object.defineProperty(globalThis, 'navigator', {configurable: true, value: {mediaDevices: {async getUserMedia() {const track = {stopped: false, stop() {this.stopped = true;}}; tracks.push(track); return {getTracks: () => [track]};}}}});
 globalThis.AudioContext = class {
   constructor() {this.state = 'running'; this.sampleRate = 16000; this.audioWorklet = {async addModule() {}}; this.destination = {}; contexts.push(this);}
@@ -13,15 +18,23 @@ globalThis.AudioContext = class {
 };
 globalThis.AudioWorkletNode = class {constructor() {this.port = {}; worklets.push(this);} connect() {} disconnect() {}};
 globalThis.fetch = async url => {
+  fetchEvents.push(url);
   if (waiting) await new Promise(resolve => {waiting.resolve = resolve;});
+  if (correctionWait && url.endsWith('/chat/completions')) await new Promise(resolve => {correctionWait.resolve = resolve;});
   const data = url.endsWith('/audio/transcriptions') ? {text: unsafeSpeech ? 'Erişim ve Altyazı M.K.' : 'merhaba çekim henüz onaylanmadı', segments: [{avg_logprob: -0.1, no_speech_prob: 0.01, compression_ratio: 1.1}]} : {choices: [{message: {content: '{"text":"Merhaba. Çekim henüz onaylanmadı."}'}}]};
   return new Response(JSON.stringify(data), {status: 200, headers: {'Content-Type': 'application/json'}});
 };
 await import('../extension/offscreen.js');
-const send = (type, sessionId, config) => new Promise(resolve => {listener({target: 'offscreen', type, sessionId, config}, {id, url: origin + 'background.js'}, resolve);});
+const send = (type, sessionId, config) => new Promise(resolve => {if (type === 'capture:start') latestSession = sessionId; listener({target: 'offscreen', type, sessionId, config}, {id, url: origin + 'background.js'}, resolve);});
+afterEach(async () => {
+  await send('capture:cancel', latestSession);
+  const releaseSpeech = waiting?.resolve, releaseCorrection = correctionWait?.resolve;
+  waiting = null; correctionWait = null; quotaWait = null; unsafeSpeech = false;
+  releaseSpeech?.(); releaseCorrection?.();
+});
 const config = {key: 'test-only-placeholder', model: 'whisper-large-v3', terms: [], correction: true, sensitivity: 0.008, pauseMs: 750};
 const push = (count, level) => {for (let i = 0; i < count; i++) worklets.at(-1).port.onmessage?.({data: new Float32Array(2048).fill(level)});};
-async function until(fn) {const deadline = Date.now() + 1000; while (!fn() && Date.now() < deadline) await new Promise(resolve => setTimeout(resolve, 5)); assert.ok(fn());}
+async function until(fn, timeout = 1000) {const deadline = Date.now() + timeout; while (!fn() && Date.now() < deadline) await new Promise(resolve => setTimeout(resolve, 5)); assert.ok(fn());}
 test('offscreen VAD to transcription and correction produces one ordered result', async () => {
   assert.equal((await send('capture:start', 'one', config)).ok, true);
   push(4, 0.04); push(7, 0);
@@ -58,7 +71,9 @@ test('hallucinated subtitle text never reaches the editor and closes the microph
 test('long provider delay buffers past the old four-segment limit and pauses capture safely', async () => {
   waiting = {};
   await send('capture:start', 'backlog', config);
-  for (let n = 0; n < 9; n++) {push(110, 0.04); await new Promise(resolve => setTimeout(resolve, 0));}
+  // Real worklet messages yield between PCM frames; let the capture-stop
+  // microtask run instead of synchronously injecting 14 seconds at a time.
+  for (let n = 0; n < 990; n++) {push(1, 0.04); await Promise.resolve();}
   await until(() => Boolean(waiting.resolve));
   const paused = events.filter(x => x.type === 'audio:meter' && x.sessionId === 'backlog' && x.pausedForBacklog).at(-1);
   assert.ok(paused); assert.equal(paused.recording, false); assert.ok(paused.pendingSeconds >= 106 && paused.pendingSeconds <= 121);
@@ -68,4 +83,45 @@ test('long provider delay buffers past the old four-segment limit and pauses cap
   await send('capture:cancel', 'backlog'); const release = waiting.resolve; waiting = null; release();
   await new Promise(resolve => setTimeout(resolve, 20));
   assert.equal(events.some(x => x.type === 'audio:result' && x.sessionId === 'backlog'), false);
+});
+test('consecutive utterances transfer without an artificial 3.5-second request gap', async () => {
+  await send('capture:start', 'burst', {...config, correction: false, pauseMs: 500});
+  const started = Date.now();
+  push(4, 0.04); push(4, 0); push(4, 0.04); push(4, 0);
+  await until(() => events.filter(x => x.type === 'audio:result' && x.sessionId === 'burst').length === 2);
+  const results = events.filter(x => x.type === 'audio:result' && x.sessionId === 'burst');
+  assert.deepEqual(results.map(x => x.segmentId), [1, 2]); assert.ok(Date.now() - started < 1000);
+  assert.ok(results.every(x => Number.isFinite(x.spokenAt)));
+  await send('capture:cancel', 'burst');
+});
+test('a rolling-minute quota wait resumes the same audio once a slot opens', async () => {
+  quotaWait = {sessionId: 'quota-wait', waitMs: 60, remaining: 1};
+  const count = fetchEvents.length;
+  await send('capture:start', 'quota-wait', {...config, correction: false}); push(4, 0.04); push(7, 0);
+  await until(() => events.some(x => x.sessionId === 'quota-wait' && x.waitingForQuota));
+  assert.equal(fetchEvents.length, count);
+  await until(() => events.some(x => x.type === 'audio:result' && x.sessionId === 'quota-wait'));
+  assert.equal(fetchEvents.length, count + 1);
+  await send('capture:cancel', 'quota-wait'); quotaWait = null;
+});
+test('canceling a quota wait sends no provider request or stale text', async () => {
+  quotaWait = {sessionId: 'quota-cancel', waitMs: 1000, remaining: 1}; const count = fetchEvents.length;
+  await send('capture:start', 'quota-cancel', config); push(4, 0.04); push(7, 0);
+  await until(() => events.some(x => x.sessionId === 'quota-cancel' && x.waitingForQuota));
+  await send('capture:cancel', 'quota-cancel'); await new Promise(resolve => setTimeout(resolve, 20));
+  assert.equal(fetchEvents.length, count); assert.equal(events.some(x => x.type === 'audio:result' && x.sessionId === 'quota-cancel'), false);
+  quotaWait = null;
+});
+test('fast mode bounds stalled correction and ignores its late response', async () => {
+  correctionWait = {};
+  await send('capture:start', 'slow-correction', {...config, fastMode: true}); push(4, 0.04); push(7, 0);
+  await until(() => Boolean(correctionWait.resolve)); const started = Date.now();
+  await until(() => events.some(x => x.type === 'audio:result' && x.sessionId === 'slow-correction'), 4500);
+  const results = events.filter(x => x.type === 'audio:result' && x.sessionId === 'slow-correction');
+  assert.equal(results.length, 1); assert.equal(results[0].text, 'Merhaba çekim henüz onaylanmadı.');
+  assert.match(results[0].warning, /dil düzeltmesi yetişmedi/); assert.ok(Date.now() - started < 4000);
+  const release = correctionWait.resolve; correctionWait = null; release();
+  await new Promise(resolve => setTimeout(resolve, 30));
+  assert.equal(events.filter(x => x.type === 'audio:result' && x.sessionId === 'slow-correction').length, 1);
+  await send('capture:cancel', 'slow-correction');
 });

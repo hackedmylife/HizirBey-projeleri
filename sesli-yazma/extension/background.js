@@ -1,4 +1,4 @@
-import {STORE, cleanSettings, emptyMemory, validateMemory, addCorrection, relevantExamples, serializeBackup, textBytes, MEMORY_LIMIT, liveChatUrl, quotaReservation, TEXT_MODEL} from './lib/core.js';
+import {STORE, cleanSettings, emptyMemory, validateMemory, addCorrection, relevantExamples, serializeBackup, textBytes, MEMORY_LIMIT, liveChatUrl, quotaReservation, QuotaWaitError, TEXT_MODEL} from './lib/core.js';
 import {request} from './lib/groq.js';
 import {dictationTextRisk, REJECTED_DICTATION} from './lib/safety.js';
 
@@ -84,7 +84,7 @@ async function start(tabId) {
   const mine = session;
   memoryCache = await getMemory();
   if (session !== mine) return view();
-  await publish({phase: 'starting', recording: false, busy: true, canUndo: false, warning: '', lastText: '', lastRaw: '', message: 'Mikrofon açılıyor…', startedAt: mine.startedAt, level: 0});
+  await publish({phase: 'starting', recording: false, busy: true, canUndo: false, warning: '', lastText: '', lastRaw: '', lastLatencyMs: null, message: 'Mikrofon açılıyor…', startedAt: mine.startedAt, level: 0});
   try {
     await ensureOffscreen();
     if (session?.id !== id) return view();
@@ -104,7 +104,9 @@ function serializedToggle(tabId) {const operation = toggleChain.then(() => toggl
 async function reserve(kind, seconds) {
   const operation = ledgerChain.then(async () => {
     const usage = (await chrome.storage.local.get(STORE.usage))[STORE.usage];
-    const next = quotaReservation(usage, kind, seconds);
+    let next;
+    try {next = quotaReservation(usage, kind, seconds);}
+    catch (error) {if (error instanceof QuotaWaitError) return {waitMs: error.waitMs}; throw error;}
     await chrome.storage.local.set({[STORE.usage]: next});
     return true;
   });
@@ -195,7 +197,7 @@ async function handle(message, sender) {
     if (message.type === 'audio:meter') {
       const pendingSeconds = Math.max(0, Math.ceil(Number(message.pendingSeconds) || 0));
       const waiting = message.waiting && message.processing;
-      const text = message.pausedForBacklog ? `Mikrofon bekleme nedeniyle kapatıldı · ${pendingSeconds} sn ses sırayla tamamlanıyor. İptal için Alt + H.` : waiting ? `Bağlantı bekleniyor · ${Math.min(3, message.attempt || 1)}/3 deneme · ${pendingSeconds} sn ses sırada` : message.processing ? 'Metin hazırlanıyor…' : message.buffered ? 'Seni dinliyorum…' : 'Konuşabilirsin · Hazır metni Enter ile gönder';
+      const text = message.pausedForBacklog ? `Mikrofon bekleme nedeniyle kapatıldı · ${pendingSeconds} sn ses sırayla tamamlanıyor. İptal için Alt + H.` : waiting ? message.waitingForQuota ? `Ücretsiz istek kotası bekleniyor · ${pendingSeconds} sn ses sırada. İptal için Alt + H.` : `Bağlantı bekleniyor · ${Math.min(3, message.attempt || 1)}/3 deneme · ${pendingSeconds} sn ses sırada` : message.processing ? 'Metin hazırlanıyor…' : message.buffered ? 'Seni dinliyorum…' : 'Konuşabilirsin · Hazır metni Enter ile gönder';
       return publish({phase: message.processing ? (message.recording ? waiting ? 'waiting' : 'processing' : 'finishing') : message.buffered ? 'listening' : 'ready', recording: message.recording, busy: message.processing || message.buffered, level: message.level, seconds: message.seconds, pendingSeconds, message: text}, false);
     }
     if (message.type === 'audio:result') {
@@ -212,7 +214,8 @@ async function handle(message, sender) {
       const response = await tellTab('voice:insert', {data});
       if (session !== mine) return false;
       if (!response?.ok) {await cancel(response?.error || 'Metin aktarılmadı. Son dikteyi eklenti penceresinden kopyalayabilirsin.', 'error'); return false;}
-      await publish({canUndo: true}, false);
+      const lastLatencyMs = Number.isFinite(message.spokenAt) && message.spokenAt > 0 ? Math.max(0, Date.now() - message.spokenAt) : null;
+      await publish({canUndo: true, lastLatencyMs}, false);
       return true;
     }
     if (message.type === 'audio:error') {await cancel(message.error || 'Dikte durduruldu.', 'error'); return true;}

@@ -1,3 +1,15 @@
+# 0.1.4 — Daha kısa bekleme ve ekran ortasında kırmızı nokta
+
+15 Ekim 2026
+
+- Aktif dinleme ve metin hazırlamada tek 10 px kırmızı nokta tam ekran merkezindedir. Ekran boyutu değişince merkezde kalır; tıklamaları engellemez. Kontroller yalnızca eklenti simgesindedir.
+- Varsayılan cümle sonu duraklama 1 saniyeden 0,5 saniyeye düşürüldü. Uzun konuşma kısa doğal duraklarda daha erken, en geç 8 saniyede parçalanır.
+- Ses istekleri arasındaki sabit 3,5 saniyelik ara kaldırıldı. Mevcut dakikalık uygulama sınırında sıra açılana kadar iptal edilebilir bekleme uygulanır; ek istek sayılmaz. Günlük sınırlar ve sağlayıcının 429 cevabında durma korunur.
+- Yeni Hızlı aktarım ayarı varsayılan açık. Dil düzeltmesine toplam 2,5 saniye bütçe verilir; yetişmezse yalnızca güvenlik denetiminden geçmiş temel metin uyarıyla aktarılır. Ayar kapatılırsa bütçe 10 saniyedir. Dil düzeltme isteği tekrar edilmez. Ses tanımanın ağ/yeniden deneme politikası ayrıdır.
+- Geç tamamlanan veya iptal edilmiş düzeltme mevcut metni değiştirmez. Ses tanıma modeli, MK/altyazı koruması, tutar/olumsuzluk denetimleri ve Enter ile kullanıcı gönderimi korunur.
+- Küçük panelde son konuşma parçasının bitişinden editöre kadar yaklaşık aktarım süresi gösterilir. Gerçek sağlayıcı/Workspace gecikmesi için sabit süre garantisi yoktur.
+- Anahtar, mikrofon izni, sözlük ve öğrenme tercihleri korunur. Önceki varsayılan 1 saniyelik bekleme 0,5 saniyeye taşınır; özel beklemeler korunur.
+
 # 0.1.3 — Şüpheli diktenin yazı alanına aktarılmasını engelleme
 
 15 Ekim 2026

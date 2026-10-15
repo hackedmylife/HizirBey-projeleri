@@ -45,7 +45,9 @@ test('only current-session offscreen results can reach the editor', async () => 
   const state = (await send('ui:get')).data.status;
   assert.equal((await send('audio:result', {sessionId: state.sessionId, text: 'bad', raw: 'bad'}, content)).ok, true);
   assert.equal(messages.filter(x => x.type === 'voice:insert').length, 0);
-  assert.equal((await send('audio:result', {sessionId: state.sessionId, segmentId: 1, text: 'Merhaba.', raw: 'merhaba'}, audio)).data, true);
+  assert.equal((await send('audio:result', {sessionId: state.sessionId, segmentId: 1, text: 'Merhaba.', raw: 'merhaba', spokenAt: Date.now() - 1250}, audio)).data, true);
+  const latency = (await send('ui:get')).data.status.lastLatencyMs;
+  assert.ok(latency >= 1250 && latency < 2250);
   assert.equal(messages.filter(x => x.type === 'voice:insert').length, 1);
   assert.equal((await send('audio:result', {sessionId: state.sessionId, segmentId: 1, text: 'Merhaba.', raw: 'merhaba'}, audio)).data, true);
   assert.equal(messages.filter(x => x.type === 'voice:insert').length, 1, 'Duplicate delivery must not insert twice');
@@ -61,8 +63,10 @@ test('only current-session offscreen results can reach the editor', async () => 
 test('audio setting upgrades preserve saved credentials and personal dictionary', async () => {
   const key = local[STORE.credentials].key, memory = structuredClone(local[STORE.memory]);
   local[STORE.settings] = {...local[STORE.settings], sensitivity: 0.008}; delete local[STORE.settings].audioRevision;
+  local[STORE.settings].pauseMs = 1000; delete local[STORE.settings].latencyRevision;
   const settings = (await send('ui:get')).data.settings;
   assert.equal(settings.sensitivity, 0.005); assert.equal(settings.micGain, 1.35);
+  assert.equal(settings.pauseMs, 500); assert.equal(settings.fastMode, true);
   await send('ui:save', {settings});
   assert.equal(local[STORE.credentials].key, key); assert.deepEqual(local[STORE.memory], memory);
 });
@@ -80,6 +84,17 @@ test('backup import cannot replace credentials or enable a paid provider', async
   assert.equal((await send('ui:import', {data})).ok, true);
   assert.equal(local[STORE.credentials].key, key); assert.equal(local[STORE.memory].credentials, undefined);
   const exported = await send('ui:export'); assert.equal(exported.data.includes(key), false); assert.equal(exported.data.includes('paid'), false);
+});
+test('minute quota reports a resumable wait without consuming an extra request', async () => {
+  const previous = structuredClone(local[STORE.usage]);
+  delete local[STORE.usage]; await send('content:toggle', {}, content);
+  const sessionId = (await send('ui:get')).data.status.sessionId;
+  for (let i = 0; i < 18; i++) assert.equal((await send('audio:reserve', {sessionId, kind: 'speech', seconds: 1}, audio)).data, true);
+  const reply = await send('audio:reserve', {sessionId, kind: 'speech', seconds: 1}, audio);
+  assert.equal(reply.ok, true); assert.ok(reply.data.waitMs > 58000 && reply.data.waitMs <= 60050);
+  assert.equal(local[STORE.usage].speech, 18); assert.equal(local[STORE.usage].audio, 18);
+  await send('content:cancel', {sessionId}, content);
+  if (previous) local[STORE.usage] = previous; else delete local[STORE.usage];
 });
 test('without explicit Free and cloud consent no new capture starts', async () => {
   await send('ui:save', {settings: {freeConfirmed: false, cloudConsent: false}});
