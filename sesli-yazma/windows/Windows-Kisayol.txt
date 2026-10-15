@@ -6,9 +6,16 @@ komutuna yönlendirilir. Mesaj gönderme hâlâ yalnızca senin Enter'ınla olur
 
 SEÇENEK 1 — MEVCUT FASTKEYS İLE
 1) FastKeys > Shortcuts / Kısayollar bölümüne yeni kayıt ekle.
-2) Tür: Send / Gönder. Gönderilecek tuş: !h
-   ! karakteri Alt anlamındadır. Raw Text / Ham metin kapalı olmalı.
-   Özel tuş/modifier tanıma kapalıysa aç; !h yazı olarak eklenmemelidir.
+2) Tür: Command / Komut. Komut alanına aşağıdaki beş satırı yapıştır:
+
+   KeyWait, h
+   KeyWait, LWin
+   KeyWait, RWin
+   IfWinActive, ahk_exe chrome.exe
+       Send, !h
+
+   Bu, FastKeys'in belgelediği Command sözdizimidir. Yalnızca yeni
+   kısayola aittir; mevcut metin şablonlarını veya genel ayarları değiştirmez.
 3) Kısayol alanına Win + H ata (gelişmiş gösterim: #h).
 4) More options / Diğer seçenekler > Context window / Bağlam penceresi:
    ahk_exe chrome.exe
@@ -44,4 +51,4 @@ RESMÎ KAYNAKLAR
 https://developer.chrome.com/docs/extensions/reference/api/commands
 https://support.microsoft.com/en-us/windows/hardware/input-devices/open-the-dictation-toolbar
 https://www.fastkeysautomation.com/documentation6/Shortcuts.html
-https://www.fastkeysautomation.com/documentation6/Send.html
+https://www.fastkeysautomation.com/documentation6/Command.html
