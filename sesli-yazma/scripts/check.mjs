@@ -9,7 +9,7 @@ const manifest = JSON.parse(await readFile(path.join(root, 'extension/manifest.j
 if (manifest.commands['toggle-dictation'].suggested_key.default !== 'Alt+H') throw new Error('Alt+H contract broken');
 const required = [manifest.background.service_worker, manifest.options_page, manifest.action.default_popup, ...Object.values(manifest.icons), ...manifest.content_scripts.flatMap(x => x.js)];
 for (const file of required) await access(path.join(root, 'extension', file));
-if (manifest.host_permissions.join(',') !== 'https://api.groq.com/*') throw new Error('Unexpected API origin');
+if (manifest.host_permissions.join(',') !== 'https://api.groq.com/*,https://my.livechatinc.com/*,https://my.livechat.com/*') throw new Error('Unexpected host origin');
 for (const file of source.filter(x => /\.(?:js|json|html|css)$/.test(x))) {
   const text = await readFile(file, 'utf8');
   if (/\b(?:gsk_[A-Za-z0-9]{20,}|ghp_[A-Za-z0-9]{20,}|sk-or-[A-Za-z0-9]{20,})\b/.test(text)) throw new Error(`Possible literal credential: ${file}`);

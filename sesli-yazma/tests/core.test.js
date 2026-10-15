@@ -38,6 +38,12 @@ test('memory has no 1000-record cutoff and correction examples stay relevant', (
   const examples = relevantExamples('çekim talebiniz bekliyor', [{from: 'çekim talebiniz bekliyor', to: 'Çekim talebiniz bekliyor.'}, {from: 'havanın rengi çok güzel', to: 'Havanın rengi çok güzel.'}]);
   assert.equal(examples.length, 1);
 });
+test('a near-capacity JSON backup can be imported under the same 10 MB limit', () => {
+  const memory = {schema: 1, terms: [], pairs: Array.from({length: 1240}, (_, i) => ({from: 'x'.repeat(4000), to: 'y'.repeat(4000), at: i}))};
+  const backup = serializeBackup(memory);
+  assert.ok(new TextEncoder().encode(backup).byteLength <= MEMORY_LIMIT);
+  assert.equal(validateMemory(JSON.parse(backup)).pairs.length, 1240);
+});
 test('local free quota fails closed and resets by day', () => {
   const at = Date.UTC(2026, 9, 15, 10); let usage;
   for (let i = 0; i < 18; i++) usage = quotaReservation(usage, 'speech', 3, at);

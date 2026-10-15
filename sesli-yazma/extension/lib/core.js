@@ -86,7 +86,7 @@ export function addCorrection(memory, from, to, now = Date.now()) {
   while (result.pairs.length && textBytes(result) > MEMORY_LIMIT) result.pairs.shift();
   return result;
 }
-export function serializeBackup(memory) {return JSON.stringify({...validateMemory(memory), exportedAt: new Date().toISOString()}, null, 2);}
+export function serializeBackup(memory) {return JSON.stringify(validateMemory(memory));}
 export function liveChatUrl(url) {try {const u = new URL(url); return u.protocol === 'https:' && ['my.livechatinc.com', 'my.livechat.com'].includes(u.hostname);} catch {return false;}}
 export function quotaReservation(usage, kind, seconds = 0, now = Date.now()) {
   const day = new Date(now).toISOString().slice(0, 10);

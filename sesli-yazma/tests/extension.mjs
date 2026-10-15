@@ -45,7 +45,7 @@ try {
   page = await context.newPage(); await page.goto('https://my.livechatinc.com/chats/DEMOCHAT01');
   await page.bringToFront();
   await page.locator('#hizir-voice-host').getByRole('button', {name: 'Başlat', exact: true}).click();
-  await page.waitForFunction(() => document.querySelector('#hizir-voice-host').shadowRoot.getElementById('bar').dataset.live === 'true', {timeout: 15000}); checks++;
+  await page.waitForFunction(() => {const root = document.querySelector('#hizir-voice-host').shadowRoot; if(root.getElementById('bar').dataset.error === 'true') throw new Error(root.getElementById('message').textContent); return root.getElementById('bar').dataset.live === 'true';}, undefined, {timeout: 15000}); checks++;
   const sessionStore = () => worker.evaluate(async () => (await chrome.storage.session.get('hbVoice.runtime.v1'))['hbVoice.runtime.v1']);
   assert.equal((await sessionStore()).status.recording, true);
   let pending;
@@ -77,6 +77,7 @@ try {
 } catch (error) {
   const state = await worker?.evaluate(async () => (await chrome.storage.session.get('hbVoice.runtime.v1'))['hbVoice.runtime.v1']).catch(() => null);
   console.error('MV3 QA diagnostics:', JSON.stringify({checks, state, errors}));
-  if (page) console.error('Toolbar:', await page.locator('#hizir-voice-host').innerText().catch(() => 'unavailable'));
+  if (page) console.error('Toolbar:', await page.locator('#hizir-voice-host').evaluate(x => x.shadowRoot.getElementById('message').textContent).catch(() => 'unavailable'));
+  console.error('Setup:', await worker?.evaluate(async () => (await chrome.storage.local.get('hbVoice.settings.v1'))['hbVoice.settings.v1']).catch(() => 'unavailable'));
   throw error;
 } finally {await context.close(); await rm(profile, {recursive: true, force: true});}

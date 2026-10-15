@@ -40,6 +40,7 @@ jobs:
                   f.writeframesraw(struct.pack('<h',int(value*32767)))
           PY
       - name: MV3 microphone and mocked API checks
+        shell: bash
         env:
           TEST_AUDIO: /tmp/hizir-qa-voice.wav
         run: node tests/extension.mjs 2>&1 | tee .qa/mv3.log

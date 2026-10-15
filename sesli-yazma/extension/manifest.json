@@ -6,7 +6,7 @@
   "minimum_chrome_version": "116",
   "description": "Alt+H ile Türkçe dikte, kontrollü yazım düzeltmesi ve LiveChat yazı alanına aktarım. Mesajı sen Enter ile gönderirsin.",
   "permissions": ["storage", "unlimitedStorage", "offscreen", "activeTab", "clipboardWrite"],
-  "host_permissions": ["https://api.groq.com/*"],
+  "host_permissions": ["https://api.groq.com/*", "https://my.livechatinc.com/*", "https://my.livechat.com/*"],
   "background": {"service_worker": "background.js", "type": "module"},
   "action": {"default_title": "Hızır Bey Sesli Yazma", "default_popup": "popup.html"},
   "options_page": "options.html",
