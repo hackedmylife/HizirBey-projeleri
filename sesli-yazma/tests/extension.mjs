@@ -23,12 +23,16 @@ chrome.runtime.onMessage.addListener((m,s,r)=>{if(m?.target!=='qa'||s.id!==chrom
 `);
 const context = await chromium.launchPersistentContext(path.join(profile, 'profile'), {executablePath: process.env.CHROMIUM_PATH, channel: 'chromium', headless: true, args: ['--no-sandbox', '--disable-extensions-except=' + extension, '--load-extension=' + extension, '--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream', '--autoplay-policy=no-user-gesture-required', ...(process.env.TEST_AUDIO ? ['--use-file-for-fake-audio-capture=' + process.env.TEST_AUDIO] : [])]});
 let checks = 0;
+let worker, page;
+const errors = [];
 try {
-  const worker = context.serviceWorkers()[0] || await context.waitForEvent('serviceworker');
+  worker = context.serviceWorkers()[0] || await context.waitForEvent('serviceworker');
   const id = new URL(worker.url()).hostname;
-  const errors = []; worker.on('console', msg => {if (msg.type() === 'error') errors.push(msg.text());});
+  worker.on('console', msg => {if (msg.type() === 'error') errors.push(msg.text());});
   const options = context.pages().find(x => x.url().includes('options.html')) || await context.newPage();
   await options.goto(`chrome-extension://${id}/options.html`); await options.waitForFunction(() => document.getElementById('shortcutState').textContent.includes('Alt'));
+  for (const other of context.pages()) if (other !== options && other.url().includes('options.html')) await other.close();
+  await options.bringToFront();
   await options.locator('#apiKey').fill('test-credential-placeholder-000000'); await options.locator('#freeConfirmed').check(); await options.locator('#cloudConsent').check(); await options.locator('#save').click();
   await options.waitForFunction(() => document.getElementById('saveState').textContent.includes('kaydedildi'));
   await options.locator('#testMic').click(); await options.waitForFunction(() => document.getElementById('testMic').textContent.includes('Testi bitir')); await options.locator('#testMic').click(); checks++;
@@ -38,7 +42,8 @@ try {
   const fixture = browserSource.match(/const fixture = `([\s\S]*?)`;/)[1];
   await context.route('https://my.livechatinc.com/**', route => route.fulfill({body: fixture, contentType: 'text/html'}));
   const qa = type => worker.evaluate(type => chrome.runtime.sendMessage({target: 'qa', type}), type);
-  const page = await context.newPage(); await page.goto('https://my.livechatinc.com/chats/DEMOCHAT01');
+  page = await context.newPage(); await page.goto('https://my.livechatinc.com/chats/DEMOCHAT01');
+  await page.bringToFront();
   await page.locator('#hizir-voice-host').getByRole('button', {name: 'Başlat', exact: true}).click();
   await page.waitForFunction(() => document.querySelector('#hizir-voice-host').shadowRoot.getElementById('bar').dataset.live === 'true', {timeout: 15000}); checks++;
   const sessionStore = () => worker.evaluate(async () => (await chrome.storage.session.get('hbVoice.runtime.v1'))['hbVoice.runtime.v1']);
@@ -60,8 +65,6 @@ try {
   await page.locator('main').evaluate(x => {x.dataset.chatId = 'DIFFERENTCHAT02';});
   await page.waitForTimeout(700); assert.equal((await sessionStore()).session, null); checks++;
   const before = await page.locator('#editor').innerText(); await page.waitForTimeout(1500); assert.equal(await page.locator('#editor').innerText(), before); checks++;
-  // The offscreen document is closed after a stop; request URLs are asserted in provider unit tests.
-  checks++;
   // Fail closed at provider quota, without another provider or upgrade request.
   await page.locator('#hizir-voice-host').getByRole('button', {name: 'Başlat', exact: true}).click();
   await page.waitForFunction(() => document.querySelector('#hizir-voice-host').shadowRoot.getElementById('bar').dataset.live === 'true');
@@ -71,4 +74,9 @@ try {
   const failed = await sessionStore(); assert.equal(failed.status.phase, 'error'); assert.match(failed.status.message, /kota/); assert.equal(failed.session, null); checks++;
   assert.deepEqual(errors, []); checks++;
   console.log(`Real extension + microphone + mocked API checks passed: ${checks}. No real account, key or customer messages used.`);
+} catch (error) {
+  const state = await worker?.evaluate(async () => (await chrome.storage.session.get('hbVoice.runtime.v1'))['hbVoice.runtime.v1']).catch(() => null);
+  console.error('MV3 QA diagnostics:', JSON.stringify({checks, state, errors}));
+  if (page) console.error('Toolbar:', await page.locator('#hizir-voice-host').innerText().catch(() => 'unavailable'));
+  throw error;
 } finally {await context.close(); await rm(profile, {recursive: true, force: true});}

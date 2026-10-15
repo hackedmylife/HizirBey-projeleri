@@ -58,7 +58,11 @@ export function relevantExamples(text, pairs = []) {
   const query = new Set(words(text));
   return pairs.map(pair => ({pair, score: words(pair.from).filter(w => query.has(w)).length / Math.max(1, new Set(words(pair.from)).size)})).filter(x => x.score > 0.45).sort((a, b) => b.score - a.score).slice(0, 2).map(x => ({from: x.pair.from.slice(0, 200), to: x.pair.to.slice(0, 200)}));
 }
-export function whisperPrompt(terms = []) {return `Türkçe canlı destek diktesi. Özel yazılışlar: ${terms.slice(0, 30).join(', ')}`.slice(0, 420);}
+export function whisperPrompt(terms = []) {
+  let prompt = 'Türkçe canlı destek diktesi. Özel yazılışlar:';
+  for (const term of terms.slice(0, 30)) {const next = `${prompt} ${term},`; if (new TextEncoder().encode(next).byteLength > 220) break; prompt = next;}
+  return prompt;
+}
 export function emptyMemory() {return {schema: 1, terms: [...DEFAULT_TERMS], pairs: []};}
 export function validateMemory(value) {
   if (!value || value.schema !== 1 || !Array.isArray(value.terms) || !Array.isArray(value.pairs)) throw new Error('Geçerli bir Hızır Bey sözlük yedeği seç.');

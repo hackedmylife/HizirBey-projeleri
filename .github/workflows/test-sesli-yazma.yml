@@ -42,7 +42,7 @@ jobs:
       - name: MV3 microphone and mocked API checks
         env:
           TEST_AUDIO: /tmp/hizir-qa-voice.wav
-        run: node tests/extension.mjs
+        run: node tests/extension.mjs 2>&1 | tee .qa/mv3.log
       - name: QA screenshots
         if: always()
         uses: actions/upload-artifact@v4
@@ -50,4 +50,5 @@ jobs:
           name: sesli-yazma-qa
           path: sesli-yazma/.qa/
           if-no-files-found: ignore
+          include-hidden-files: true
           retention-days: 7

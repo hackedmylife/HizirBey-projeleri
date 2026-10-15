@@ -103,7 +103,9 @@ async function reserve(kind, seconds) {
   ledgerChain = operation.catch(() => {}); return operation;
 }
 function contentSender(sender) {return sender.id === chrome.runtime.id && sender.tab && sender.frameId === 0 && liveChatUrl(sender.url);}
-function uiSender(sender) {return sender.id === chrome.runtime.id && !sender.tab?.url?.startsWith('http') && ['popup.html', 'options.html'].some(path => sender.url === extensionOrigin + path);}
+function uiSender(sender) {
+  try {return sender.id === chrome.runtime.id && !sender.tab?.url?.startsWith('http') && sender.url.startsWith(extensionOrigin) && ['/popup.html', '/options.html'].includes(new URL(sender.url).pathname);} catch {return false;}
+}
 function audioSender(sender) {return sender.id === chrome.runtime.id && sender.url === offscreenUrl;}
 async function handle(message, sender) {
   await boot;

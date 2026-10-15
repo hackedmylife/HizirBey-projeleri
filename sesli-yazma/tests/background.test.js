@@ -30,6 +30,10 @@ test('incomplete setup prevents capture and opens setup instead', async () => {
   assert.equal(result.ok, false); assert.match(result.error, /mikrofon/); assert.ok(messages.some(x => x.openedOptions));
   assert.equal(messages.some(x => x.type === 'capture:start'), false);
 });
+test('settings navigation fragments retain privileged UI access', async () => {
+  const result = await send('ui:get', {}, {id, url: origin + 'options.html#microphone'});
+  assert.equal(result.ok, true); assert.equal(result.data.hasKey, true);
+});
 test('actual capture configuration stays inside privileged extension contexts', async () => {
   await send('ui:microphone'); await send('content:toggle', {}, content);
   const state = (await send('ui:get')).data.status;

@@ -39,7 +39,7 @@
       if (records.every(record => host.contains(record.target))) return;
       clearTimeout(monitorTimer); monitorTimer = setTimeout(monitor, 60);
     });
-    observer.observe(document.body, {subtree: true, childList: true, attributes: true, attributeFilter: ['data-chat-id', 'data-conversation-id', 'data-mode', 'data-testid', 'aria-selected']});
+    observer.observe(document.body, {subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ['data-chat-id', 'data-conversation-id', 'data-mode', 'data-testid', 'aria-selected']});
     $('toggle').textContent = 'Durdur'; notify('Mikrofon hazırlanıyor…'); position();
   }
   function render(data) {
