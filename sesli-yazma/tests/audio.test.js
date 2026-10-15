@@ -11,7 +11,7 @@ test('silence makes no requests; a pause closes a complete speech segment', () =
   assert.equal(segments.length, 0);
   for (let i = 0; i < 5; i++) s.push(new Float32Array(100).fill(0.03));
   for (let i = 0; i < 7; i++) s.push(new Float32Array(100));
-  assert.equal(segments.length, 1); assert.ok(segments[0].length >= 1200); assert.equal(s.length, 0);
+  assert.equal(segments.length, 1); assert.ok(segments[0].length >= 650 && segments[0].length < 1200, 'Keep word endings but trim the long trailing pause'); assert.equal(s.length, 0);
 });
 test('a stop flushes voiced audio once and discards short clicks', () => {
   const segments = [], s = new Segmenter({sampleRate: 1000, onSegment: x => segments.push(x)});

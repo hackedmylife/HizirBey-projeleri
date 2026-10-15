@@ -1,5 +1,6 @@
 import {STORE, cleanSettings, emptyMemory, validateMemory, addCorrection, relevantExamples, serializeBackup, textBytes, MEMORY_LIMIT, liveChatUrl, quotaReservation, TEXT_MODEL} from './lib/core.js';
 import {request} from './lib/groq.js';
+import {dictationTextRisk, REJECTED_DICTATION} from './lib/safety.js';
 
 const extensionOrigin = chrome.runtime.getURL('');
 const offscreenUrl = chrome.runtime.getURL('offscreen.html');
@@ -199,6 +200,7 @@ async function handle(message, sender) {
     }
     if (message.type === 'audio:result') {
       const mine = session;
+      if (dictationTextRisk(message.text) || dictationTextRisk(message.raw)) {await cancel(REJECTED_DICTATION, 'error'); return false;}
       if (!Number.isSafeInteger(message.segmentId) || message.segmentId < 1) throw new Error('Geçersiz dikte parçası.');
       if (message.segmentId <= (mine.lastSegment || 0)) return true;
       // Claim before the first await: duplicate delivery must never write twice.

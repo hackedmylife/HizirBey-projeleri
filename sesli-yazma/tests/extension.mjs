@@ -11,16 +11,17 @@ const profile = await mkdtemp(path.join(os.tmpdir(), 'hb-voice-qa-')), extension
 await cp(path.join(root, 'extension'), extension, {recursive: true});
 // Isolated test copy: the shipped extension contains no mock, test hook or override.
 await appendFile(path.join(extension, 'offscreen.js'), `
-const qa = {hold: true, quota: false, transientFailures: 1, requests: [], release: null};
+const qa = {hold: true, quota: false, unsafe: false, transientFailures: 1, requests: [], release: null};
 globalThis.fetch = async (url, init) => {
   qa.requests.push(String(url));
   if (qa.quota) return new Response('{}', {status:429, headers:{'retry-after':'1'}});
+  if (qa.unsafe && String(url).endsWith('/audio/transcriptions')) return new Response(JSON.stringify({text:'Erişim ve Altyazı M.K. Ses deneme 1-2.',segments:[{avg_logprob:-0.1,no_speech_prob:0.01,compression_ratio:1.1}]}),{status:200,headers:{'Content-Type':'application/json'}});
   if (String(url).endsWith('/audio/transcriptions') && qa.transientFailures > 0) {qa.transientFailures--;return new Response('{}',{status:503});}
   if (String(url).endsWith('/audio/transcriptions') && qa.hold) await new Promise((resolve,reject) => {qa.release=resolve;init.signal.addEventListener('abort',()=>reject(new DOMException('Aborted','AbortError')),{once:true});});
-  const data = String(url).endsWith('/audio/transcriptions') ? {text:'merhaba çekiminiz henüz onaylanmadı',segments:[{no_speech_prob:0.01}]} : {choices:[{message:{content:JSON.stringify({text:'Merhaba. Çekiminiz henüz onaylanmadı.'})}}]};
+  const data = String(url).endsWith('/audio/transcriptions') ? {text:'merhaba çekiminiz henüz onaylanmadı',segments:[{avg_logprob:-0.1,no_speech_prob:0.01,compression_ratio:1.1}]} : {choices:[{message:{content:JSON.stringify({text:'Merhaba. Çekiminiz henüz onaylanmadı.'})}}]};
   return new Response(JSON.stringify(data),{status:200,headers:{'Content-Type':'application/json'}});
 };
-chrome.runtime.onMessage.addListener((m,s,r)=>{if(m?.target!=='qa'||s.id!==chrome.runtime.id)return false;if(m.type==='qa:get')r({requests:qa.requests,waiting:Boolean(qa.release)});else if(m.type==='qa:release'){qa.hold=false;qa.release?.();qa.release=null;r(true);}else if(m.type==='qa:quota'){qa.quota=true;qa.hold=false;r(true);}return false;});
+chrome.runtime.onMessage.addListener((m,s,r)=>{if(m?.target!=='qa'||s.id!==chrome.runtime.id)return false;if(m.type==='qa:get')r({requests:qa.requests,waiting:Boolean(qa.release)});else if(m.type==='qa:release'){qa.hold=false;qa.release?.();qa.release=null;r(true);}else if(m.type==='qa:unsafe'){qa.unsafe=true;qa.hold=false;qa.transientFailures=0;r(true);}else if(m.type==='qa:quota'){qa.quota=true;qa.hold=false;r(true);}return false;});
 `);
 const context = await chromium.launchPersistentContext(path.join(profile, 'profile'), {executablePath: process.env.CHROMIUM_PATH, channel: 'chromium', headless: true, args: ['--no-sandbox', '--disable-extensions-except=' + extension, '--load-extension=' + extension, '--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream', '--autoplay-policy=no-user-gesture-required', ...(process.env.TEST_AUDIO ? ['--use-file-for-fake-audio-capture=' + process.env.TEST_AUDIO] : [])]});
 let checks = 0;
@@ -80,6 +81,13 @@ try {
   await page.locator('main').evaluate(x => {x.dataset.chatId = 'DIFFERENTCHAT02';});
   await page.waitForTimeout(700); assert.equal((await sessionStore()).session, null); checks++;
   const before = await page.locator('#editor').innerText(); await page.waitForTimeout(1500); assert.equal(await page.locator('#editor').innerText(), before); checks++;
+  // A known subtitle hallucination must never reach the customer's composer.
+  await page.locator('#editor').fill('Korunacak mevcut metin.');
+  await toggle(); await listening(); await qa('qa:unsafe');
+  const unsafeUntil = Date.now() + 20000;
+  while (Date.now() < unsafeUntil) {if ((await sessionStore()).status.phase === 'error') break; await page.waitForTimeout(200);}
+  const rejected = await sessionStore(); assert.equal(rejected.status.phase, 'error'); assert.match(rejected.status.message, /Şüpheli dikte yazılmadı/); assert.equal(rejected.session, null); checks++;
+  assert.equal((await page.locator('#editor').innerText()).trim(), 'Korunacak mevcut metin.'); assert.equal(await page.locator('#hizir-voice-host').isVisible(), false); assert.equal(await page.evaluate(() => globalThis.sentCount), 1); checks++;
   // Fail closed at provider quota, without another provider or upgrade request.
   await toggle(); await listening();
   await qa('qa:quota');

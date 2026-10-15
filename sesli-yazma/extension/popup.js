@@ -3,7 +3,7 @@ const $ = id => document.getElementById(id);
 const ask = async message => {const r = await chrome.runtime.sendMessage(message); if (!r?.ok) throw new Error(r?.error || 'Eklenti bağlantısı kurulamadı.'); return r.data;};
 function showError(error) {$('error').hidden = false; $('error').textContent = error.message;}
 function render(state) {
-  $('status').textContent = (!state.busy && state.warning) || state.message || 'LiveChat görüşmesinde başlat.';
+  $('status').textContent = (state.phase !== 'error' && !state.busy && state.warning) || state.message || 'LiveChat görüşmesinde başlat.';
   $('statusDot').classList.toggle('live', Boolean(state.recording || state.busy));
   $('toggle').textContent = state.phase === 'finishing' ? 'İptal' : state.sessionId ? 'Durdur' : 'Başlat';
   $('undo').disabled = !state.sessionId || state.busy || !state.canUndo;

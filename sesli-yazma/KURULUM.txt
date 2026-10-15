@@ -1,4 +1,4 @@
-HIZIR BEY SESLİ YAZMA — 0.1.2
+HIZIR BEY SESLİ YAZMA — 0.1.3
 
 1) ZIP'i bilgisayarında sabit bir klasöre çıkar. Örnek: Belgeler\HizirBey-Sesli-Yazma
 2) Chrome adres çubuğuna chrome://extensions yaz.
@@ -38,6 +38,13 @@ KULLANIM
   Gerekirse eklenti simgesinden Son dikte metnini kopyala.
 - Yazım/noktalama düzeltmesi doğruluğu artırmayı hedefler; tutarları,
   özel isimleri ve işlemin durumunu göndermeden önce kontrol et.
+
+ŞÜPHELİ DİKTE KORUMASI
+Altyazı/kapanış kalıbı, tek başına MK/M.K. veya düşük güvenli sonuç
+algılanırsa o parça yazılmaz ve mikrofon kapanır. Eklenti simgesinden
+uyarıyı oku; mevcut metni kontrol edip yeniden dikte başlat.
+Denetim, anlaşılamayan metni tahmin ederek tamamlamaz. Yanlış özel adları
+ve her kelime hatasını yakalaması garanti değildir; göndermeden önce oku.
 
 KISAYOL ÇALIŞMIYORSA
 chrome://extensions/shortcuts adresini aç. Hızır Bey Sesli Yazma altında

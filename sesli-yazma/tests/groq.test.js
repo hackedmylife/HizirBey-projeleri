@@ -9,8 +9,19 @@ test('quota errors never retry, change provider or call a billing API', async ()
   assert.equal(calls, 1); await assert.rejects(request('/billing', {key: config.key}), /İzin verilmeyen/);
 });
 test('transcription uses Turkish, fixed model and short vocabulary; not chat history', async () => {
-  const text = await transcribe(new Blob(['audio']), {...config, terms: ['Hızır Bey']}, undefined, async (url, init) => {assert.equal(init.body.get('language'), 'tr'); assert.equal(init.body.get('model'), 'whisper-large-v3'); assert.ok(init.body.get('prompt').includes('Hızır Bey')); return response({text: 'merhaba'});});
+  const text = await transcribe(new Blob(['audio']), {...config, terms: ['Hızır Bey']}, undefined, async (url, init) => {assert.equal(init.body.get('language'), 'tr'); assert.equal(init.body.get('model'), 'whisper-large-v3'); assert.equal(init.body.get('timestamp_granularities[]'), 'segment'); assert.ok(init.body.get('prompt').includes('Hızır Bey')); return response({text: 'merhaba', segments: [{avg_logprob: -0.1, no_speech_prob: 0.01, compression_ratio: 1.1}]});});
   assert.equal(text, 'merhaba');
+});
+test('an unsafe ASR result is rejected without retries or any text correction call', async () => {
+  let calls = 0;
+  await assert.rejects(transcribe(new Blob(['audio']), config, undefined, async () => {calls++; return response({text: 'Erişim ve Altyazı M.K. Ses deneme 1-2.', segments: [{avg_logprob: -0.1, no_speech_prob: 0.01, compression_ratio: 1.1}]});}), /Şüpheli dikte yazılmadı/);
+  assert.equal(calls, 1);
+});
+test('unsafe correction is discarded while a clean original stays intact', async () => {
+  const result = await correct('merhaba iyi günler', config, undefined, async () => response({choices: [{message: {content: JSON.stringify({text: 'M.K. Merhaba, iyi günler.'})}}]}));
+  assert.equal(result.text, 'Merhaba iyi günler.'); assert.equal(result.corrected, false); assert.match(result.warning, /Şüpheli/);
+  let calls = 0;
+  await assert.rejects(correct('Altyazı M.K.', config, undefined, async () => {calls++;}), /Şüpheli dikte/); assert.equal(calls, 0);
 });
 test('unsafe LLM correction is replaced with the original meaning', async () => {
   const result = await correct('Çekim henüz onaylanmadı', config, undefined, async () => response({choices: [{message: {content: JSON.stringify({text: 'Çekim onaylandı.'})}}]}));

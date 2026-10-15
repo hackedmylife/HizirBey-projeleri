@@ -1,6 +1,6 @@
 # Hızır Bey Sesli Yazma
 
-Chrome / LiveChat için logolu Türkçe dikte uzantısı. Güncel sürüm: **0.1.2**.
+Chrome / LiveChat için logolu Türkçe dikte uzantısı. Güncel sürüm: **0.1.3**.
 
 **Win + H (Windows yönlendirmesiyle) → konuş → metni oku → Enter ile gönder.**
 
@@ -17,6 +17,10 @@ Groq hesabını **Free** planında tut, ödeme yöntemi ekleme ve Developer plan
 - Başlatma/durdurma: Windows yönlendirmesi açıkken Win + H; doğrudan Chrome komutu Alt + H. Durdururken son ses parçası tamamlanır.
 - Sayfada geniş çubuk yoktur. Dinleme veya metin hazırlanması sürerken sağ üstte tıklamaları engellemeyen 10 px kırmızı nokta görünür; işlem bitince kaybolur. Logolu Başlat/Durdur, geri al ve ayarlar paneli yalnızca Chrome eklenti simgesine tıklanınca açılır. Paneli kapatmak dikteyi durdurmaz.
 - Ses, Whisper Large v3 (veya seçilirse Turbo) ile Türkçe yazıya çevrilir. Metin düzeltme açıksa Groq'taki GPT OSS 20B, kontrollü yazım/noktalama düzeltmesi yapar.
+- Ses tanıma sonucu, dil düzeltmesinden önce kalite denetiminden geçer. Segment güven verisi eksikse; düşük güven, yüksek sessizlik olasılığı veya aşırı tekrar varsa parça otomatik yazılmaz. Tamamen sessiz olduğu işaretlenen parça atlanır.
+- Bilinen altyazı/video kapanış kalıpları, tek başına MK/M.K. ve sınırlı uygunsuz ifade listesi engellenir. Şüpheli parçanın tamamı reddedilir, mikrofon kapanır; önceki yazı korunur ve panelde uyarı gösterilir. Şüpheli sözcüğü silip kalanını otomatik birleştirme yapılmaz. Aynı denetim yazı alanına aktarımın son adımında da uygulanır.
+- Dil düzeltmesi yeni bir şüpheli ifade eklerse o düzeltme kullanılmaz; yalnızca denetlenmiş temiz temel metin korunur. Bu denetimler ek bir API çağrısı veya sabit bekleme eklemez.
+- Bu filtreler bütün tanıma hatalarını yakaladığı anlamına gelmez. Gerçek kişi/kurum adları ve sayılar hâlâ okunmalıdır. MK gibi gerçek bir baş harf/kod amaçlanmışsa otomatik dikte reddedilebilir; gerektiğinde elle yazılabilir.
 - Tutar, sayı, olumsuzluk ve işlem türü değişimleri denetlenir. Şüpheli düzeltmede temel metin korunur ve eklenti panelinde uyarı gösterilir.
 - Gerçek LiveChat Lexical editörü hedeflenir. İç not modunda aktarım engellenir.
 - Eklenti mesaj göndermez. Kullanıcının normal Enter / Send eylemi sırasında mikrofon oturumu kapanır. İşlem sürerken Enter engellenir; hazır olduğunda yeniden basılır. İlk basış daha sonra kendiliğinden gönderime dönüşmez.

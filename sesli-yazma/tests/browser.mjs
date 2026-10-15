@@ -93,6 +93,8 @@ await popup.locator('#toggle').click(); assert.equal(await popup.evaluate(() => 
 await popup.evaluate(() => globalThis.__uiListeners.forEach(fn => fn({type: 'voice:status', target: 'ui', data: {sessionId: 'qa', phase: 'finishing', busy: true, recording: false, seconds: 20, level: 0.4, message: 'Son cümle hazırlanıyor…', canUndo: true, lastText: 'Merhaba.'}})));
 assert.equal(await popup.locator('#toggle').textContent(), 'İptal'); assert.equal(await popup.locator('#undo').isDisabled(), true); assert.equal(await popup.locator('#timer').textContent(), '00:20'); checks++;
 await popup.screenshot({path: path.join(output, 'popup-active.png')});
+await popup.evaluate(() => globalThis.__uiListeners.forEach(fn => fn({type: 'voice:status', target: 'ui', data: {phase: 'error', busy: false, recording: false, warning: 'Önceki düzeltme uyarısı.', message: 'Şüpheli dikte yazılmadı; mikrofon kapatıldı.'}})));
+assert.equal(await popup.locator('#status').textContent(), 'Şüpheli dikte yazılmadı; mikrofon kapatıldı.'); checks++;
 assert.deepEqual(errors, []); checks++;
 await context.close(); await browser.close(); await new Promise(resolve => server.close(resolve));
 console.log(`Browser/editor/UI checks passed: ${checks}. Screenshots: ${output}`);

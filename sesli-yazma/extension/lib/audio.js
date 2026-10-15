@@ -32,7 +32,9 @@ export class Segmenter {
     return {rms, buffered: this.length > 0};
   }
   flush() {
-    const samples = this.length && this.voice / this.sampleRate >= 0.22 ? concatFrames(this.frames) : null;
+    // Keep a short tail for word endings; avoid uploading a full pause as speech.
+    const keep = Math.max(0, this.length - Math.max(0, this.silence - Math.round(this.sampleRate * 0.25)));
+    const samples = this.length && this.voice / this.sampleRate >= 0.22 ? concatFrames(this.frames).slice(0, keep) : null;
     this.frames = []; this.pre = []; this.length = 0; this.silence = 0; this.voice = 0;
     if (samples) this.onSegment(samples);
   }

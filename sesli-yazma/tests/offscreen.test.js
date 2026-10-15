@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 const id = 'audio-test', origin = `chrome-extension://${id}/`, events = [], worklets = [], tracks = [], contexts = [];
-let listener, waiting = null;
+let listener, waiting = null, unsafeSpeech = false;
 globalThis.chrome = {runtime: {id, getURL: path => origin + path, onMessage: {addListener(fn) {listener = fn;}}, async sendMessage(message) {events.push(message); return {ok: true, data: message.type === 'audio:examples' ? [] : true};}}};
 Object.defineProperty(globalThis, 'navigator', {configurable: true, value: {mediaDevices: {async getUserMedia() {const track = {stopped: false, stop() {this.stopped = true;}}; tracks.push(track); return {getTracks: () => [track]};}}}});
 globalThis.AudioContext = class {
@@ -14,7 +14,7 @@ globalThis.AudioContext = class {
 globalThis.AudioWorkletNode = class {constructor() {this.port = {}; worklets.push(this);} connect() {} disconnect() {}};
 globalThis.fetch = async url => {
   if (waiting) await new Promise(resolve => {waiting.resolve = resolve;});
-  const data = url.endsWith('/audio/transcriptions') ? {text: 'merhaba çekim henüz onaylanmadı'} : {choices: [{message: {content: '{"text":"Merhaba. Çekim henüz onaylanmadı."}'}}]};
+  const data = url.endsWith('/audio/transcriptions') ? {text: unsafeSpeech ? 'Erişim ve Altyazı M.K.' : 'merhaba çekim henüz onaylanmadı', segments: [{avg_logprob: -0.1, no_speech_prob: 0.01, compression_ratio: 1.1}]} : {choices: [{message: {content: '{"text":"Merhaba. Çekim henüz onaylanmadı."}'}}]};
   return new Response(JSON.stringify(data), {status: 200, headers: {'Content-Type': 'application/json'}});
 };
 await import('../extension/offscreen.js');
@@ -46,6 +46,14 @@ test('stop flushes the last spoken words and releases microphone resources', asy
   await until(() => events.some(x => x.type === 'audio:done' && x.sessionId === 'three'));
   assert.equal(events.filter(x => x.type === 'audio:result' && x.sessionId === 'three').length, 1);
   assert.ok(tracks.at(-1).stopped); assert.equal(contexts.at(-1).state, 'closed');
+});
+test('hallucinated subtitle text never reaches the editor and closes the microphone', async () => {
+  unsafeSpeech = true;
+  await send('capture:start', 'unsafe', config); push(4, 0.04); push(7, 0);
+  await until(() => events.some(x => x.type === 'audio:error' && x.sessionId === 'unsafe'));
+  assert.equal(events.some(x => x.type === 'audio:result' && x.sessionId === 'unsafe'), false);
+  assert.ok(tracks.at(-1).stopped); assert.equal(contexts.at(-1).state, 'closed');
+  unsafeSpeech = false;
 });
 test('long provider delay buffers past the old four-segment limit and pauses capture safely', async () => {
   waiting = {};

@@ -1,3 +1,15 @@
+# 0.1.3 — Şüpheli diktenin yazı alanına aktarılmasını engelleme
+
+15 Ekim 2026
+
+- Bilinen altyazı/kapanış kalıpları, tek başına MK/M.K. varyantları ve sınırlı uygunsuz ifade denetimi. Şüpheli parçanın tamamı reddedilir; kelime silerek yeni anlam kurulmaz.
+- Whisper segmentlerinin ortalama log olasılığı, sessizlik olasılığı ve sıkıştırma oranı denetlenir. Eksik ölçüm veya karışık düşük güvenli segment, otomatik aktarımı durdurur. Tamamen sessiz sonuç atlanır.
+- Dil düzeltmesi ve editöre son aktarımda ek çıktı denetimi. Temiz temele şüpheli ifade ekleyen dil düzeltmesi kullanılmaz.
+- Şüpheli tanımada mikrofon kapanır, mevcut yazı korunur; açıklama panelde görünür. Eski düzeltme uyarısının kritik hata mesajını gizlemesi düzeltildi.
+- Ses parçasının sonundaki uzun sessizlik kırpılır; kelime sonları için 0,25 saniyelik kuyruk korunur. Mikrofon güçlendirme ve hassasiyet ayarları korunur.
+- Ek bir bulut çağrısı veya bekleme yoktur. Küçük panel, kırmızı nokta, Win + H yönlendirmesi, anahtar ve sözlük korunur.
+- Koruma bütün ses tanıma/özel isim hatalarını sıfırlamaz; gerçek mikrofonda kabul testi gerekir.
+
 # 0.1.2 — Küçük kontrol paneli ve sessiz sayfa görünümü
 
 15 Ekim 2026

@@ -66,6 +66,14 @@ test('audio setting upgrades preserve saved credentials and personal dictionary'
   await send('ui:save', {settings});
   assert.equal(local[STORE.credentials].key, key); assert.deepEqual(local[STORE.memory], memory);
 });
+test('the final editor boundary rejects unsafe output even if an earlier layer is bypassed', async () => {
+  await send('content:toggle', {}, content);
+  const state = (await send('ui:get')).data.status, count = messages.filter(x => x.type === 'voice:insert').length;
+  const reply = await send('audio:result', {sessionId: state.sessionId, segmentId: 1, raw: 'merhaba', text: 'Merhaba. M.K.'}, audio);
+  assert.equal(reply.data, false); assert.equal(messages.filter(x => x.type === 'voice:insert').length, count);
+  const next = (await send('ui:get')).data.status;
+  assert.equal(next.phase, 'error'); assert.equal(next.sessionId, null); assert.equal(next.lastText.includes('M.K.'), false);
+});
 test('backup import cannot replace credentials or enable a paid provider', async () => {
   const key = local[STORE.credentials].key;
   const data = JSON.stringify({schema: 1, terms: ['Hızır Bey'], pairs: [], credentials: {key: 'other'}, provider: 'paid'});
