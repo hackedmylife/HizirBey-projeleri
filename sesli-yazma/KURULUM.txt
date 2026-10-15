@@ -1,4 +1,4 @@
-HIZIR BEY SESLİ YAZMA — 0.1.0
+HIZIR BEY SESLİ YAZMA — 0.1.1
 
 1) ZIP'i bilgisayarında sabit bir klasöre çıkar. Örnek: Belgeler\HizirBey-Sesli-Yazma
 2) Chrome adres çubuğuna chrome://extensions yaz.
@@ -32,6 +32,22 @@ KISAYOL ÇALIŞMIYORSA
 chrome://extensions/shortcuts adresini aç. Hızır Bey Sesli Yazma altında
 Türkçe dikteyi başlat/durdur alanını ALT + H olarak ayarla. Başka bir
 eklenti aynı kısayolu kullanıyorsa onun atamasını değiştir.
+
+GECİKME VE MİKROFON
+- Yavaş bağlantıda ses sıraya alınır. Geçici hatalarda 45 saniyelik yanıt
+  süresiyle en fazla 3 deneme yapılır; yeniden denemeler kotaya dahildir.
+- “Bağlantı bekleniyor” sırasında metni tekrar dikte etmene gerek yoktur.
+  İşlem tamamlanınca oku ve Enter'a bas. Beklerken basılan Enter sonradan
+  otomatik gönderime dönüşmez.
+- Bekleyen ses yaklaşık 2 dakikaya yaklaşırsa mikrofon kapanır, alınmış
+  ses sırayla işlenir. Yeni konuşmadan önce tamamlanmasını bekle ve Alt + H
+  ile yeniden başlat. Beklemeyi iptal etmek için Alt + H kullanabilirsin.
+- Kalıcı bağlantı kesintisinde denemeler tükenince hata gösterilir.
+  Yazı alanındaki metin korunur; tamamlanmayan ses kalıcı kaydedilmez.
+- Ayarlar > Mikrofon ve dikte: güçlendirme varsayılan %135; %100–200
+  arasında değiştirilebilir. Algı eşiği 0,005 ile başlar. Ortam gürültüsü
+  algılanıyorsa eşiği biraz yükselt. “Mikrofonu dene” ile yerel kontrol yap.
+- Yazılımsal güçlendirme, bilgisayarının sistem mikrofon sesini değiştirmez.
 
 ÜCRETSİZ KOTA
 Groq Free planındaki ses ve metin sınırları geçerlidir. Kota dolunca

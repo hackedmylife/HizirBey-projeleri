@@ -1,8 +1,11 @@
 import {Segmenter, wavBlob} from './lib/audio.js';
-import {transcribe, correct} from './lib/groq.js';
+import {transcribe, correct, abortableDelay} from './lib/groq.js';
 import {basicText} from './lib/core.js';
 
 let active = null;
+// Includes the in-flight request. Stop capturing before the next 14-second segment
+// would exceed roughly two minutes in RAM; drain everything already captured.
+const PAUSE_PENDING_SECONDS = 106;
 async function ask(session, type, data = {}) {
   const response = await chrome.runtime.sendMessage({type, sessionId: session.id, ...data});
   if (!response?.ok) throw new Error(response?.error || 'Dikte bağlantısı kesildi.');
@@ -24,7 +27,23 @@ async function fail(s, error) {
 function meter(s, force = false) {
   if (active !== s || (!force && Date.now() - s.lastMeter < 350)) return;
   s.lastMeter = Date.now();
-  ask(s, 'audio:meter', {level: Math.min(1, (s.rms || 0) * 12), seconds: Math.floor((Date.now() - s.startedAt) / 1000), buffered: Boolean(s.segmenter?.length), processing: s.processing || s.queue.length > 0, recording: s.recording}).catch(error => fail(s, error));
+  ask(s, 'audio:meter', {level: Math.min(1, (s.rms || 0) * (s.config.micGain || 1.35) * 12), seconds: Math.floor((Date.now() - s.startedAt) / 1000), buffered: Boolean(s.segmenter?.length), processing: s.processing || s.queue.length > 0, recording: s.recording, waiting: Boolean(s.requestState?.waiting), attempt: s.requestState?.attempt || 1, pendingSeconds: Math.ceil(s.pendingSeconds), pausedForBacklog: s.pausedForBacklog}).catch(error => fail(s, error));
+}
+function connection(s, kind, seconds = 0) {
+  return {
+    async onAttempt({attempt, maxAttempts}) {
+      if (kind === 'speech') {
+        const wait = Math.max(0, 3500 - (Date.now() - s.lastRequest));
+        if (wait) await abortableDelay(wait, s.controller.signal);
+      }
+      if (active !== s || s.controller.signal.aborted) throw new DOMException('İptal edildi.', 'AbortError');
+      await ask(s, 'audio:reserve', {kind, seconds});
+      if (kind === 'speech') s.lastRequest = Date.now();
+      s.requestState = {attempt, maxAttempts, waiting: attempt > 1}; meter(s, true);
+    },
+    onRetry({attempt, maxAttempts}) {s.requestState = {attempt, maxAttempts, waiting: true}; meter(s, true);},
+    onSlow() {if (active === s) {s.requestState = {...s.requestState, waiting: true}; meter(s, true);}}
+  };
 }
 async function drain(s) {
   if (s.processing || active !== s) return;
@@ -32,20 +51,16 @@ async function drain(s) {
   try {
     while (s.queue.length && active === s) {
       const samples = s.queue.shift();
-      const wait = Math.max(0, 3500 - (Date.now() - s.lastRequest));
-      if (wait) await new Promise(resolve => {const timer = setTimeout(resolve, wait); s.controller.signal.addEventListener('abort', () => {clearTimeout(timer); resolve();}, {once: true});});
-      if (active !== s || s.controller.signal.aborted) return;
-      await ask(s, 'audio:reserve', {kind: 'speech', seconds: samples.length / s.sampleRate});
-      s.lastRequest = Date.now();
-      const raw = await transcribe(wavBlob(samples, s.sampleRate), s.config, s.controller.signal);
+      const duration = samples.length / s.sampleRate;
+      const raw = await transcribe(wavBlob(samples, s.sampleRate, s.config.micGain), {...s.config, connection: connection(s, 'speech', duration)}, s.controller.signal);
       if (active !== s) return;
-      if (!raw) continue;
+      s.requestState = null;
+      if (!raw) {s.pendingSeconds = Math.max(0, s.pendingSeconds - duration); continue;}
       let result = {text: basicText(raw, s.config.terms), corrected: false, warning: ''}, stopForQuota = false;
       if (s.config.correction) {
         try {
-          await ask(s, 'audio:reserve', {kind: 'text'});
           const examples = await ask(s, 'audio:examples', {text: raw});
-          result = await correct(raw, {...s.config, pairs: examples}, s.controller.signal);
+          result = await correct(raw, {...s.config, pairs: examples, connection: connection(s, 'text')}, s.controller.signal);
         } catch (error) {
           if (s.controller.signal.aborted || active !== s) return;
           result.warning = 'Dil düzeltmesi tamamlanamadı; temel metni kontrol et.';
@@ -53,8 +68,10 @@ async function drain(s) {
         }
       }
       if (active !== s) return;
-      const inserted = await ask(s, 'audio:result', {raw, ...result});
+      s.requestState = null;
+      const inserted = await ask(s, 'audio:result', {segmentId: s.nextResult++, raw, ...result});
       if (!inserted || active !== s) return;
+      s.pendingSeconds = Math.max(0, s.pendingSeconds - duration);
       if (stopForQuota) {await fail(s, new Error('Ücretsiz düzeltme kotası doldu. Temel metin korundu; dikte durduruldu.')); return;}
     }
   } catch (error) {await fail(s, error);}
@@ -62,13 +79,13 @@ async function drain(s) {
     s.processing = false;
     if (active === s) {
       meter(s, true);
-      if (!s.recording && !s.queue.length) {active = null; await ask(s, 'audio:done').catch(() => {});}
+      if (!s.recording && !s.queue.length) {active = null; await ask(s, 'audio:done', {reason: s.pausedForBacklog ? 'Bekleyen metin tamamlandı. Oku, Enter ile gönder; yeni dikte için Alt + H.' : undefined}).catch(() => {});}
     }
   }
 }
 async function start(id, config) {
   if (active) {const old = active; active = null; old.controller.abort(); await cleanup(old);}
-  const s = {id, config, queue: [], controller: new AbortController(), recording: true, processing: false, startedAt: Date.now(), lastMeter: 0, lastRequest: 0, lastVoice: Date.now()};
+  const s = {id, config, queue: [], pendingSeconds: 0, nextResult: 1, pausedForBacklog: false, controller: new AbortController(), recording: true, processing: false, startedAt: Date.now(), lastMeter: 0, lastRequest: 0, lastVoice: Date.now()};
   active = s;
   try {
     s.stream = await navigator.mediaDevices.getUserMedia({audio: {channelCount: 1, echoCancellation: true, noiseSuppression: true, autoGainControl: true, ...(config.deviceId ? {deviceId: {exact: config.deviceId}} : {})}});
@@ -78,8 +95,12 @@ async function start(id, config) {
     if (active !== s) {await cleanup(s); throw new Error('Kayıt iptal edildi.');}
     s.segmenter = new Segmenter({sampleRate: s.sampleRate, threshold: config.sensitivity, pauseMs: config.pauseMs, onSegment(samples) {
       if (active !== s) return;
-      if (s.queue.length >= 4) {void fail(s, new Error('Ses kuyruğu doldu. Metni kontrol edip yeni dikte başlat.')); return;}
+      s.pendingSeconds += samples.length / s.sampleRate;
       s.queue.push(samples); void drain(s);
+      if (s.pendingSeconds >= PAUSE_PENDING_SECONDS && s.recording) {
+        s.pausedForBacklog = true;
+        queueMicrotask(() => {if (active === s) void finish(id);});
+      }
     }});
     s.source = s.context.createMediaStreamSource(s.stream);
     s.worklet = new AudioWorkletNode(s.context, 'hizir-pcm');

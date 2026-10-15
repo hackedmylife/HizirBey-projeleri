@@ -23,5 +23,36 @@ test('normal Turkish correction and no-correction mode work independently', asyn
 });
 test('canceled audio cannot produce a later API result', async () => {
   const controller = new AbortController(); controller.abort();
-  await assert.rejects(request('/models', {key: config.key, signal: controller.signal, fetcher: async (_, init) => {assert.equal(init.signal.aborted, true); throw new DOMException('Aborted', 'AbortError');}}), {name: 'AbortError'});
+  await assert.rejects(request('/models', {key: config.key, signal: controller.signal, fetcher: async () => {assert.fail('A canceled request must never reach fetch');}}), {name: 'AbortError'});
+});
+test('temporary service failures retry the same request and reserve each attempt', async () => {
+  let calls = 0; const attempts = [], retries = [], body = new FormData(); body.set('file', 'same-audio');
+  const result = await request('/audio/transcriptions', {key: config.key, body, retryDelays: [0, 0], onAttempt: x => attempts.push(x.attempt), onRetry: x => retries.push(x.attempt), fetcher: async (_url, init) => {assert.equal(init.body, body); calls++; return calls < 3 ? new Response('{}', {status: calls === 1 ? 503 : 502}) : response({text: 'tek sonuç'});}});
+  assert.deepEqual(result, {text: 'tek sonuç'}); assert.equal(calls, 3); assert.deepEqual(attempts, [1, 2, 3]); assert.deepEqual(retries, [2, 3]);
+});
+test('cancel during retry backoff makes no later request', async () => {
+  const controller = new AbortController(); let calls = 0;
+  const pending = request('/models', {key: config.key, signal: controller.signal, onRetry() {queueMicrotask(() => controller.abort());}, fetcher: async () => {calls++; throw new TypeError('Network disconnected');}});
+  await assert.rejects(pending, {name: 'AbortError'}); assert.equal(calls, 1);
+});
+test('timeout aborts one attempt before a successful retry; ordinary delay does not duplicate', async () => {
+  let calls = 0, aborted = false;
+  const result = await request('/models', {key: config.key, timeout: 15, retryDelays: [0], fetcher: async (_url, init) => {calls++; if (calls === 1) return new Promise((_resolve, reject) => init.signal.addEventListener('abort', () => {aborted = true; reject(new DOMException('Timeout', 'AbortError'));}, {once: true})); return response({data: []});}});
+  assert.deepEqual(result, {data: []}); assert.equal(aborted, true); assert.equal(calls, 2);
+  calls = 0;
+  await request('/models', {key: config.key, timeout: 80, fetcher: async () => {calls++; await new Promise(resolve => setTimeout(resolve, 25)); return response({data: []});}});
+  assert.equal(calls, 1);
+});
+test('exhausted network retries, client errors and quota guards have finite limits', async () => {
+  let calls = 0;
+  await assert.rejects(request('/models', {key: config.key, retryDelays: [0, 0], fetcher: async () => {calls++; throw new TypeError('offline');}}), /bağlantısı/);
+  assert.equal(calls, 3);
+  for (const status of [400, 401, 403, 429]) {
+    calls = 0;
+    await assert.rejects(request('/models', {key: config.key, fetcher: async () => {calls++; return new Response('{}', {status});}}), error => error.status === status);
+    assert.equal(calls, 1);
+  }
+  calls = 0;
+  await assert.rejects(request('/models', {key: config.key, retryDelays: [0, 0], onAttempt({attempt}) {if (attempt === 2) throw new Error('Yerel ücretsiz kota doldu.');}, fetcher: async () => {calls++; return new Response('{}', {status: 503});}}), /Yerel ücretsiz kota/);
+  assert.equal(calls, 1);
 });

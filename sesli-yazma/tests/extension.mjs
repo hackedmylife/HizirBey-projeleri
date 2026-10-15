@@ -11,10 +11,11 @@ const profile = await mkdtemp(path.join(os.tmpdir(), 'hb-voice-qa-')), extension
 await cp(path.join(root, 'extension'), extension, {recursive: true});
 // Isolated test copy: the shipped extension contains no mock, test hook or override.
 await appendFile(path.join(extension, 'offscreen.js'), `
-const qa = {hold: true, quota: false, requests: [], release: null};
+const qa = {hold: true, quota: false, transientFailures: 1, requests: [], release: null};
 globalThis.fetch = async (url, init) => {
   qa.requests.push(String(url));
   if (qa.quota) return new Response('{}', {status:429, headers:{'retry-after':'1'}});
+  if (String(url).endsWith('/audio/transcriptions') && qa.transientFailures > 0) {qa.transientFailures--;return new Response('{}',{status:503});}
   if (String(url).endsWith('/audio/transcriptions') && qa.hold) await new Promise((resolve,reject) => {qa.release=resolve;init.signal.addEventListener('abort',()=>reject(new DOMException('Aborted','AbortError')),{once:true});});
   const data = String(url).endsWith('/audio/transcriptions') ? {text:'merhaba çekiminiz henüz onaylanmadı',segments:[{no_speech_prob:0.01}]} : {choices:[{message:{content:JSON.stringify({text:'Merhaba. Çekiminiz henüz onaylanmadı.'})}}]};
   return new Response(JSON.stringify(data),{status:200,headers:{'Content-Type':'application/json'}});
@@ -51,9 +52,14 @@ try {
   let pending;
   const until = Date.now() + 20000; while (Date.now() < until) {pending = await qa('qa:get').catch(() => null); if (pending?.waiting) break; await page.waitForTimeout(200);}
   assert.ok(pending?.waiting, 'Microphone must produce a queued WAV request through the offscreen page'); checks++;
+  assert.equal(pending.requests.filter(x => x.endsWith('/audio/transcriptions')).length, 2, 'A temporary 503 is retried once');
+  assert.equal((await sessionStore()).status.phase, 'waiting'); checks++;
   await page.locator('#editor').focus(); await page.keyboard.press('Enter'); assert.equal(await page.evaluate(() => globalThis.sentCount), 0); checks++;
   await qa('qa:release');
   await page.waitForFunction(() => document.getElementById('editor').innerText.includes('henüz onaylanmadı'), {timeout: 15000});
+  assert.equal(((await page.locator('#editor').innerText()).match(/henüz onaylanmadı/g) || []).length, 1, 'The retried segment is inserted only once');
+  const usage = await worker.evaluate(async () => (await chrome.storage.local.get('hbVoice.usage.v1'))['hbVoice.usage.v1']);
+  assert.equal(usage.speech, 2); assert.equal(usage.text, 1); checks++;
   assert.equal(await page.evaluate(() => globalThis.sentCount), 0); checks++;
   const readyUntil = Date.now() + 5000; while ((await sessionStore()).status.busy && Date.now() < readyUntil) await page.waitForTimeout(100);
   await page.keyboard.press('Enter'); await page.waitForTimeout(400);

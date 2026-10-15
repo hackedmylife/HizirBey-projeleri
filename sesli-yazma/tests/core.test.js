@@ -6,6 +6,13 @@ test('only supported models and explicit free consent survive configuration', ()
   const settings = cleanSettings({model: 'paid-unlisted-model', freeConfirmed: 'true', cloudConsent: true, sensitivity: 100, pauseMs: 0});
   assert.equal(settings.model, 'whisper-large-v3'); assert.equal(settings.freeConfirmed, false); assert.equal(settings.cloudConsent, true); assert.equal(settings.sensitivity, 0.04);
 });
+test('audio defaults migrate while custom choices and Free consent are preserved', () => {
+  const migrated = cleanSettings({sensitivity: 0.008, microphoneReady: true, freeConfirmed: true, cloudConsent: true});
+  assert.equal(migrated.sensitivity, 0.005); assert.equal(migrated.micGain, 1.35); assert.equal(migrated.audioRevision, 2); assert.equal(migrated.microphoneReady, true); assert.equal(migrated.freeConfirmed, true);
+  assert.equal(cleanSettings({sensitivity: 0.012}).sensitivity, 0.012);
+  assert.equal(cleanSettings({sensitivity: 0.008, audioRevision: 2}).sensitivity, 0.008);
+  assert.equal(cleanSettings({micGain: 999}).micGain, 2); assert.equal(cleanSettings({micGain: 0.5}).micGain, 1);
+});
 test('Turkish capitalization and local terms preserve financial text', () => {
   assert.equal(basicText('istanbul için 500 TL yatırılmadı , henüz bekliyoruz', []), 'İstanbul için 500 TL yatırılmadı, henüz bekliyoruz.');
   assert.equal(basicText('livechat açık', ['LiveChat']), 'LiveChat açık.');

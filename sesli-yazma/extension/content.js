@@ -34,7 +34,7 @@
   function bind(id) {
     detach(); host.hidden = false;
     const binding = new globalThis.HizirVoiceEditor.Binding();
-    active = {id, binding, busy: true, recording: false};
+    active = {id, binding, busy: true, recording: false, lastSegment: 0};
     observer = new MutationObserver(records => {
       if (records.every(record => host.contains(record.target))) return;
       clearTimeout(monitorTimer); monitorTimer = setTimeout(monitor, 60);
@@ -65,8 +65,10 @@
       const mine = active;
       insertion = insertion.catch(() => {}).then(async () => {
         if (active !== mine) throw new Error('Dikte oturumu değişti; metin eklenmedi.');
+        if (message.data.segmentId && message.data.segmentId <= mine.lastSegment) return;
         await mine.binding.insert(message.data.text);
         if (active !== mine) throw new Error('Görüşme değişti.');
+        mine.lastSegment = message.data.segmentId || mine.lastSegment;
         mine.warning = message.data.warning;
         notify(message.data.warning || 'Metin hazır · Oku, Enter ile gönder.'); $('undo').disabled = false;
       });

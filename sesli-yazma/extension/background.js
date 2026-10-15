@@ -79,7 +79,7 @@ async function start(tabId) {
   let binding;
   try {binding = await chrome.tabs.sendMessage(tabId, {type: 'voice:bind', sessionId: id}, {frameId: 0});} catch {throw new Error('LiveChat sayfasını bir kez yenile ve tekrar dene.');}
   if (!binding?.ok) throw new Error(binding?.error || 'LiveChat mesaj alanı bulunamadı.');
-  session = {id, tabId, startedAt: Date.now()};
+  session = {id, tabId, startedAt: Date.now(), lastSegment: 0};
   const mine = session;
   memoryCache = await getMemory();
   if (session !== mine) return view();
@@ -182,10 +182,19 @@ async function handle(message, sender) {
     if (!audioSender(sender) || !session || session.id !== message.sessionId) return false;
     if (message.type === 'audio:reserve') return reserve(message.kind, message.seconds || 0);
     if (message.type === 'audio:examples') return relevantExamples(String(message.text || '').slice(0, 10000), (await getMemory()).pairs);
-    if (message.type === 'audio:meter') return publish({phase: message.processing ? (message.recording ? 'processing' : 'finishing') : message.buffered ? 'listening' : 'ready', recording: message.recording, busy: message.processing || message.buffered, level: message.level, seconds: message.seconds, message: message.processing ? 'Metin hazırlanıyor…' : message.buffered ? 'Seni dinliyorum…' : 'Konuşabilirsin · Hazır metni Enter ile gönder'}, false);
+    if (message.type === 'audio:meter') {
+      const pendingSeconds = Math.max(0, Math.ceil(Number(message.pendingSeconds) || 0));
+      const waiting = message.waiting && message.processing;
+      const text = message.pausedForBacklog ? `Mikrofon bekleme nedeniyle kapatıldı · ${pendingSeconds} sn ses sırayla tamamlanıyor. İptal için Alt + H.` : waiting ? `Bağlantı bekleniyor · ${Math.min(3, message.attempt || 1)}/3 deneme · ${pendingSeconds} sn ses sırada` : message.processing ? 'Metin hazırlanıyor…' : message.buffered ? 'Seni dinliyorum…' : 'Konuşabilirsin · Hazır metni Enter ile gönder';
+      return publish({phase: message.processing ? (message.recording ? waiting ? 'waiting' : 'processing' : 'finishing') : message.buffered ? 'listening' : 'ready', recording: message.recording, busy: message.processing || message.buffered, level: message.level, seconds: message.seconds, pendingSeconds, message: text}, false);
+    }
     if (message.type === 'audio:result') {
       const mine = session;
-      const data = {text: message.text, raw: message.raw, warning: message.warning || ''};
+      if (!Number.isSafeInteger(message.segmentId) || message.segmentId < 1) throw new Error('Geçersiz dikte parçası.');
+      if (message.segmentId <= (mine.lastSegment || 0)) return true;
+      // Claim before the first await: duplicate delivery must never write twice.
+      mine.lastSegment = message.segmentId;
+      const data = {segmentId: message.segmentId, text: message.text, raw: message.raw, warning: message.warning || ''};
       // Keep a temporary recovery copy if an editor rejects insertion. Never auto-replay it.
       await publish({lastText: data.text, lastRaw: data.raw, message: data.warning || 'Metin yazı alanına eklendi.'});
       if (session !== mine) return false;

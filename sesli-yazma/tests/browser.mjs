@@ -29,7 +29,9 @@ const dispatch = message => page.evaluate(message => globalThis.__dispatch(messa
 assert.equal((await dispatch({type: 'voice:bind', sessionId: 's1'})).ok, true); checks++;
 await dispatch({type: 'voice:status', sessionId: 's1', data: {sessionId: 's1', busy: true, recording: true, message: 'Hazırlanıyor'}});
 await page.locator('#editor').focus(); await page.keyboard.press('Enter'); assert.equal(await page.evaluate(() => globalThis.sentCount), 0); checks++;
-assert.equal((await dispatch({type: 'voice:insert', sessionId: 's1', data: {text: 'Çekiminiz henüz onaylanmadı.', raw: 'çekiminiz henüz onaylanmadı'}})).ok, true);
+assert.equal((await dispatch({type: 'voice:insert', sessionId: 's1', data: {segmentId: 1, text: 'Çekiminiz henüz onaylanmadı.', raw: 'çekiminiz henüz onaylanmadı'}})).ok, true);
+assert.equal((await page.locator('#editor').innerText()).trim(), 'Çekiminiz henüz onaylanmadı.'); checks++;
+assert.equal((await dispatch({type: 'voice:insert', sessionId: 's1', data: {segmentId: 1, text: 'Çekiminiz henüz onaylanmadı.'}})).ok, true);
 assert.equal((await page.locator('#editor').innerText()).trim(), 'Çekiminiz henüz onaylanmadı.'); checks++;
 await dispatch({type: 'voice:status', sessionId: 's1', data: {sessionId: 's1', busy: false, recording: true, message: 'Hazır'}});
 await page.keyboard.press('Enter'); assert.equal(await page.evaluate(() => globalThis.sentCount), 1); checks++;
@@ -54,13 +56,14 @@ await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
 const port = server.address().port;
 await context.addInitScript(() => {
   if (!location.hostname.includes('127.0.0.1')) return;
-  const data = {settings: {model: 'whisper-large-v3', correction: true, freeConfirmed: false, cloudConsent: false, microphoneReady: false, deviceId: '', sensitivity: 0.008, pauseMs: 1000, learn: false}, hasKey: false, terms: ['Hızır Bey', 'LiveChat', 'EveryMatrix', 'FastKeys'], memory: {count: 0, bytes: 120, maxBytes: 10000000}, usage: {}, shortcut: 'Alt+H', status: {phase: 'idle', message: 'LiveChat görüşmesinde Alt + H ile başlat.', busy: false, recording: false}};
+  const data = {settings: {model: 'whisper-large-v3', correction: true, freeConfirmed: false, cloudConsent: false, microphoneReady: false, deviceId: '', sensitivity: 0.005, micGain: 1.35, pauseMs: 1000, learn: false}, hasKey: false, terms: ['Hızır Bey', 'LiveChat', 'EveryMatrix', 'FastKeys'], memory: {count: 0, bytes: 120, maxBytes: 10000000}, usage: {}, shortcut: 'Alt+H', status: {phase: 'idle', message: 'LiveChat görüşmesinde Alt + H ile başlat.', busy: false, recording: false}};
   globalThis.chrome = {runtime: {sendMessage: async message => {if (message.type === 'ui:get') return {ok: true, data}; if (message.type === 'ui:save') {data.settings = {...data.settings, ...message.settings}; data.hasKey = Boolean(message.key) || data.hasKey;} return {ok: true, data: true};}, onMessage: {addListener() {}}}, storage: {onChanged: {addListener() {}}}};
 });
 const options = await context.newPage(); await options.setViewportSize({width: 1440, height: 1080});
 await options.goto(`http://127.0.0.1:${port}/options.html`); await options.waitForFunction(() => document.getElementById('shortcutState').textContent.includes('Alt+H'));
 assert.equal(await options.locator('img').first().evaluate(x => x.complete && x.naturalWidth > 0), true); checks++;
 assert.equal(await options.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true); checks++;
+assert.equal(await options.locator('#micGain').inputValue(), '1.35'); assert.equal(await options.locator('#micGainValue').textContent(), '%135'); assert.equal(await options.locator('#sensitivity').inputValue(), '0.005'); checks++;
 await options.screenshot({path: path.join(output, 'settings-desktop.png'), fullPage: true});
 await options.locator('#apiKey').fill('test-credential-placeholder-000000'); await options.locator('#freeConfirmed').check(); await options.locator('#cloudConsent').check(); await options.locator('#save').click(); await options.waitForFunction(() => document.getElementById('saveState').textContent.includes('kaydedildi'));
 assert.equal(await options.locator('#apiKey').inputValue(), ''); checks++;

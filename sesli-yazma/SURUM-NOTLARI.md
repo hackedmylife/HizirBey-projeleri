@@ -1,3 +1,15 @@
+# 0.1.1 — Bağlantı bekleme ve mikrofon güçlendirme
+
+15 Ekim 2026
+
+- Geçici ağ/sunucu hataları için iptal edilebilir, en fazla 3 deneme; her denemede 45 saniye yanıt süresi. Her yeniden deneme ücretsiz kota sayacına girer. Kota/anahtar hatalarında tekrar yoktur.
+- Sıralı ses tamponu; uzun beklemede kayıt durdurularak mevcut ses tamamlanır. Bekleyen ses yaklaşık 2 dakikayla sınırlanır. İptal, sohbet değişimi ve geç yanıt korumaları korunur.
+- Oturum ve parça kimliğiyle yinelenen metin aktarımını engelleme; işlem sırasında Enter koruması.
+- %135 varsayılan mikrofon güçlendirme, %100–200 ayar ve yüksek sesleri yumuşak sınırlama. Ham ses üzerinden konuşma algılama ve daha hassas 0,005 varsayılan eşik.
+- Yerel mikrofon testinde seçilen güçlendirme ve konuşma algısının gösterilmesi.
+- Anahtar/sözlük/izinleri koruyan ses ayarı geçişi. Eski varsayılan eşik güncellenir; diğer özel eşikler korunur.
+- Gecikme, zaman aşımı, yeniden deneme sırasında iptal, dolan tampon ve ses kazancı için ek testler.
+
 # 0.1.0 — İlk kurulum sürümü
 
 15 Ekim 2026

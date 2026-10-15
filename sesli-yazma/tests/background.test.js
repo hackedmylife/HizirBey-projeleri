@@ -45,11 +45,21 @@ test('only current-session offscreen results can reach the editor', async () => 
   const state = (await send('ui:get')).data.status;
   assert.equal((await send('audio:result', {sessionId: state.sessionId, text: 'bad', raw: 'bad'}, content)).ok, true);
   assert.equal(messages.filter(x => x.type === 'voice:insert').length, 0);
-  assert.equal((await send('audio:result', {sessionId: state.sessionId, text: 'Merhaba.', raw: 'merhaba'}, audio)).data, true);
+  assert.equal((await send('audio:result', {sessionId: state.sessionId, segmentId: 1, text: 'Merhaba.', raw: 'merhaba'}, audio)).data, true);
   assert.equal(messages.filter(x => x.type === 'voice:insert').length, 1);
+  assert.equal((await send('audio:result', {sessionId: state.sessionId, segmentId: 1, text: 'Merhaba.', raw: 'merhaba'}, audio)).data, true);
+  assert.equal(messages.filter(x => x.type === 'voice:insert').length, 1, 'Duplicate delivery must not insert twice');
   await send('content:cancel', {sessionId: state.sessionId, reason: 'Görüşme değişti.'}, content);
   assert.equal((await send('audio:result', {sessionId: state.sessionId, text: 'Geç yanıt.', raw: 'geç yanıt'}, audio)).data, false);
   assert.equal(messages.filter(x => x.type === 'voice:insert').length, 1);
+});
+test('audio setting upgrades preserve saved credentials and personal dictionary', async () => {
+  const key = local[STORE.credentials].key, memory = structuredClone(local[STORE.memory]);
+  local[STORE.settings] = {...local[STORE.settings], sensitivity: 0.008}; delete local[STORE.settings].audioRevision;
+  const settings = (await send('ui:get')).data.settings;
+  assert.equal(settings.sensitivity, 0.005); assert.equal(settings.micGain, 1.35);
+  await send('ui:save', {settings});
+  assert.equal(local[STORE.credentials].key, key); assert.deepEqual(local[STORE.memory], memory);
 });
 test('backup import cannot replace credentials or enable a paid provider', async () => {
   const key = local[STORE.credentials].key;

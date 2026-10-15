@@ -34,7 +34,7 @@ jobs:
           import math, struct, wave
           with wave.open('/tmp/hizir-qa-voice.wav','wb') as f:
               f.setparams((1,2,16000,0,'NONE','not compressed'))
-              for i in range(16000*7):
+              for i in range(16000*20):
                   t=i/16000
                   value=.12*math.sin(2*math.pi*440*t) if 1<t<3 else 0
                   f.writeframesraw(struct.pack('<h',int(value*32767)))

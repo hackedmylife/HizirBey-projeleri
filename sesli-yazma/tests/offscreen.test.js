@@ -47,3 +47,17 @@ test('stop flushes the last spoken words and releases microphone resources', asy
   assert.equal(events.filter(x => x.type === 'audio:result' && x.sessionId === 'three').length, 1);
   assert.ok(tracks.at(-1).stopped); assert.equal(contexts.at(-1).state, 'closed');
 });
+test('long provider delay buffers past the old four-segment limit and pauses capture safely', async () => {
+  waiting = {};
+  await send('capture:start', 'backlog', config);
+  for (let n = 0; n < 9; n++) {push(110, 0.04); await new Promise(resolve => setTimeout(resolve, 0));}
+  await until(() => Boolean(waiting.resolve));
+  const paused = events.filter(x => x.type === 'audio:meter' && x.sessionId === 'backlog' && x.pausedForBacklog).at(-1);
+  assert.ok(paused); assert.equal(paused.recording, false); assert.ok(paused.pendingSeconds >= 106 && paused.pendingSeconds <= 121);
+  assert.equal(events.some(x => x.type === 'audio:error' && x.sessionId === 'backlog'), false);
+  assert.equal(events.filter(x => x.type === 'audio:reserve' && x.sessionId === 'backlog').length, 1, 'Only one request is in flight');
+  assert.ok(tracks.at(-1).stopped);
+  await send('capture:cancel', 'backlog'); const release = waiting.resolve; waiting = null; release();
+  await new Promise(resolve => setTimeout(resolve, 20));
+  assert.equal(events.some(x => x.type === 'audio:result' && x.sessionId === 'backlog'), false);
+});
