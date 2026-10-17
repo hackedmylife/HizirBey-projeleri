@@ -15,7 +15,7 @@ const errors = [];
 context.on('page', page => page.on('pageerror', error => errors.push(error.message)));
 const editorSource = await readFile(path.join(extensionPath, 'editor.js'), 'utf8');
 const contentSource = await readFile(path.join(extensionPath, 'content.js'), 'utf8');
-const fixture = `<!doctype html><html lang="tr"><meta charset="utf-8"><style>body{font:16px system-ui;padding:35px;background:#f5f6f8}main{max-width:850px;margin:auto;background:white;padding:24px}#editor{border:1px solid #888;min-height:100px;padding:15px;margin-top:30px}button{padding:10px}</style><main data-chat-id="DEMOCHAT01"><h1>Kontrollü LiveChat editör testi</h1><div data-testid="chat-feed"><p>Bu sayfa gerçek bir görüşme değildir.</p><div data-testid="DEMOCHAT01_1-reaction"></div></div><div id="composer"><div id="editor" data-testid="chat-feed-text-area-test-id" data-lexical-editor="true" contenteditable="true" role="textbox"><p><br></p></div><div id="placeholder"><p>Type your message</p></div><button data-testid="send-button">Send</button></div><p id="sent">0</p></main><script>window.sentCount=0;document.getElementById('editor').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();window.sentCount++;document.getElementById('sent').textContent=window.sentCount;}});</script></html>`;
+const fixture = `<!doctype html><html lang="tr"><meta charset="utf-8"><style>body{font:16px system-ui;padding:35px;background:#f5f6f8}main{max-width:850px;margin:auto;background:white;padding:24px}#editor{border:1px solid #888;min-height:100px;padding:15px;margin-top:30px}button{padding:10px}</style><main data-chat-id="DEMOCHAT01"><h1>Kontrollü LiveChat editör testi</h1><div data-testid="chat-feed"><p>Bu sayfa gerçek bir görüşme değildir.</p><div data-testid="DEMOCHAT01_1-reaction"></div></div><div id="composer"><div id="editor" data-testid="chat-feed-text-area-test-id" data-lexical-editor="true" contenteditable="true" role="textbox"><p><br></p></div><div id="placeholder"><p>Type your message</p></div><button data-testid="send-button">Send</button></div><p id="sent">0</p></main><script>window.sentCount=0;window.sendClicks=0;window.nativeEnterCount=0;window.nativeEnterSends=true;const send=()=>{window.sentCount++;document.getElementById('sent').textContent=window.sentCount;};document.querySelector('[data-testid="send-button"]').addEventListener('click',()=>{window.sendClicks++;send();});document.getElementById('editor').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){window.nativeEnterCount++;if(window.nativeEnterSends){e.preventDefault();send();}}});</script></html>`;
 const page = await context.newPage();
 await page.route('https://my.livechatinc.com/**', route => route.fulfill({body: fixture, contentType: 'text/html'}));
 await page.goto('https://my.livechatinc.com/chats/DEMOCHAT01');
@@ -34,7 +34,7 @@ const dot = page.locator('#hizir-voice-host').locator('#indicator');
 assert.equal(await dot.isVisible(), true);
 assert.equal(await dot.evaluate(x => getComputedStyle(x).backgroundColor), 'rgb(239, 68, 68)');
 const dotRect = await page.locator('#hizir-voice-host').boundingBox();
-assert.equal(dotRect.width, 10);
+assert.equal(dotRect.width, 20); assert.equal(dotRect.height, 20);
 assert.ok(Math.abs(dotRect.x + dotRect.width / 2 - page.viewportSize().width / 2) < 1);
 assert.ok(Math.abs(dotRect.y + dotRect.height / 2 - page.viewportSize().height / 2) < 1);
 assert.equal(await page.locator('#hizir-voice-host').evaluate(x => getComputedStyle(x).pointerEvents), 'none'); checks++;
@@ -54,7 +54,12 @@ await dispatch({type: 'voice:status', sessionId: 's1', data: {sessionId: 's1', b
 assert.equal((await dispatch({type: 'voice:undo', sessionId: 's1'})).ok, true);
 assert.equal((await page.locator('#editor').innerText()).trim(), '');
 assert.equal((await dispatch({type: 'voice:insert', sessionId: 's1', data: {segmentId: 2, text: 'Çekiminiz henüz onaylanmadı.'}})).ok, true); checks++;
-await page.keyboard.press('Enter'); assert.equal(await page.evaluate(() => globalThis.sentCount), 1); checks++;
+// A verified draft is immediately sendable even before a busy status clears.
+await dispatch({type: 'voice:status', sessionId: 's1', data: {sessionId: 's1', busy: true, recording: true}});
+await page.keyboard.down('Enter'); assert.equal(await page.evaluate(() => globalThis.sentCount), 1);
+assert.equal(await page.evaluate(() => globalThis.sendClicks), 1); assert.equal(await page.evaluate(() => globalThis.nativeEnterCount), 0); checks++;
+await page.keyboard.down('Enter'); await page.keyboard.up('Enter');
+assert.equal(await page.evaluate(() => globalThis.sentCount), 1, 'Holding Enter must not send twice'); checks++;
 assert.equal(await dot.isVisible(), false); checks++;
 assert.equal((await dispatch({type: 'voice:insert', sessionId: 's1', data: {text: 'Geciken sonuç.'}})).ok, false); checks++;
 await page.locator('#editor').fill('Mevcut yazı.'); await dispatch({type: 'voice:bind', sessionId: 's2'});
@@ -69,6 +74,37 @@ await dispatch({type: 'voice:bind', sessionId: 's4'});
 await page.locator('main').evaluate(x => {x.dataset.chatId = 'DEMOCHAT02';}); await page.waitForTimeout(120);
 assert.equal((await dispatch({type: 'voice:insert', sessionId: 's4', data: {text: 'Yanlış görüşmeye gitmemeli.'}})).ok, false); checks++;
 await page.screenshot({path: path.join(output, 'livechat-editor.png'), fullPage: true});
+
+// LiveChat's Enter-is-newline setting must not require changing app settings.
+await page.locator('#editor').fill('');
+await page.evaluate(() => {globalThis.nativeEnterSends = false;});
+await dispatch({type: 'voice:bind', sessionId: 'newline'});
+await dispatch({type: 'voice:insert', sessionId: 'newline', data: {segmentId: 1, text: 'Kontrol edilmiş metin.'}});
+const sentBefore = await page.evaluate(() => globalThis.sentCount);
+await page.evaluate(() => document.getElementById('editor').dispatchEvent(new window.KeyboardEvent('keydown', {key: 'Enter', bubbles: true, cancelable: true})));
+assert.equal(await page.evaluate(() => globalThis.sentCount), sentBefore, 'Untrusted keys cannot activate Send'); checks++;
+await page.keyboard.press('Shift+Enter');
+assert.equal(await page.evaluate(() => globalThis.sentCount), sentBefore); checks++;
+await page.keyboard.press('Enter');
+assert.equal(await page.evaluate(() => globalThis.sentCount), sentBefore + 1);
+assert.equal(await page.locator('#hizir-voice-host').isVisible(), false); checks++;
+// A disabled button cannot silently lose or submit the reviewed draft.
+await page.locator('#editor').fill(''); await dispatch({type: 'voice:bind', sessionId: 'disabled'});
+await dispatch({type: 'voice:insert', sessionId: 'disabled', data: {segmentId: 1, text: 'Korunacak taslak.'}});
+await page.locator('[data-testid="send-button"]').evaluate(x => {x.disabled = true;});
+await page.keyboard.press('Enter');
+assert.equal(await page.evaluate(() => globalThis.sentCount), sentBefore + 1);
+assert.equal((await page.locator('#editor').innerText()).trim(), 'Korunacak taslak.');
+assert.equal(await page.evaluate(() => globalThis.__messages.some(x => x.type === 'content:cancel' && /hazır değil/.test(x.reason))), true); checks++;
+await page.locator('[data-testid="send-button"]').evaluate(x => {x.disabled = false;});
+// Normal stop hides the dot but keeps the reviewed draft's Enter shortcut.
+await page.locator('#editor').fill(''); await dispatch({type: 'voice:bind', sessionId: 'stopped'});
+await dispatch({type: 'voice:insert', sessionId: 'stopped', data: {segmentId: 1, text: 'Dinleme bitti, taslak hazır.'}});
+await dispatch({type: 'voice:release', sessionId: 'stopped', keepDraft: true});
+assert.equal(await page.locator('#hizir-voice-host').isVisible(), false);
+assert.equal((await dispatch({type: 'voice:insert', sessionId: 'stopped', data: {segmentId: 2, text: 'Geç kalan sonuç.'}})).ok, false); checks++;
+await page.keyboard.press('Enter'); assert.equal(await page.evaluate(() => globalThis.sentCount), sentBefore + 2); checks++;
+
 
 // Render actual packaged UI with a local fake extension transport.
 const mime = {'.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png'};

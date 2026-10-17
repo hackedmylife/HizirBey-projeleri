@@ -1,4 +1,4 @@
-HIZIR BEY SESLİ YAZMA — 0.1.4
+HIZIR BEY SESLİ YAZMA — 0.1.5
 
 1) ZIP'i bilgisayarında sabit bir klasöre çıkar. Örnek: Belgeler\HizirBey-Sesli-Yazma
 2) Chrome adres çubuğuna chrome://extensions yaz.
@@ -25,12 +25,18 @@ Chrome, Win tuşunu doğrudan uzantı kısayolu olarak kabul etmez.
 GÖRÜNÜM
 Sayfada geniş çubuk görünmez. Eklenti simgesine tıklayınca logolu küçük
 kontrol paneli açılır. Dinleme ve yazım sırasında ekranın tam ortasında tek bir
-kırmızı nokta görünür. Paneli kapatmak tek başına mikrofonu durdurmaz.
+20 piksel kırmızı nokta görünür. Paneli kapatmak tek başına mikrofonu durdurmaz.
 
 KULLANIM
 - ALT + H'ye yeniden basmak dinlemeyi bitirir; son cümle hazırlanır.
-- Hazırlanıyor durumunda Enter eksik metni göndermesin diye bekletilir.
-  Metin hazır olunca Enter'a yeniden bas. Otomatik gönderim yapılmaz.
+- Dikte yazıldıktan sonra ENTER, görüşmenin Gönder düğmesini bir kez
+  çalıştırır. LiveChat Enter ayarın satır açmak olsa da taslak gönderilir.
+  Mikrofon ve bekleyen dikte kapanır; geç sonuçlar eklenmez. Gönderilen,
+  yazı alanında gördüğün metindir. SHIFT + ENTER satır açmaya devam eder.
+- İlk metin henüz yazılmadıysa veya ekleme sürüyorsa Enter engellenir.
+  Tuş sonradan otomatik gönderime dönüşmez; hazır metni okuyup tekrar bas.
+- Alt + H ile dinlemeyi normal bitirince de hazır taslak Enter ile
+  gönderilebilir. Düğme kullanılamıyorsa taslak korunur, panelde uyarı olur.
 - Enter ile gönderdiğinde mikrofon oturumu biter. Yeni mesaj için ALT + H.
 - İç not modundan müşteriye mesaj moduna geç; iç nota dikte aktarılmaz.
 - Görüşme veya sekme değişiminde kayıt kapanır.

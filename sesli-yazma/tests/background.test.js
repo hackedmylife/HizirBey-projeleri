@@ -96,6 +96,14 @@ test('minute quota reports a resumable wait without consuming an extra request',
   await send('content:cancel', {sessionId}, content);
   if (previous) local[STORE.usage] = previous; else delete local[STORE.usage];
 });
+test('normal capture completion preserves only the reviewed draft shortcut', async () => {
+  await send('content:toggle', {}, content);
+  const sessionId = (await send('ui:get')).data.status.sessionId;
+  await send('audio:done', {sessionId}, audio);
+  const release = messages.filter(x => x.type === 'voice:release' && x.sessionId === sessionId).at(-1);
+  assert.equal(release.keepDraft, true); assert.equal((await send('ui:get')).data.status.sessionId, null);
+  assert.ok(messages.some(x => x.type === 'capture:cancel' && x.sessionId === sessionId));
+});
 test('without explicit Free and cloud consent no new capture starts', async () => {
   await send('ui:save', {settings: {freeConfirmed: false, cloudConsent: false}});
   assert.equal((await send('content:toggle', {}, content)).ok, false);

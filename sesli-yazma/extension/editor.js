@@ -27,6 +27,22 @@
     return {url: location.href, feed, stable, thread};
   }
   function same(a, b) {return a.url === b.url && a.feed === b.feed && a.stable === b.stable && a.thread === b.thread;}
+  function findSendButton(editor) {
+    let scope = editor.parentElement;
+    while (scope && scope !== document.body) {
+      const buttons = [...scope.querySelectorAll('[data-testid="send-button"]')].filter(visible);
+      if (buttons.length) {
+        if (buttons.length !== 1) throw new Error('Gönder düğmesi belirsiz. Metni kontrol edip LiveChat Gönder düğmesini kullan.');
+        const button = buttons[0];
+        if (button.hasAttribute('disabled') || button.getAttribute('aria-disabled') === 'true' || button.closest('[inert]')) throw new Error('Gönder düğmesi henüz hazır değil. Metnin korundu; LiveChat Gönder düğmesini kullan.');
+        return button;
+      }
+      // Never climb past this conversation to a different composer's button.
+      if (scope.querySelector('[data-testid="chat-feed"]')) break;
+      scope = scope.parentElement;
+    }
+    throw new Error('Gönder düğmesi bulunamadı. Metnin korundu; LiveChat Gönder düğmesini kullan.');
+  }
   class Binding {
     constructor() {
       this.editor = find();
@@ -37,6 +53,7 @@
       try {return this.editor.isConnected && visible(this.editor) && !isNote(this.editor) && find() === this.editor && same(this.identity, identity(this.editor));} catch {return false;}
     }
     assert() {if (!this.valid()) throw new Error('Görüşme veya yazı alanı değişti. Dikte durduruldu.');}
+    sendButton() {this.assert(); return findSendButton(this.editor);}
     async insert(text) {
       this.assert();
       if (read(this.editor) !== this.expected) throw new Error('Yazı alanını elle değiştirdin. Mevcut metnin korundu; yeni dikte için Alt + H.');

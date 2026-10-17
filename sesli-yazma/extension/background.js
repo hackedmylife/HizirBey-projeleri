@@ -52,10 +52,10 @@ async function closeIdleOffscreen() {
     await offscreenClosing;
   } catch { /* Already closed. */ }
 }
-async function cancel(message = 'Dinleme durduruldu.', phase = 'idle') {
+async function cancel(message = 'Dinleme durduruldu.', phase = 'idle', keepDraft = false) {
   const old = session; session = null; memoryCache = null;
   if (old) {
-    chrome.tabs.sendMessage(old.tabId, {type: 'voice:release', sessionId: old.id, message}, {frameId: 0}).catch(() => {});
+    chrome.tabs.sendMessage(old.tabId, {type: 'voice:release', sessionId: old.id, message, keepDraft}, {frameId: 0}).catch(() => {});
     await offscreen('capture:cancel', {sessionId: old.id}).catch(() => {});
   }
   if (session) return view();
@@ -219,7 +219,7 @@ async function handle(message, sender) {
       return true;
     }
     if (message.type === 'audio:error') {await cancel(message.error || 'Dikte durduruldu.', 'error'); return true;}
-    if (message.type === 'audio:done') {await cancel(message.reason || 'Dikte tamamlandı. Metni okuyup Enter ile gönderebilirsin.'); return true;}
+    if (message.type === 'audio:done') {await cancel(message.reason || 'Dikte tamamlandı. Metni okuyup Enter ile gönderebilirsin.', 'idle', true); return true;}
   }
   throw new Error('Bilinmeyen eklenti işlemi.');
 }

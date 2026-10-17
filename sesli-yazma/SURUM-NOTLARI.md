@@ -1,3 +1,15 @@
+# 0.1.5 — Büyük kırmızı nokta ve tek Enter ile gönderim
+
+17 Ekim 2026
+
+- Ekranın ortasındaki kırmızı noktanın çapı 10 pikselden 20 piksele çıkarıldı. Merkez ve tıklamaları geçirme davranışı korunur.
+- Dikte yazıldıktan sonra kullanıcının gerçek Enter basışı, bağlı görüşmenin etkin Gönder düğmesini bir kez çalıştırır. LiveChat’in Enter/satır ayarından bağımsızdır; uygulamanın genel ayarını değiştirmez.
+- Gönderim, kullanıcının ekranda gördüğü taslağı esas alır. Mikrofon oturumu ve bekleyen dikte kapanır; geç sonuçlar sonradan eklenmez. Hazır taslak varsa devam eden dinleme veya yeni sesin sırada olması Enter’ı engellemez.
+- Alt + H ile normal bitirilen diktenin hazır taslağında da Enter çalışır. Bu bekleme görünmezdir; mikrofon kapanır, nokta gizlenir. Görüşme değişimi, iptal veya hata durumunda bu bağ korunmaz.
+- İlk metin gelmeden veya editör hâlâ yazarken Enter koruması devam eder. Otomatik/ertelenmiş gönderim yoktur. Shift + Enter satır açar; tuşu basılı tutmak çift göndermez.
+- Eksik, kapalı veya birden fazla Gönder düğmesinde metin korunur ve açıklama gösterilir. Başka görüşmenin düğmesine yönlenmez.
+- 0.1.4 hız ayarları, şüpheli dikte denetimleri, anahtar ve sözlük korunur.
+
 # 0.1.4 — Daha kısa bekleme ve ekran ortasında kırmızı nokta
 
 17 Ekim 2026

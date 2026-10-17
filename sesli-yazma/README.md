@@ -1,6 +1,6 @@
 # Hızır Bey Sesli Yazma
 
-Chrome / LiveChat için logolu Türkçe dikte uzantısı. Güncel sürüm: **0.1.4**.
+Chrome / LiveChat için logolu Türkçe dikte uzantısı. Güncel sürüm: **0.1.5**.
 
 **Win + H (Windows yönlendirmesiyle) → konuş → metni oku → Enter ile gönder.**
 
@@ -15,7 +15,7 @@ Groq hesabını **Free** planında tut, ödeme yöntemi ekleme ve Developer plan
 ## Davranış
 
 - Başlatma/durdurma: Windows yönlendirmesi açıkken Win + H; doğrudan Chrome komutu Alt + H. Durdururken son ses parçası tamamlanır.
-- Sayfada geniş çubuk yoktur. Dinleme veya metin hazırlanması sürerken ekranın tam ortasında tıklamaları engellemeyen 10 px kırmızı nokta görünür; işlem bitince kaybolur. Logolu Başlat/Durdur, geri al ve ayarlar paneli yalnızca Chrome eklenti simgesine tıklanınca açılır. Paneli kapatmak dikteyi durdurmaz.
+- Sayfada geniş çubuk yoktur. Dinleme veya metin hazırlanması sürerken ekranın tam ortasında tıklamaları engellemeyen 20 px kırmızı nokta görünür; işlem bitince kaybolur. Logolu Başlat/Durdur, geri al ve ayarlar paneli yalnızca Chrome eklenti simgesine tıklanınca açılır. Paneli kapatmak dikteyi durdurmaz.
 - Ses, Whisper Large v3 (veya seçilirse Turbo) ile Türkçe yazıya çevrilir. Metin düzeltme açıksa Groq'taki GPT OSS 20B, kontrollü yazım/noktalama düzeltmesi yapar.
 - Ses tanıma sonucu, dil düzeltmesinden önce kalite denetiminden geçer. Segment güven verisi eksikse; düşük güven, yüksek sessizlik olasılığı veya aşırı tekrar varsa parça otomatik yazılmaz. Tamamen sessiz olduğu işaretlenen parça atlanır.
 - Bilinen altyazı/video kapanış kalıpları, tek başına MK/M.K. ve sınırlı uygunsuz ifade listesi engellenir. Şüpheli parçanın tamamı reddedilir, mikrofon kapanır; önceki yazı korunur ve panelde uyarı gösterilir. Şüpheli sözcüğü silip kalanını otomatik birleştirme yapılmaz. Aynı denetim yazı alanına aktarımın son adımında da uygulanır.
@@ -23,7 +23,8 @@ Groq hesabını **Free** planında tut, ödeme yöntemi ekleme ve Developer plan
 - Bu filtreler bütün tanıma hatalarını yakaladığı anlamına gelmez. Gerçek kişi/kurum adları ve sayılar hâlâ okunmalıdır. MK gibi gerçek bir baş harf/kod amaçlanmışsa otomatik dikte reddedilebilir; gerektiğinde elle yazılabilir.
 - Tutar, sayı, olumsuzluk ve işlem türü değişimleri denetlenir. Şüpheli düzeltmede temel metin korunur ve eklenti panelinde uyarı gösterilir.
 - Gerçek LiveChat Lexical editörü hedeflenir. İç not modunda aktarım engellenir.
-- Eklenti mesaj göndermez. Kullanıcının normal Enter / Send eylemi sırasında mikrofon oturumu kapanır. İşlem sürerken Enter engellenir; hazır olduğunda yeniden basılır. İlk basış daha sonra kendiliğinden gönderime dönüşmez.
+- Eklenti kendiliğinden göndermez. Dikte metni yazı alanına eklendikten sonra gerçek bir Enter basışı, aynı görüşmenin etkin Gönder düğmesini bir kez çalıştırır; LiveChat’in Enter/satır ayarını değiştirmek gerekmez. Gönderilen, ekranda gördüğün taslaktır. Mikrofon ve bekleyen dikte kapanır; sonradan gelen sonuç eklenmez. İlk metin henüz yazılmadıysa veya editör yazma işleminin ortasındaysa Enter engellenir; bekletilen tuş sonradan gönderime dönüşmez. Shift + Enter satır açar.
+- Dinlemeyi Alt + H ile normal bitirdiğinde de hazır taslağın Enter kısayolu korunur; nokta gizlenir. Gönder düğmesi eksik, kapalı veya belirsizse metin korunur ve açıklama gösterilir. Başka görüşmenin düğmesi kullanılmaz.
 - Mevcut yazıyı silmez. Kullanıcı alanı elle değiştirmişse geç gelen sonuç eklenmez; son metin popup'tan kurtarılabilir.
 - Sohbet, sekme veya sayfa değişiminde mikrofon kapanır. 90 saniye sessizlikte ve 15 dakikalık oturum sınırında kayıt sonlandırılır.
 - Ses tanıma isteği başına 45 saniyeye kadar beklenir. Ağ hatası, zaman aşımı veya geçici sunucu hatasında toplam en fazla 3 deneme yapılır. Yeniden denemeler de yerel ücretsiz kotaya sayılır; 400/401/403/429 hataları tekrar edilmez.

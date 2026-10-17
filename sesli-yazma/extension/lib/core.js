@@ -1,4 +1,4 @@
-export const VERSION = '0.1.4';
+export const VERSION = '0.1.5';
 export const MEMORY_LIMIT = 10_000_000;
 export const SPEECH_MODELS = ['whisper-large-v3', 'whisper-large-v3-turbo'];
 export const TEXT_MODEL = 'openai/gpt-oss-20b';

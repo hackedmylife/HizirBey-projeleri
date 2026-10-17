@@ -53,6 +53,7 @@ try {
   const listening = () => page.waitForFunction(() => {const host = document.getElementById('hizir-voice-host'); return !host.hidden && host.shadowRoot.getElementById('indicator').dataset.phase === 'listening';}, undefined, {timeout: 15000});
   await toggle(); await listening(); checks++;
   const dotRect = await page.locator('#hizir-voice-host').boundingBox(), viewport = page.viewportSize();
+  assert.equal(dotRect.width, 20); assert.equal(dotRect.height, 20);
   assert.ok(Math.abs(dotRect.x + dotRect.width / 2 - viewport.width / 2) < 1);
   assert.ok(Math.abs(dotRect.y + dotRect.height / 2 - viewport.height / 2) < 1); checks++;
   const sessionStore = () => options.evaluate(async () => {const reply = await chrome.runtime.sendMessage({type: 'ui:get'}); const status = reply.data.status; return {status, session: status.sessionId ? {id: status.sessionId} : null};});
@@ -79,7 +80,23 @@ try {
   assert.ok(Number.isFinite(latency) && latency >= 26000, 'Transfer timing includes deliberate network delay'); checks++;
   await page.keyboard.press('Enter'); await page.waitForTimeout(400);
   assert.equal(await page.evaluate(() => globalThis.sentCount), 1); assert.equal((await sessionStore()).session, null); checks++;
+  assert.equal(await page.evaluate(() => globalThis.sendClicks), 1); assert.equal(await page.evaluate(() => globalThis.nativeEnterCount), 0); checks++;
   assert.equal(await page.locator('#hizir-voice-host').isVisible(), false); checks++;
+  const closedUntil = Date.now() + 2000;
+  while (Date.now() < closedUntil && (await worker.evaluate(() => chrome.runtime.getContexts({contextTypes: ['OFFSCREEN_DOCUMENT']}))).length) await page.waitForTimeout(100);
+  assert.equal((await worker.evaluate(() => chrome.runtime.getContexts({contextTypes: ['OFFSCREEN_DOCUMENT']}))).length, 0, 'Enter closes the offscreen microphone context'); checks++;
+  // Stop capture first; Enter still sends the reviewed draft when the host
+  // application is configured to insert a newline on Enter.
+  await page.locator('#editor').fill(''); await page.evaluate(() => {globalThis.nativeEnterSends = false;});
+  await toggle(); await listening();
+  await page.waitForFunction(() => document.getElementById('editor').innerText.includes('henüz onaylanmadı'), undefined, {timeout: 15000});
+  await toggle();
+  const stoppedUntil = Date.now() + 5000;
+  while ((await sessionStore()).session && Date.now() < stoppedUntil) await page.waitForTimeout(100);
+  assert.equal((await sessionStore()).session, null); assert.equal(await page.locator('#hizir-voice-host').isVisible(), false); checks++;
+  await page.keyboard.press('Enter');
+  assert.equal(await page.evaluate(() => globalThis.sentCount), 2); assert.equal(await page.evaluate(() => globalThis.sendClicks), 2); checks++;
+  await page.evaluate(() => {globalThis.nativeEnterSends = true;});
   // Repeated recordings exercise close/reopen and mic cleanup.
   await page.locator('#editor').fill(''); await page.waitForTimeout(500);
   await toggle(); await listening();
@@ -92,7 +109,7 @@ try {
   const unsafeUntil = Date.now() + 20000;
   while (Date.now() < unsafeUntil) {if ((await sessionStore()).status.phase === 'error') break; await page.waitForTimeout(200);}
   const rejected = await sessionStore(); assert.equal(rejected.status.phase, 'error'); assert.match(rejected.status.message, /Şüpheli dikte yazılmadı/); assert.equal(rejected.session, null); checks++;
-  assert.equal((await page.locator('#editor').innerText()).trim(), 'Korunacak mevcut metin.'); assert.equal(await page.locator('#hizir-voice-host').isVisible(), false); assert.equal(await page.evaluate(() => globalThis.sentCount), 1); checks++;
+  assert.equal((await page.locator('#editor').innerText()).trim(), 'Korunacak mevcut metin.'); assert.equal(await page.locator('#hizir-voice-host').isVisible(), false); assert.equal(await page.evaluate(() => globalThis.sentCount), 2); checks++;
   // Fail closed at provider quota, without another provider or upgrade request.
   await toggle(); await listening();
   await qa('qa:quota');

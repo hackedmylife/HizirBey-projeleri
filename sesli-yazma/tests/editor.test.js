@@ -38,3 +38,24 @@ test('a newly selected note mode invalidates an already bound editor', async () 
   window.document.querySelector('#composer p').textContent = 'Type an internal note';
   assert.equal(binding.valid(), false); await window.happyDOM.close();
 });
+test('Enter resolves only the bound composer send button', async () => {
+  const window = fixture(), doc = window.document;
+  doc.getElementById('composer').insertAdjacentHTML('beforeend', '<button data-testid="send-button" id="correct-send">Send</button>');
+  doc.body.insertAdjacentHTML('beforeend', '<section data-chat-id="OTHER01"><button data-testid="send-button" id="other-send">Other</button></section>');
+  const binding = new window.HizirVoiceEditor.Binding();
+  assert.equal(binding.sendButton().id, 'correct-send');
+  doc.getElementById('correct-send').remove();
+  assert.throws(() => binding.sendButton(), /bulunamadı/, 'Never use a different conversation send button');
+  await window.happyDOM.close();
+});
+test('disabled or ambiguous Send controls preserve the reviewed draft', async () => {
+  for (const buttons of ['<button data-testid="send-button" disabled>Send</button>', '<button data-testid="send-button" aria-disabled="true">Send</button>', '<button data-testid="send-button">One</button><button data-testid="send-button">Two</button>']) {
+    const window = fixture(), doc = window.document;
+    doc.getElementById('editor').innerText = 'Korunacak taslak.';
+    doc.getElementById('composer').insertAdjacentHTML('beforeend', buttons);
+    const binding = new window.HizirVoiceEditor.Binding();
+    assert.throws(() => binding.sendButton(), /hazır değil|belirsiz/);
+    assert.equal(doc.getElementById('editor').innerText, 'Korunacak taslak.');
+    await window.happyDOM.close();
+  }
+});
