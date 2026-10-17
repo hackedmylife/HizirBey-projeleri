@@ -1,18 +1,18 @@
-# Hızır Bey Sesli Yazma 0.1.4 — Doğrulama
+# Hızır Bey Sesli Yazma 0.1.5 — Doğrulama
 
-17 Ekim 2026
+18 Ekim 2026
 
 | Kontrol | Sonuç | Kapsam |
 | --- | --- | --- |
-| Birim / DOM / oturum testleri | **65 / 65 geçti** | Hız bütçesi, art arda hızlı aktarım, kota sırasında iptal/devam, MK/altyazı ve kalite denetimi, son aktarım koruması, Türkçe anlam, WAV/VAD/kazanç, iptal, tampon sınırı, anahtar ve yedek |
+| Birim / DOM / oturum testleri | **68 / 68 geçti** | Hız bütçesi, art arda hızlı aktarım, kota sırasında iptal/devam, MK/altyazı ve kalite denetimi, son aktarım koruması, Türkçe anlam, WAV/VAD/kazanç, iptal, tampon sınırı, anahtar ve yedek |
 | ESLint | **Geçti** | Uygulama, testler ve JavaScript yardımcıları |
 | Sözdizimi ve manifest | **Geçti** | Alt + H sözleşmesi, kaynaklar, dar host listesi ve kimlik bilgisi taraması |
-| Chromium arayüz / editör | **27 kontrol geçti** | Logonun yüklenmesi, masaüstü/mobil taşma, simge paneli, gizli boşta görünüm, dinleme/işleme sırasında farklı pencere boyutlarında ortalı kırmızı nokta, aktarım süresi, hızlı mod, geri al, mikrofon ayarları ve Enter davranışı |
-| Gerçek MV3 uzantısı + sahte mikrofon / API | **21 kontrol geçti** | Offscreen AudioWorklet → ses isteği → 503 sonrası tekrar → 26 saniye gecikme → düzeltme → tek ekleme → kullanıcının Enter'ı; kota sayacı, şüpheli altyazı cevabının engellenmesi/mevcut yazının korunması, ortalanmış kırmızı nokta, aktarım süresi, görüşme değişimi ve 429 |
+| Chromium arayüz / editör | **34 kontrol geçti** | Logonun yüklenmesi, masaüstü/mobil taşma, simge paneli, gizli boşta görünüm, dinleme/işleme sırasında farklı pencere boyutlarında ortalı kırmızı nokta, aktarım süresi, hızlı mod, geri al, mikrofon ayarları, tek Enter/Shift+Enter, basılı tuş, pasif düğme, durdurulmuş taslak ve iki farklı Enter ayarı |
+| Gerçek MV3 uzantısı + sahte mikrofon / API | **25 kontrol geçti** | Offscreen AudioWorklet → ses isteği → 503 sonrası tekrar → 26 saniye gecikme → düzeltme → tek ekleme → kullanıcının Enter'ı; kota sayacı, şüpheli altyazı cevabının engellenmesi/mevcut yazının korunması, 20 px ortalanmış kırmızı nokta, aktarım süresi, tek Gönder tıklaması, mikrofon bağlamının kapanması, durdurulmuş taslakta Enter, görüşme değişimi ve 429 |
 
-Başarılı CI çalışması: [Sesli Yazma QA](https://github.com/hackedmylife/HizirBey-projeleri/actions/runs/38807935797). MV3 testinin çıktı günlüğü ayrıca okunmuş, 21 kontrolün tamamlandığı doğrulanmıştır.
+Başarılı CI çalışması: [Sesli Yazma QA](https://github.com/hackedmylife/HizirBey-projeleri/actions/runs/39069246996). MV3 testinin çıktı günlüğü ayrıca okunmuş, 25 kontrolün tamamlandığı doğrulanmıştır.
 
-Doğrulanan uygulama kaynak commit'i: `e2ceda349754b846f77fcec4058fba5f1ad06656`. Teslimdeki 22 uygulama dosyası bu kaynakla bayt düzeyinde eşleştirilmiştir; daha sonraki teslim commit'i rapor, proje özeti ve kurulum arşivini ekler.
+Doğrulanan uygulama kaynak commit'i: `3e454830e32a4c17139c4f69fd5935eef6248c09`. Teslimdeki 22 uygulama dosyası bu kaynakla bayt düzeyinde eşleştirilmiştir; daha sonraki teslim commit'i rapor, proje özeti ve kurulum arşivini ekler.
 
 ## Gerçek olarak doğrulananlar
 
@@ -21,7 +21,7 @@ Doğrulanan uygulama kaynak commit'i: `e2ceda349754b846f77fcec4058fba5f1ad06656`
 - Servis çağrıları özel test kopyasında taklit edilir. Gerçek API anahtarı veya ücretli/ücretsiz gerçek Groq tüketimi kullanılmaz. Ücretsiz kota/429 durumu taklitle sınanır.
 - LiveChat URL'sine yerel test cevabı döndürülür. Gerçek müşteri veya gerçek müşteri hesabı açılmaz; mesaj gönderilmez.
 - Üretim uzantısında test kancası veya taklit servis yoktur. Teste özel değişiklikler geçici kopyada kalır ve kurulum ZIP'ine girmez.
-- İşlem sürerken Enter engellenir; sonradan otomatik gönderim olmaz. Kullanıcının gerçek klavye Enter'ı, hazır metni standart editörde gönderir ve oturum biter.
+- İlk metin yazılmadan veya editör yazarken Enter engellenir; sonradan otomatik gönderim olmaz. Hazır dikte için gerçek Enter, bağlı görüşmenin Gönder düğmesini bir kez çalıştırır ve oturum biter. Gönderilen, yazı alanında görülen taslaktır; bekleyen dikte iptal edilir.
 - Görüşme değiştiğinde geç gelen sonuç yeni alana yazılmaz. İç not ve elle değiştirilmiş metin kontrolleri editör testlerinde doğrulanır.
 - İlk ses isteğine 503 cevabı verilir; ikinci istek 26 saniye bekletilir. Bu sırada yeni bir gereksiz istek oluşmaz, Enter göndermez; sonuç yalnızca bir kez eklenir. İki ses denemesinin de ücretsiz kota sayacına girdiği doğrulanır.
 - Ses tanımada ağ hatalarında en fazla üç deneme, zaman aşımında önceki isteğin iptali, bekleme sırasında iptal ve 400/401/403/429 hatalarında tekrar yapılmaması birim testlerinde doğrulanır.
@@ -29,6 +29,17 @@ Doğrulanan uygulama kaynak commit'i: `e2ceda349754b846f77fcec4058fba5f1ad06656`
 - %135 kazancın düşük sesi yükselttiği, yüksek örneklerin sınırda kaldığı ve ham VAD verisinin değiştirilmediği doğrulanır. Yeni eşik sessiz sesi algılar; düşük seviyeli yapay gürültüyü konuşma saymaz. Gerçek ortam gürültüsü ayrıca denenmelidir.
 - Güncelleme sırasında API anahtarı ve kişisel sözlük korunur. Eski varsayılan eşik taşınır; diğer özel eşikler korunur.
 - 10 MB'a yakın hafıza JSON yedeği aynı kapasite sınırında yeniden içe alınır. Anahtar bu yedekte yoktur.
+
+## 0.1.5 büyük nokta ve Enter ile gönderim
+
+- Noktanın çapı 20 piksel olarak ölçülür; masaüstü ve dar pencerede merkezi korunur. Ekran görüntüsü ayrıca incelenmiştir.
+- Tarayıcı testinde LiveChat benzeri editörün hem Enter-gönder hem Enter-satır tercihi kullanılır. Dikte için gerçek Enter, Gönder düğmesini tam bir kez çalıştırır; yerel Enter dinleyicisinden ikinci gönderim oluşmaz.
+- Hazır dikte varken kayıt/bekleme durumu Enter’ı engellemez. Enter sonrası oturum bırakılır ve geç sonuç eklenmez. Tuşu basılı tutmak çift göndermez; Shift + Enter gönderimi tetiklemez. Betikle oluşturulmuş tuş olayı Gönder düğmesini çalıştıramaz.
+- İlk sonuç beklerken basılan Enter gönderim yapmaz ve sonraya saklanmaz. Editörün metin eklemesi sırasında Enter engellenir.
+- Normal durdurma mikrofonu kapatır, noktayı gizler ve yalnızca hazır taslağın Enter bağını korur. Bu aşamada geç sonuç reddedilir. Gerçek MV3/sahte mikrofon testinde normal durdurmadan sonra Enter-satır tercihine rağmen taslağın gönderildiği doğrulanır.
+- Gerçek MV3 testinde aktif dikteyi Enter ile gönderince offscreen mikrofon bağlamının kapandığı ayrıca sorgulanır.
+- Kapalı Gönder düğmesinde metnin korunması tarayıcıda; eksik, belirsiz ve başka görüşmedeki düğmenin kullanılmaması DOM testlerinde doğrulanır.
+- Bu kontroller gerçek Chrome uzantısını ve sahte LiveChat/API yanıtlarını kullanır. Kullanıcının canlı LiveChat hesabındaki son kabul testi ayrıca gerekir.
 
 ## 0.1.4 gecikme ve merkezdeki nokta
 
@@ -51,9 +62,9 @@ Doğrulanan uygulama kaynak commit'i: `e2ceda349754b846f77fcec4058fba5f1ad06656`
 
 ## Panel ve görünüm kontrolleri
 
-- Sayfa boşta hiçbir panel veya düğme göstermez. Dinleme ve metin hazırlanırken ekranın tam ortasında 10 px kırmızı nokta görünür; nokta tıklamaları engellemez. Enter ile gönderim veya iptalde gizlenir.
+- Sayfa boşta hiçbir panel veya düğme göstermez. Dinleme ve metin hazırlanırken ekranın tam ortasında 20 px kırmızı nokta görünür; nokta tıklamaları engellemez. Enter ile gönderim veya iptalde gizlenir.
 - Eklenti simgesinden açılan küçük panelde logo, Başlat/Durdur/İptal, geri al, ayarlar, süre/seviye ve isteğe bağlı son metin kopyası doğrulanmıştır. Panel ve merkezdeki noktanın ekran görüntüleri ayrıca incelenmiştir.
-- Gizli sayfa görünümünde işlem sürerken Enter koruması devam eder. Hazır dikte geri alınabilir; elle değiştirilmiş metin geri alınmaz.
+- İlk metin yazılmadan Enter koruması devam eder. Yazılmış dikte tek Enter ile gönderilir. Hazır dikte geri alınabilir; elle değiştirilmiş metin geri alınmaz.
 - Win + H, Chrome'un desteklemediği Windows tuşu nedeniyle yardımcı eşleştirmeyle sunulur. Manifestte çalışan Alt + H komutu korunur. AutoHotkey v2 yardımcısı yalnızca Chrome öndeyken tuş yönlendirir; otomatik kurulmaz/başlatılmaz. FastKeys yönergesi mevcut şablonların genel ayarlarını değiştirmez.
 
 ## Henüz ölçülmeyenler

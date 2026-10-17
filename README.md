@@ -1,10 +1,10 @@
 # Hızır Bey Projeleri
 
-Projelerin son erişilebilir kaynak sürümleri ve kurulum paketleri. Güncelleme tarihi: 17 Ekim 2026.
+Projelerin son erişilebilir kaynak sürümleri ve kurulum paketleri. Güncelleme tarihi: 18 Ekim 2026.
 
 | Proje | Sürüm / durum | Dosyalar |
 |---|---|---|
-| Sesli yazma | 0.1.4; kısa cümle sonu bekleme, süre sınırlı düzeltme ve ekran ortasında kırmızı nokta; şüpheli dikte koruması | [Kaynak ve kurulum](sesli-yazma/) · [Paket](paketler/Hizir-Bey-Sesli-Yazma-0.1.4.zip) |
+| Sesli yazma | 0.1.5; iki kat büyük merkez noktası, hazır dikteyi tek Enter ile gönderme, kısa bekleme ve şüpheli dikte koruması | [Kaynak ve kurulum](sesli-yazma/) · [Paket](paketler/Hizir-Bey-Sesli-Yazma-0.1.5.zip) |
 | Sohbet asistanı | 0.3.3; 10 MB / 20.000 örnek hafızası, kapasite göstergesi, hızlı yerel örnek seçimi ve büyük JSON yedeği; 108 test geçti | [Kaynak ve güncelleme](sohbet-asistani/) · [Paket](paketler/Hizir-Bey-Sohbet-Asistani-0.3.3.zip) |
 | Yatırım / çekim hesaplayıcı | Logolu sürüm; alt düğme yerleşimi düzeltildi | [Kaynak ve EXE oluşturma](hesaplayici/) · [Paket](paketler/HizirBey_EXE_Olusturma.zip) |
 | Sohbet tarayıcı | 1.1.0 | [Kaynak](sohbet-tarayici/) · [Paket](paketler/Hizir-Bey-Sohbet-Tarayici-1.1.0.zip) |

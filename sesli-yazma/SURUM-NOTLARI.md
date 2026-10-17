@@ -1,6 +1,6 @@
 # 0.1.5 — Büyük kırmızı nokta ve tek Enter ile gönderim
 
-17 Ekim 2026
+18 Ekim 2026
 
 - Ekranın ortasındaki kırmızı noktanın çapı 10 pikselden 20 piksele çıkarıldı. Merkez ve tıklamaları geçirme davranışı korunur.
 - Dikte yazıldıktan sonra kullanıcının gerçek Enter basışı, bağlı görüşmenin etkin Gönder düğmesini bir kez çalıştırır. LiveChat’in Enter/satır ayarından bağımsızdır; uygulamanın genel ayarını değiştirmez.
