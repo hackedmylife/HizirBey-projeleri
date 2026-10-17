@@ -88,7 +88,7 @@ try {
   // Stop capture first; Enter still sends the reviewed draft when the host
   // application is configured to insert a newline on Enter.
   await page.locator('#editor').fill(''); await page.evaluate(() => {globalThis.nativeEnterSends = false;});
-  await toggle(); await listening();
+  await toggle(); await listening(); await qa('qa:release');
   await page.waitForFunction(() => document.getElementById('editor').innerText.includes('henüz onaylanmadı'), undefined, {timeout: 15000});
   await toggle();
   const stoppedUntil = Date.now() + 5000;
