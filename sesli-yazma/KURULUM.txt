@@ -1,4 +1,4 @@
-HIZIR BEY SESLİ YAZMA — 0.1.8
+HIZIR BEY SESLİ YAZMA — 0.1.9
 
 1) ZIP'i bilgisayarında sabit bir klasöre çıkar. Örnek: Belgeler\HizirBey-Sesli-Yazma
 2) Chrome adres çubuğuna chrome://extensions yaz.
@@ -29,6 +29,20 @@ GÖRÜNÜM
 Sayfada geniş çubuk görünmez. Eklenti simgesine tıklayınca logolu küçük
 kontrol paneli açılır. Dinleme ve yazım sırasında ekranın tam ortasında tek bir
 20 piksel kırmızı nokta görünür. Paneli kapatmak tek başına mikrofonu durdurmaz.
+
+MÜZİK AÇIKKEN
+Arka plan koruması varsayılan açıktır; ek ücretli servis kullanmaz.
+Ayarlar > Mikrofon ve dikte bölümünde gerçek mikrofonunu seç.
+Müziği açık bırak, Arka planı ölç · 2 sn düğmesine bas ve 2 saniye
+konuşma. Ölçüm kaydedilince LiveChat'e geçip normal sesinle dikte et.
+Ölçüm yereldir; ses gönderilmez veya saklanmaz. Her dikte başlangıcında
+tekrarlanmaz. Müzik / sistem mikrofon seviyesi değişirse yeniden ölç.
+Mikrofon seçimi değişince eski ölçüm sıfırlanır. Aynı sistem varsayılanı
+başka gerçek mikrofona geçerse eski seviye otomatik uygulanmaz.
+Kulaklık mikrofonunu ağzına yaklaştır. Yüksek arka planda güçlendirmeyi
+%100 ile deneyebilirsin. Varsayılan %135 tercihin güncellemede korunur.
+Koruma konuşma ve şarkı vokalini kesin ayırmaz; yüksek / yakın müzik veya
+çok kısık konuşmada hata kalabilir. Bu sürüm sıfır tanıma hatası vadetmez.
 
 KULLANIM
 - Panelde Yeniden yazdır: son dikteyi aynı görüşmenin yazı alanına

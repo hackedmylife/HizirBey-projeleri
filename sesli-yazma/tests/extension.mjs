@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {mkdtemp, rm, readFile, cp, appendFile} from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
+import {speechFixture, musicSignal} from './fixtures.mjs';
 import {createRequire} from 'node:module';
 const require = createRequire(import.meta.url);
 const {chromium} = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
@@ -12,7 +13,9 @@ await cp(path.join(root, 'extension'), extension, {recursive: true});
 // Isolated test copy: the shipped extension contains no mock, test hook or override.
 await appendFile(path.join(extension, 'offscreen.js'), `
 const qa = {hold: true, quota: false, unsafe: false, transientFailures: 1, requests: [], release: null, fragments: [], long: false};
+const qaNativeFetch = globalThis.fetch;
 globalThis.fetch = async (url, init) => {
+  if (!String(url).startsWith('https://api.groq.com/openai/v1/')) return qaNativeFetch(url, init);
   qa.requests.push(String(url));
   if (qa.quota) return new Response('{}', {status:429, headers:{'retry-after':'1'}});
   if (qa.unsafe && String(url).endsWith('/audio/transcriptions')) return new Response(JSON.stringify({text:'Erişim ve Altyazı M.K. Ses deneme 1-2.',segments:[{avg_logprob:-0.1,no_speech_prob:0.01,compression_ratio:1.1}]}),{status:200,headers:{'Content-Type':'application/json'}});
@@ -22,6 +25,12 @@ globalThis.fetch = async (url, init) => {
   return new Response(JSON.stringify(data),{status:200,headers:{'Content-Type':'application/json'}});
 };
 chrome.runtime.onMessage.addListener((m,s,r)=>{if(m?.target!=='qa'||s.id!==chrome.runtime.id)return false;if(m.type==='qa:get')r({requests:qa.requests,waiting:Boolean(qa.release)});else if(m.type==='qa:release'){qa.hold=false;qa.release?.();qa.release=null;r(true);}else if(m.type==='qa:unsafe'){qa.unsafe=true;qa.hold=false;qa.transientFailures=0;r(true);}else if(m.type==='qa:long'){qa.requests=[];qa.long=true;qa.hold=false;qa.transientFailures=0;qa.fragments=['çekim talebiniz ile ilgili','kontrollerimiz sürüyor henüz','onaylanmadı bu nedenle','bir süre daha beklemenizi','rica ediyoruz bilgi vereceğiz'];active.worklet.port.onmessage=null;for(let i=0;i<282;i++)active.segmenter.push(new Float32Array(Math.round(active.sampleRate*.128)).fill(.04));for(let i=0;i<9;i++)active.segmenter.push(new Float32Array(Math.round(active.sampleRate*.128)));r(true);}else if(m.type==='qa:window'){qa.requests=[];qa.long=true;qa.hold=false;qa.transientFailures=0;active.worklet.port.onmessage=null;r(true);}else if(m.type==='qa:preview'||m.type==='qa:reject'){active.worklet.port.onmessage=null;if(m.type==='qa:preview')qa.fragments=[m.text];for(let i=0;i<4;i++)active.segmenter.push(new Float32Array(Math.round(active.sampleRate*.128)).fill(.04));for(let i=0;i<(m.type==='qa:reject'?9:4);i++)active.segmenter.push(new Float32Array(Math.round(active.sampleRate*.128)));r(true);}else if(m.type==='qa:settle'){for(let i=0;i<4;i++)active.segmenter.push(new Float32Array(Math.round(active.sampleRate*.128)));r(true);}else if(m.type==='qa:quota'){qa.quota=true;qa.hold=false;r(true);} return false;});
+chrome.runtime.onMessage.addListener((m,s,r)=>{
+  if(m?.target!=='qa'||s.id!==chrome.runtime.id)return false;
+  if(m.type==='qa:guard') {qa.requests=[];qa.long=true;qa.hold=false;qa.unsafe=false;qa.transientFailures=0;active.worklet.port.onmessage=null;r({filter:!!active.filter,rate:active.sampleRate});}
+  else if(m.type==='qa:pcm') {const data=Float32Array.from(m.samples);for(let i=0;i<data.length;i+=2048)active.accept(data.subarray(i,i+2048));for(let i=0;i<12;i++)active.accept(new Float32Array(2048));r(true);}
+  return false;
+});
 `);
 const context = await chromium.launchPersistentContext(path.join(profile, 'profile'), {executablePath: process.env.CHROMIUM_PATH, channel: 'chromium', headless: true, args: ['--no-sandbox', '--disable-extensions-except=' + extension, '--load-extension=' + extension, '--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream', '--autoplay-policy=no-user-gesture-required', ...(process.env.TEST_AUDIO ? ['--use-file-for-fake-audio-capture=' + process.env.TEST_AUDIO] : [])]});
 let checks = 0;
@@ -38,6 +47,13 @@ try {
   await options.locator('#apiKey').fill('test-credential-placeholder-000000'); await options.locator('#freeConfirmed').check(); await options.locator('#cloudConsent').check(); await options.locator('#save').click();
   await options.waitForFunction(() => document.getElementById('saveState').textContent.includes('kaydedildi'));
   await options.locator('#testMic').click(); await options.waitForFunction(() => document.getElementById('testMic').textContent.includes('Testi bitir')); await options.locator('#testMic').click(); checks++;
+  assert.equal(await options.locator('#backgroundGuard').isChecked(), true); checks++;
+  await options.locator('#measureNoise').click();
+  assert.equal(await options.locator('#deviceId').isDisabled(), true); checks++;
+  await options.waitForFunction(() => document.getElementById('noiseState').textContent.includes('ölçümü kayıtlı'));
+  const measured = await worker.evaluate(async () => (await chrome.storage.local.get('hbVoice.settings.v1'))['hbVoice.settings.v1']);
+  assert.equal(measured.backgroundGuard, true); assert.ok(Number.isFinite(measured.noiseLevel)); assert.ok(measured.noiseDeviceId.length > 0); checks++;
+  await options.locator('#clearNoise').click(); await options.waitForFunction(() => document.getElementById('clearNoise').disabled); checks++;
   const key = await worker.evaluate(async () => (await chrome.storage.local.get('hbVoice.credentials.v1'))['hbVoice.credentials.v1'].key);
   assert.equal(key, 'test-credential-placeholder-000000'); checks++;
   const browserSource = await readFile(path.join(root, 'tests/browser.mjs'), 'utf8');
@@ -148,6 +164,21 @@ try {
   assert.equal((await sessionStore()).status.recording, true);
   await page.keyboard.press('Enter'); await page.waitForTimeout(400);
   assert.equal(await page.evaluate(() => globalThis.sentCount), 4); assert.equal((await sessionStore()).session, null); checks++;
+  // Exercise the shipped WASM filter through the production PCM entry point.
+  await options.evaluate(noiseDeviceId => chrome.runtime.sendMessage({type: 'ui:save', settings: {backgroundGuard: true, noiseLevel: 0.009, noiseDeviceId}}), measured.noiseDeviceId);
+  await page.locator('#editor').fill('Korunan başlangıç.'); await toggle(); await listening();
+  assert.deepEqual(await qa('qa:guard'), {filter: true, rate: 16000}); checks++;
+  await qa('qa:pcm', {samples: Array.from(musicSignal(6))}); await page.waitForTimeout(300);
+  assert.equal((await qa('qa:get')).requests.length, 0);
+  assert.equal((await page.locator('#editor').innerText()).trim(), 'Korunan başlangıç.'); assert.equal((await sessionStore()).status.recording, true); checks++;
+  const publicSpeech = await speechFixture(), music = musicSignal(publicSpeech.length / 16000);
+  await qa('qa:pcm', {samples: Array.from(publicSpeech.map((n, i) => n + music[i]))});
+  await page.waitForFunction(() => document.getElementById('editor').innerText.includes('henüz onaylanmadı'));
+  assert.ok((await qa('qa:get')).requests.some(x => x.endsWith('/audio/transcriptions'))); checks++;
+  await toggle(); const guardStopUntil = Date.now() + 10000;
+  while ((await sessionStore()).session && Date.now() < guardStopUntil) await page.waitForTimeout(100);
+  assert.equal((await sessionStore()).session, null); assert.equal(await page.evaluate(() => globalThis.sentCount), 4); checks++;
+  await options.evaluate(() => chrome.runtime.sendMessage({type: 'ui:save', settings: {noiseLevel: 0, noiseDeviceId: ''}}));
   // Repeated recordings exercise close/reopen and mic cleanup.
   await page.locator('#editor').fill(''); await page.waitForTimeout(500);
   await toggle(); await listening();

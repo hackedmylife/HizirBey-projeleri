@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Hızır Bey Sesli Yazma",
   "short_name": "Hızır Bey Dikte",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "minimum_chrome_version": "116",
   "description": "Alt+H ile Türkçe dikte, kontrollü yazım düzeltmesi ve LiveChat yazı alanına aktarım. Mesajı sen Enter ile gönderirsin.",
   "permissions": ["storage", "unlimitedStorage", "offscreen", "activeTab", "clipboardWrite"],
@@ -16,5 +16,5 @@
   "icons": {"16": "icons/icon-16.png", "32": "icons/icon-32.png", "48": "icons/icon-48.png", "128": "icons/icon-128.png"},
   "content_scripts": [{"matches": ["https://my.livechatinc.com/*", "https://my.livechat.com/*"], "js": ["editor.js", "content.js"], "run_at": "document_idle"}],
   "web_accessible_resources": [{"resources": ["logo.png"], "matches": ["https://my.livechatinc.com/*", "https://my.livechat.com/*"]}],
-  "content_security_policy": {"extension_pages": "script-src 'self'; object-src 'none'; connect-src https://api.groq.com; img-src 'self' data:; style-src 'self';"}
+  "content_security_policy": {"extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'none'; connect-src 'self' https://api.groq.com; img-src 'self' data:; style-src 'self';"}
 }

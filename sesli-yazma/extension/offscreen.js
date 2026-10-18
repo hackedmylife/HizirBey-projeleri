@@ -2,6 +2,7 @@ import {Segmenter, SpeechWindows, wavBlob} from './lib/audio.js';
 import {transcribe, correct, abortableDelay, RejectedTranscriptionError} from './lib/groq.js';
 import {draftText} from './lib/core.js';
 import {withTimeBudget} from './lib/timing.js';
+import {openMicrophone, createSpeechFilter} from './lib/voice.js';
 
 let active = null;
 // Includes the in-flight request and cumulative window snapshots, including
@@ -16,6 +17,7 @@ async function cleanup(s) {
   s.recording = false;
   clearTimeout(s.limitTimer);
   if (s.worklet) {s.worklet.port.onmessage = null; s.worklet.disconnect();}
+  s.filter?.destroy();
   s.source?.disconnect(); s.sink?.disconnect();
   for (const track of s.stream?.getTracks() || []) track.stop();
   if (s.context?.state !== 'closed') await s.context?.close().catch(() => {});
@@ -145,9 +147,15 @@ async function start(id, config) {
   const s = {id, config, queue: [], pieces: new Map(), gaps: new Map(), raw: '', rawVersion: 0, finalizedVersion: -1, utterance: 0, rejected: 0, warning: '', pendingSeconds: 0, nextResult: 1, pausedForBacklog: false, controller: new AbortController(), recording: true, processing: false, startedAt: Date.now(), lastMeter: 0, lastVoice: Date.now()};
   active = s;
   try {
-    s.stream = await navigator.mediaDevices.getUserMedia({audio: {channelCount: 1, echoCancellation: true, noiseSuppression: true, autoGainControl: true, ...(config.deviceId ? {deviceId: {exact: config.deviceId}} : {})}});
+    s.stream = await openMicrophone(config);
     if (active !== s) {await cleanup(s); throw new Error('Kayıt iptal edildi.');}
     s.context = new AudioContext({sampleRate: 16000}); s.sampleRate = s.context.sampleRate;
+    if (config.backgroundGuard !== false) {
+      const track = s.stream.getAudioTracks?.()[0] || s.stream.getTracks()[0];
+      const matches = !config.noiseDeviceId || track.getSettings?.().deviceId === config.noiseDeviceId;
+      s.filter = await createSpeechFilter({...config, noiseLevel: matches ? config.noiseLevel : 0, sampleRate: s.sampleRate});
+      if (!matches) await ask(s, 'audio:warning', {warning: 'Mikrofon değişti. Arka planı ayarlardan yeniden ölç; eski seviye bu mikrofona uygulanmadı.'});
+    }
     await s.context.audioWorklet.addModule(chrome.runtime.getURL('worklet.js'));
     if (active !== s) {await cleanup(s); throw new Error('Kayıt iptal edildi.');}
     s.windows = new SpeechWindows(s.sampleRate);
@@ -166,13 +174,18 @@ async function start(id, config) {
     s.worklet = new AudioWorkletNode(s.context, 'hizir-pcm');
     s.sink = s.context.createGain(); s.sink.gain.value = 0;
     s.source.connect(s.worklet); s.worklet.connect(s.sink); s.sink.connect(s.context.destination);
-    s.worklet.port.onmessage = event => {
+    s.consume = ({frame, speech}) => {
+      const v = s.segmenter.push(frame, {speech}); s.rms = v.rms;
+      if (v.speaking) s.lastVoice = Date.now();
+    };
+    s.accept = input => {
       if (active !== s || !s.recording) return;
-      const v = s.segmenter.push(event.data); s.rms = v.rms;
-      if (v.rms >= config.sensitivity) s.lastVoice = Date.now();
+      try {if (s.filter) {for (const frame of s.filter.push(input)) s.consume(frame);} else s.consume({frame: input});}
+      catch (error) {void fail(s, error); return;}
       meter(s);
       if (Date.now() - s.lastVoice > 90000) void finish(id);
     };
+    s.worklet.port.onmessage = event => s.accept(event.data);
     for (const track of s.stream.getTracks()) track.onended = () => {if (s.recording && active === s) void fail(s, new Error('Mikrofon bağlantısı kesildi.'));};
     await s.context.resume();
     s.limitTimer = setTimeout(() => void finish(id), 15 * 60 * 1000);
@@ -187,7 +200,9 @@ async function start(id, config) {
 }
 async function finish(id) {
   const s = active; if (!s || s.id !== id || !s.recording) return;
-  s.recording = false; s.segmenter.flush(); queueFinal(s, true); await cleanup(s);
+  s.recording = false;
+  for (const frame of s.filter?.flush() || []) s.consume(frame);
+  s.segmenter.flush(); queueFinal(s, true); await cleanup(s);
   meter(s, true);
 }
 chrome.runtime.onMessage.addListener((message, sender, respond) => {

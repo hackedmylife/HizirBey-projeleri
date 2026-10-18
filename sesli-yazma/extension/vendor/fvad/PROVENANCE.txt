@@ -1,0 +1,14 @@
+libfvad / WebRTC VAD WebAssembly
+
+Binary copied unmodified from @ozymandiasthegreat/vad 2.0.7:
+https://registry.npmjs.org/@ozymandiasthegreat/vad/-/vad-2.0.7.tgz
+Archive SHA-1: ef8eb4a8a2e0e4e45ded1fd5c69db7aca2adb99d
+libfvad.wasm SHA-256: 3fadafc9c5c1c3117d0178ae631484c6dabc72e0f8742b95c370cd39f46cf171
+Upstream: https://github.com/OzymandiasTheGreat/libfvad-wasm
+Core: https://github.com/dpirch/libfvad
+
+The actual LICENSE supplied in this archive is BSD-3-Clause and is included,
+together with PATENTS and AUTHORS. No upstream JavaScript wrapper is bundled.
+The extension uses its own local loader; it fetches no code from a CDN.
+The upstream wasm repository is archived. This binary is pinned and checksum
+verified at build/check time, rather than fetched as an unpinned runtime update.

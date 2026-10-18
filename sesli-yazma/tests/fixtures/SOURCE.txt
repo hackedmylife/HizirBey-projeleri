@@ -1,0 +1,5 @@
+Public libfvad speech test fixture (not user/customer audio).
+Source: https://github.com/OzymandiasTheGreat/libfvad-wasm/blob/2692578b7f2af573e3a6efb84e4356b41250d414/tests/data/audio_tiny16.wav
+SHA-256: 551d3f0282c5d5e1e32e76da97bd3532c38e6f4bb02a32510caf562d7c06ae9c
+BSD-3-Clause; LICENSE/PATENTS/AUTHORS are preserved in extension/vendor/fvad/.
+This file is only for development/CI and is excluded from the installation ZIP.

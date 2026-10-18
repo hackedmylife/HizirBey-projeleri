@@ -31,13 +31,15 @@ jobs:
       - name: Prepare deterministic local microphone input
         run: |
           python3 - <<'PY'
-          import math, struct, wave
+          import wave
+          with wave.open('tests/fixtures/speech-16k.wav','rb') as source:
+              assert source.getframerate()==16000 and source.getnchannels()==1 and source.getsampwidth()==2
+              samples=source.readframes(source.getnframes())
           with wave.open('/tmp/hizir-qa-voice.wav','wb') as f:
               f.setparams((1,2,16000,0,'NONE','not compressed'))
-              for i in range(16000*60):
-                  t=i/16000
-                  value=.12*math.sin(2*math.pi*440*t) if 1<t<3 else 0
-                  f.writeframesraw(struct.pack('<h',int(value*32767)))
+              # A public speech excerpt replaces the old pure tone, which the
+              # new speech gate intentionally rejects. No user audio is used.
+              f.writeframes(b'\0'*(16000*2)+samples[16000:80000]+b'\0'*(16000*57*2))
           PY
       - name: MV3 microphone and mocked API checks
         shell: bash

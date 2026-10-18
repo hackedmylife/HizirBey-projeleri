@@ -35,7 +35,7 @@ afterEach(async () => {
   waiting = null; correctionWait = null; quotaWait = null; unsafeSpeech = false; speechTexts = []; correctionOutput = null; correctionInputs.length = 0;
   releaseSpeech?.(); releaseCorrection?.();
 });
-const config = {key: 'test-only-placeholder', model: 'whisper-large-v3', terms: [], correction: true, sensitivity: 0.008, pauseMs: 750};
+const config = {key: 'test-only-placeholder', model: 'whisper-large-v3', terms: [], correction: true, sensitivity: 0.008, pauseMs: 750, backgroundGuard: false};
 const push = (count, level) => {for (let i = 0; i < count; i++) worklets.at(-1).port.onmessage?.({data: new Float32Array(2048).fill(level)});};
 async function until(fn, timeout = 1000) {const deadline = Date.now() + timeout; while (!fn() && Date.now() < deadline) await new Promise(resolve => setTimeout(resolve, 5)); assert.ok(fn());}
 test('offscreen writes an immediate draft then punctuates the complete text', async () => {

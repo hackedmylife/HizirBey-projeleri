@@ -1,3 +1,14 @@
+# 0.1.9 — Arka plan müziği tetiklemelerini azaltma
+
+18 Ekim 2026
+
+- Varsayılan açık yerel konuşma denetimi: pakete dahil 15 KB WebRTC/libfvad WASM ve sürekli tek ton kontrolü, yalnızca RMS yüksekliğiyle konuşma sayan akışın önüne eklendi. İşlem cihazda yapılır; yeni ücretli servis / CDN veya model indirmesi yoktur.
+- Arka planı ölç · 2 sn ve Ölçümü sıfırla kontrolleri eklendi. Müzik çalarken konuşmadan ölçülen seviye, arka planın üstündeki yakın konuşma için başlangıç eşiği sağlar. Ses tutulmaz; seviye ve mikrofon kimliği saklanır. Farklı mikrofonun eski ölçümü uygulanmaz.
+- Koruma açıkken otomatik mikrofon kazancı istenmez. Normal yankı / gürültü bastırma istenir; giriş gerçekten destekliyorsa tüm yerel çalım için yankı giderme denenir. Desteklenmezse normal giderme kalır. Sistem sesi / ekran yakalanmaz, yeni host izni yoktur.
+- Sessizlik süresi gerçek konuşma kararına göre işler; yalnızca yüksek müzik oturumu canlı tutmaz. Normal bitirmede son eksik 20 ms kare sıfırla tamamlanarak işlenir. Geri yazdırma, noktalama, anahtar, sözlük, kısayol ve 20 px merkez noktası korunur.
+- Koruma, şarkıcıyı / başka konuşmacıyı kullanıcıdan kesin ayırmaz ve aynı anda konuşma içindeki müziği bütünüyle çıkarmaz. Yüksek arka plan için yakın kulaklık mikrofonu önerilir. Gerçek kullanıcının müziği ve mikrofonunda kabul testi gerekir.
+- WASM, lisans / patent / atıf ve kaynak bilgileriyle sabit sürüm olarak paketlenir. Testlerde yalnızca kamuya açık ses örneği ve oluşturulmuş müzik sinyalleri kullanılır.
+
 # 0.1.8 — Son dikteyi yeniden yazdırma
 
 18 Ekim 2026

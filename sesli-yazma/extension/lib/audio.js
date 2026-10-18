@@ -33,10 +33,10 @@ export class Segmenter {
     this.frames = []; this.pre = []; this.length = 0; this.silence = 0; this.voice = 0;
     this.utterance = false; this.quiet = 0;
   }
-  push(frame) {
+  push(frame, {speech} = {}) {
     let sum = 0; for (const v of frame) sum += v * v;
     const rms = Math.sqrt(sum / Math.max(1, frame.length));
-    const speaking = rms >= this.threshold;
+    const speaking = typeof speech === 'boolean' ? speech : rms >= this.threshold;
     if (speaking) {
       if (!this.utterance) {this.utterance = true; this.onSpeechStart?.();}
       this.quiet = 0;
@@ -46,13 +46,13 @@ export class Segmenter {
         this.flush(); this.utterance = false; this.quiet = 0; this.onBoundary?.();
       }
     }
-    if (!this.length && !speaking) {this.pre.push(frame); while (this.pre.reduce((n, x) => n + x.length, 0) > this.sampleRate * 0.3) this.pre.shift(); return {rms, buffered: false};}
+    if (!this.length && !speaking) {this.pre.push(frame); while (this.pre.reduce((n, x) => n + x.length, 0) > this.sampleRate * 0.3) this.pre.shift(); return {rms, speaking, buffered: false};}
     if (!this.length) {this.frames = this.pre.splice(0); this.length = this.frames.reduce((n, x) => n + x.length, 0);}
     this.frames.push(frame); this.length += frame.length;
     if (speaking) {this.silence = 0; this.voice += frame.length;} else this.silence += frame.length;
     const longPause = this.length / this.sampleRate >= this.splitAfterSeconds && this.silence / this.sampleRate >= 0.25;
     if (longPause || this.silence / this.sampleRate * 1000 >= this.pauseMs || this.length / this.sampleRate >= this.maxSeconds) this.flush();
-    return {rms, buffered: this.length > 0};
+    return {rms, speaking, buffered: this.length > 0};
   }
   flush() {
     // Keep a short tail for word endings; avoid uploading a full pause as speech.

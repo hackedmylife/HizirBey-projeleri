@@ -1,6 +1,6 @@
 # Hızır Bey Sesli Yazma
 
-Chrome / LiveChat için logolu Türkçe dikte uzantısı. Güncel sürüm: **0.1.8**.
+Chrome / LiveChat için logolu Türkçe dikte uzantısı. Güncel sürüm: **0.1.9**.
 
 **Win + H (Windows yönlendirmesiyle) → konuş → metni oku → Enter ile gönder.**
 
@@ -13,6 +13,11 @@ Kurulum paketini sabit bir klasöre çıkar. Chrome'da `chrome://extensions` adr
 Groq hesabını **Free** planında tut, ödeme yöntemi ekleme ve Developer plana yükseltme. Anahtarı yalnızca eklentinin kendi ayar sayfasına bir kez gir. Free hesap ve ses işleme onaylarını kaydet, “Mikrofonu dene” ile mikrofon iznini tamamla. LiveChat sayfasını yenile. Kısayol başka eklentiye atanmışsa `chrome://extensions/shortcuts` sayfasından Alt + H ata.
 
 ## Davranış
+
+- **Arka plan koruması** varsayılan açıktır. Yalnızca ses yüksekliğine bakmak yerine, pakete dahil yerel WebRTC konuşma denetimi ve sürekli tek ton kontrolü kullanılır. Konuşma başlangıcı yaklaşık 60–100 ms süren karelerle doğrulanır; kayıt her açıldığında ek 2 saniyelik bekleme yoktur. Süre, cihaz ve iş yüküyle değişir; uçtan uca gecikme garantisi değildir.
+- Müzik açıkken **Ayarlar → Mikrofon ve dikte → Arka planı ölç · 2 sn** kullan. Ölçüm boyunca konuşma. Ölçüm cihazda yapılır; yalnızca seviye ve mikrofon kimliği saklanır, ses kaydedilmez veya gönderilmez. Yakın konuşmanın ölçülen arka plandan belirgin yüksek olması gerekir. Müzik veya sistem mikrofon seviyesi değişirse yeniden ölç. Mikrofon seçimini değiştirmek ölçümü sıfırlar; farklı gerçek mikrofonun eski ölçümü kullanılmaz.
+- Koruma açıkken mikrofonun otomatik kazancı istenmez; bu, ortam sesinin otomatik yükselmesini azaltmayı hedefler. Gürültü bastırma ve yankı giderme istenir. Gerçek giriş destekliyorsa yerel sistem çalımını azaltan `echoCancellation: all` seçilir; desteklenmiyorsa normal yankı giderme korunur. Bu destek, Workspace ve cihazın ses yönlendirmesine bağlıdır. Yeni site veya ekran / sistem sesi yakalama izni istenmez.
+- Bu özellik şarkı vokalini, başka konuşmacıyı veya kullanıcıyla benzer yükseklikteki sesi kesin ayırmaz; konuşmacı tanıma ya da tam müzik ayırma modeli değildir. Yüksek arka planda yakın kulaklık mikrofonu kullan. Girdi olarak sistem sesi / Stereo Mix yerine gerçek mikrofonu seç. Güçlendirme kalan müziği de yükseltir; gerekirse %100 ile dene. Çok sessiz konuşma filtreye takılabilir. Koruma ayarlardan kapatılabilir.
 
 - Paneldeki **Yeniden yazdır**, son dikte metnini aynı görüşmenin yazı alanına geri koyar. Hazırlık sürerken kapalıdır; tıklanınca dinleme / bekleyen ses kapanır. Metin zaten alandaysa tekrar eklenmez. Silinen alan veya geri alınan dikte yeniden doldurulabilir; elle yazılmış farklı dolu metnin üzerine yazılmaz. Enter ile kullanıcı gönderir. Gönderim, görüşme / sekme / sayfa değişimi veya yeni dikte önceki yazdırma bağını kapatır. Son metin tarayıcı oturumu boyunca geçici olarak tutulur; bu işlem ek API çağrısı yapmaz ve ses kaydı saklamaz.
 
@@ -34,7 +39,7 @@ Groq hesabını **Free** planında tut, ödeme yöntemi ekleme ve Developer plan
 - **Hızlı aktarım** varsayılan açıktır. Son noktalama kontrolünün toplam bütçesi 2,5 saniyedir; yetişmezse güvenlik denetiminden geçmiş taslak uyarıyla korunur, zorla son nokta eklenmez. Bu ayar kapatıldığında bütçe 10 saniyedir. Noktalama çağrısı tekrar edilmez. Ses tanıma ve ağ bağlantısının süresi bu bütçeden ayrıdır; sabit bir uçtan uca gecikme garantisi verilmez.
 - Küçük panel, son parçanın konuşma bitişinden editöre aktarımına kadar yaklaşık süreyi gösterir. Ses sırada beklediyse bu süreye bekleme de dahildir.
 - Ses pencereleri sırayla işlenir; tekrar teslim edilen aynı sonuç iki kez eklenmez. Bağlantı beklerken aynı pencerenin henüz gönderilmemiş eski önizlemeleri en yenisiyle birleştirilir. Söylenen gerçek tekrarlar benzer kelime diye silinmez. Yeniden tanınan pencerenin bütün ses süresi her denemede kotaya sayılır. Bekleme durumu ve sıradaki ses süresi eklenti panelinde görünür. İşlenen ve sıradaki ses pencerelerinin toplam süresi yaklaşık 106 saniyeye ulaştığında mikrofon kapanır; alınmış ses sırayla tamamlanır. Pencerelerde tekrar değerlendirilen bağlam da bu sayıya dahildir. RAM'deki bekleme yaklaşık iki dakikalık PCM ile sınırlanır. İptal için Alt + H kullanılabilir. Kalıcı internet kesintisini ortadan kaldırmaz; denemeler tükenirse eldeki yazı korunarak hata gösterilir.
-- Mikrofon güçlendirme varsayılan **%135**, aralık **%100–200**. Yüksek seslerde yumuşak sınırlama uygulanır. Konuşma eşiği **0,005** ile daha hassastır. Gürültü bastırma, yankı giderme ve tarayıcı otomatik kazancı istenir; destek donanıma/tarayıcıya bağlıdır. Güçlendirme konuşma algılamasından sonra uygulanır; tek başına ortam gürültüsünü konuşma saydırmaz.
+- Mikrofon güçlendirme varsayılan **%135**, aralık **%100–200**. Yüksek seslerde yumuşak sınırlama uygulanır. Konuşma eşiği **0,005** ile daha hassastır. Gürültü bastırma ve yankı giderme istenir; otomatik kazanç yalnızca arka plan koruması kapalıyken istenir; destek donanıma/tarayıcıya bağlıdır. Güçlendirme konuşma algılamasından sonra uygulanır; tek başına ortam gürültüsünü konuşma saydırmaz.
 - Özel terim sözlüğü ve isteğe bağlı yerel düzeltme örnekleri vardır. Noktalamada yalnızca aynı kelimeleri aynı sırada koruyan öğrenilmiş örnekler kullanılabilir; diğer düzeltmeler yedekte saklanır. Öğrenme açıkken, boş alanla başlayan aktif dikteyi Enter ile gönderirken yapılan düzenlemeler örnek olarak kaydedilir. Alt + H ile dinleme bitirildikten sonra yapılan düzenlemeler bu sürümde otomatik kaydedilmez.
 - Bir dikte taslağı 8.000 karaktere ulaşınca mevcut metin korunarak kayıt sonlandırılır. Hafıza 10 MB UTF-8 sınırıyla yönetilir; sabit 1000 örnek kesintisi yoktur. Dışa aktarma ve içe aktarma yalnızca sözlük/düzeltmeler içindir.
 

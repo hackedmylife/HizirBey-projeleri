@@ -166,6 +166,8 @@ assert.equal(await options.locator('img').first().evaluate(x => x.complete && x.
 assert.equal(await options.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true); checks++;
 assert.equal(await options.locator('#micGain').inputValue(), '1.35'); assert.equal(await options.locator('#micGainValue').textContent(), '%135'); assert.equal(await options.locator('#sensitivity').inputValue(), '0.005'); checks++;
 assert.equal(await options.locator('#pauseMs').inputValue(), '500'); assert.equal(await options.locator('#fastMode').isChecked(), true); checks++;
+assert.equal(await options.locator('#backgroundGuard').isChecked(), true); assert.equal(await options.locator('#clearNoise').isDisabled(), true);
+assert.match(await options.locator('#noiseState').textContent(), /2 saniye konuşma/); checks++;
 await options.screenshot({path: path.join(output, 'settings-desktop.png'), fullPage: true});
 await options.locator('#apiKey').fill('test-credential-placeholder-000000'); await options.locator('#freeConfirmed').check(); await options.locator('#cloudConsent').check(); await options.locator('#save').click(); await options.waitForFunction(() => document.getElementById('saveState').textContent.includes('kaydedildi'));
 assert.equal(await options.locator('#apiKey').inputValue(), ''); checks++;

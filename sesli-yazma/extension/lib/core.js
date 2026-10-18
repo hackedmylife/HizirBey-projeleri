@@ -1,9 +1,9 @@
-export const VERSION = '0.1.8';
+export const VERSION = '0.1.9';
 export const MEMORY_LIMIT = 10_000_000;
 export const SPEECH_MODELS = ['whisper-large-v3', 'whisper-large-v3-turbo'];
 export const TEXT_MODEL = 'openai/gpt-oss-20b';
 export const STORE = Object.freeze({settings: 'hbVoice.settings.v1', credentials: 'hbVoice.credentials.v1', memory: 'hbVoice.memory.v1', usage: 'hbVoice.usage.v1', runtime: 'hbVoice.runtime.v1'});
-export const DEFAULTS = Object.freeze({model: SPEECH_MODELS[0], correction: true, fastMode: true, freeConfirmed: false, cloudConsent: false, microphoneReady: false, deviceId: '', sensitivity: 0.005, micGain: 1.35, audioRevision: 2, latencyRevision: 1, pauseMs: 500, learn: false});
+export const DEFAULTS = Object.freeze({model: SPEECH_MODELS[0], correction: true, fastMode: true, freeConfirmed: false, cloudConsent: false, microphoneReady: false, deviceId: '', sensitivity: 0.005, micGain: 1.35, backgroundGuard: true, noiseLevel: 0, audioRevision: 2, latencyRevision: 1, pauseMs: 500, learn: false});
 export const DEFAULT_TERMS = ['Hızır Bey', 'LiveChat', 'EveryMatrix', 'FastKeys'];
 
 export function cleanSettings(value = {}) {
@@ -19,6 +19,9 @@ export function cleanSettings(value = {}) {
     deviceId: typeof value.deviceId === 'string' ? value.deviceId.slice(0, 250) : '',
     sensitivity: Math.max(0.002, Math.min(0.04, sensitivity || DEFAULTS.sensitivity)),
     micGain: Math.max(1, Math.min(2, Number(value.micGain) || DEFAULTS.micGain)),
+    backgroundGuard: value.backgroundGuard !== false,
+    noiseLevel: Number.isFinite(value.noiseLevel) ? Math.max(0, Math.min(0.2, value.noiseLevel)) : 0,
+    noiseDeviceId: typeof value.noiseDeviceId === 'string' ? value.noiseDeviceId.slice(0, 250) : '',
     audioRevision: DEFAULTS.audioRevision,
     latencyRevision: DEFAULTS.latencyRevision,
     pauseMs: Math.max(350, Math.min(1800, pauseMs || DEFAULTS.pauseMs)),

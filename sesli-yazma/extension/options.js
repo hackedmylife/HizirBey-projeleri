@@ -1,10 +1,12 @@
 import {VERSION, STORE, MEMORY_LIMIT} from './lib/core.js';
 import {boostSample} from './lib/audio.js';
+import {openMicrophone, backgroundLevel} from './lib/voice.js';
 const $ = id => document.getElementById(id);
-let micStream = null, audioContext = null, micFrame = null, micTimer = null, toastTimer;
+let micStream = null, audioContext = null, micFrame = null, micTimer = null, toastTimer, noiseLevel = 0, noiseDeviceId = '', measuring = false;
 const ask = async message => {const result = await chrome.runtime.sendMessage(message); if (!result?.ok) throw new Error(result?.error || 'Eklentiyle bağlantı kurulamadı.'); return result.data;};
 function toast(text, error = false) {clearTimeout(toastTimer); $('toast').textContent = text; $('toast').classList.toggle('error', error); $('toast').hidden = false; toastTimer = setTimeout(() => {$('toast').hidden = true;}, error ? 8000 : 4000);}
-function settings() {return {model: $('model').value, correction: $('correction').checked, fastMode: $('fastMode').checked, freeConfirmed: $('freeConfirmed').checked, cloudConsent: $('cloudConsent').checked, deviceId: $('deviceId').value, sensitivity: Number($('sensitivity').value), micGain: Number($('micGain').value), pauseMs: Number($('pauseMs').value), learn: $('learn').checked};}
+function settings() {return {model: $('model').value, correction: $('correction').checked, fastMode: $('fastMode').checked, freeConfirmed: $('freeConfirmed').checked, cloudConsent: $('cloudConsent').checked, deviceId: $('deviceId').value, sensitivity: Number($('sensitivity').value), micGain: Number($('micGain').value), backgroundGuard: $('backgroundGuard').checked, noiseLevel, noiseDeviceId, pauseMs: Number($('pauseMs').value), learn: $('learn').checked};}
+function renderNoise() {const measured = Boolean(noiseLevel || noiseDeviceId); $('noiseState').textContent = measured ? 'Arka plan ölçümü kayıtlı. Müzik veya mikrofon seviyesi değişirse yeniden ölç.' : 'Müziği açık bırak; ölçüm sırasında 2 saniye konuşma. Ses kaydedilmez veya gönderilmez.'; $('clearNoise').disabled = measuring || !measured;}
 function renderMetadata(data) {
   const ready = data.hasKey && data.settings.freeConfirmed && data.settings.cloudConsent && data.settings.microphoneReady;
   $('setupChip').textContent = ready ? 'Kurulum tamam · LiveChat’e geçebilirsin' : 'Kurulum bekleniyor'; $('setupChip').classList.toggle('ready', ready);
@@ -29,6 +31,7 @@ async function load() {
     control.value = value;
   }
   for (const name of ['correction', 'fastMode', 'freeConfirmed', 'cloudConsent', 'learn']) $(name).checked = data.settings[name];
+  $('backgroundGuard').checked = data.settings.backgroundGuard !== false; noiseLevel = data.settings.noiseLevel || 0; noiseDeviceId = data.settings.noiseDeviceId || ''; renderNoise();
   $('terms').value = data.terms.join('\n');
   $('sensitivityValue').textContent = Number($('sensitivity').value).toFixed(3);
   $('micGainValue').textContent = `%${Math.round(Number($('micGain').value) * 100)}`;
@@ -44,6 +47,7 @@ $('showKey').onclick = () => {const visible = $('apiKey').type === 'password'; $
 $('shortcuts').onclick = () => ask({type: 'ui:shortcuts'}).catch(error => toast(error.message, true));
 $('sensitivity').oninput = () => {$('sensitivityValue').textContent = Number($('sensitivity').value).toFixed(3);};
 $('micGain').oninput = () => {$('micGainValue').textContent = `%${Math.round(Number($('micGain').value) * 100)}`;};
+$('deviceId').onchange = () => {noiseLevel = 0; noiseDeviceId = ''; renderNoise();};
 $('settingsForm').oninput = () => {$('saveState').textContent = 'Kaydedilmemiş değişiklikler var.';};
 $('learn').onchange = () => {$('saveState').textContent = 'Öğrenme tercihini kaydet.';};
 $('checkConnection').onclick = async () => {
@@ -63,7 +67,7 @@ $('testMic').onclick = async () => {
   if (micStream) {await stopMic(); return;}
   $('testMic').disabled = true;
   try {
-    micStream = await navigator.mediaDevices.getUserMedia({audio: {channelCount: 1, echoCancellation: true, noiseSuppression: true, autoGainControl: true, ...($('deviceId').value ? {deviceId: {exact: $('deviceId').value}} : {})}});
+    micStream = await openMicrophone(settings());
     if (document.hidden) {for (const track of micStream.getTracks()) track.stop(); micStream = null; throw new Error('Mikrofon testi için ayarlar sekmesini açık tut.');}
     audioContext = new AudioContext(); const analyser = audioContext.createAnalyser(); analyser.fftSize = 256; audioContext.createMediaStreamSource(micStream).connect(analyser);
     const buffer = new Float32Array(analyser.fftSize);
@@ -74,7 +78,7 @@ $('testMic').onclick = async () => {
       const rms = Math.sqrt(buffer.reduce((n, x) => n + boostSample(x, gain) ** 2, 0) / buffer.length);
       const level = Math.min(100, Math.round(rms * 700));
       $('micLevel').style.width = `${level}%`; $('levelMeter').setAttribute('aria-valuenow', String(level));
-      const title = rawRms >= Number($('sensitivity').value) ? 'Konuşman algılanıyor.' : 'Ses bekleniyor · normal sesinle konuş.';
+      const title = rawRms >= Number($('sensitivity').value) ? 'Mikrofon sesi alınıyor.' : 'Ses bekleniyor · normal sesinle konuş.';
       if ($('micTitle').textContent !== title) $('micTitle').textContent = title;
       micFrame = requestAnimationFrame(draw);
     }; draw();
@@ -87,6 +91,38 @@ $('testMic').onclick = async () => {
   } catch (error) {await stopMic(); toast(error.name === 'NotAllowedError' ? 'Mikrofona izin verilmedi. Chrome site izinlerinden bu eklentiye mikrofon erişimi ver.' : 'Mikrofon açılamadı. Sistem mikrofonunu kontrol et.', true);}
   finally {$('testMic').disabled = false;}
 };
+$('measureNoise').onclick = async () => {
+  if (measuring) return;
+  measuring = true; $('measureNoise').disabled = true; $('clearNoise').disabled = true; $('testMic').disabled = true;
+  try {
+    if (micStream) await stopMic();
+    const selectedDevice = $('deviceId').value;
+    $('deviceId').disabled = true;
+    micStream = await openMicrophone({...settings(), backgroundGuard: true});
+    const stream = micStream;
+    const track = stream.getAudioTracks?.()[0] || stream.getTracks()[0], measuredDevice = track.getSettings?.().deviceId || '';
+    if (document.hidden) throw new Error('Arka plan ölçümü için ayarlar sekmesini açık tut.');
+    audioContext = new AudioContext({sampleRate: 16000}); const analyser = audioContext.createAnalyser(); analyser.fftSize = 2048;
+    audioContext.createMediaStreamSource(stream).connect(analyser); await audioContext.resume();
+    const samples = new Float32Array(analyser.fftSize), levels = [], started = performance.now();
+    while (performance.now() - started < 2000) {
+      if (micStream !== stream || document.hidden) throw new Error('Arka plan ölçümü iptal edildi.');
+      analyser.getFloatTimeDomainData(samples);
+      const rms = Math.sqrt(samples.reduce((n, x) => n + x * x, 0) / samples.length);
+      if (performance.now() - started >= 250) levels.push(rms);
+      $('noiseState').textContent = `Arka plan ölçülüyor · ${Math.max(1, Math.ceil((2000 - (performance.now() - started)) / 1000))} sn konuşma.`;
+      await new Promise(resolve => setTimeout(resolve, 32));
+    }
+    const measured = backgroundLevel(levels); await stopMic();
+    await ask({type: 'ui:microphone'});
+    await ask({type: 'ui:save', settings: {noiseLevel: measured, noiseDeviceId: measuredDevice, backgroundGuard: true, deviceId: selectedDevice}});
+    noiseLevel = measured; noiseDeviceId = measuredDevice; $('backgroundGuard').checked = true;
+    renderMetadata(await ask({type: 'ui:get'}));
+    toast(measured > 0.03 ? 'Arka plan yüksek. Kulaklık mikrofonu kullanıp müziği azaltman konuşmayı daha net ayırır.' : 'Arka plan ölçümü kaydedildi. Şimdi normal sesinle dikte edebilirsin.');
+  } catch (error) {await stopMic(); toast(error.message || 'Arka plan ölçülemedi.', true);}
+  finally {measuring = false; $('measureNoise').disabled = false; $('testMic').disabled = false; $('deviceId').disabled = false; renderNoise();}
+};
+$('clearNoise').onclick = async () => {try {await ask({type: 'ui:save', settings: {noiseLevel: 0, noiseDeviceId: ''}}); noiseLevel = 0; noiseDeviceId = ''; renderNoise(); toast('Arka plan ölçümü sıfırlandı.');} catch (error) {toast(error.message, true);}};
 $('saveTerms').onclick = async () => {try {const terms = $('terms').value.split(/\r?\n/).map(x => x.trim()).filter(Boolean); if (terms.length > 300 || terms.some(x => x.length > 80)) throw new Error('En fazla 300 terim, terim başına 80 karakter kullan.'); await ask({type: 'ui:terms', terms}); renderMetadata(await ask({type: 'ui:get'})); toast('Özel terimlerin kaydedildi.');} catch (error) {toast(error.message, true);}};
 $('export').onclick = async () => {try {const data = await ask({type: 'ui:export'}); const url = URL.createObjectURL(new Blob([data], {type: 'application/json'})); const a = document.createElement('a'); a.href = url; a.download = `Hizir-Bey-Dikte-Yedek-${new Date().toISOString().slice(0, 10)}.json`; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000); toast('Anahtar içermeyen sözlük yedeği indirildi.');} catch (error) {toast(error.message, true);}};
 $('import').onchange = async event => {const file = event.target.files?.[0]; if (!file) return; try {if (file.size > MEMORY_LIMIT) throw new Error('Yedek 10 MB sınırını aşıyor.'); if (!confirm('Bu yedek mevcut terim ve düzeltme hafızasının yerini alacak. Devam edilsin mi?')) return; await ask({type: 'ui:import', data: await file.text()}); await load(); toast('Sözlük yedeği yüklendi. API anahtarın korundu.');} catch (error) {toast(error.message, true);} finally {event.target.value = '';}};

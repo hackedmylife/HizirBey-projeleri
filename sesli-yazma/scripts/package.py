@@ -21,7 +21,7 @@ def main():
     for path in files:
         if not path.is_file():
             raise RuntimeError(f'Missing release document: {path.name}')
-        if path.suffix.lower() not in ('.js', '.json', '.html', '.css', '.png', '.md', '.txt', '.ahk'):
+        if path.suffix.lower() not in ('.js', '.json', '.html', '.css', '.png', '.md', '.txt', '.ahk', '.wasm'):
             raise RuntimeError(f'Unexpected extension asset: {path.name}')
         if re.search(r'(?:credential|token|api.?key|\.env)', path.name, re.I):
             raise RuntimeError(f'Credential-like file name: {path.name}')
