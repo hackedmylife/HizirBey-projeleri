@@ -27,7 +27,9 @@ test('microphone processing does not amplify background automatically; local pla
   assert.equal(microphoneConstraints({backgroundGuard: false}).audio.autoGainControl, true);
   const applied = [], track = {getCapabilities: () => ({echoCancellation: [true, false, 'all']}), async applyConstraints(value) {applied.push(value);}}, stream = {getTracks: () => [track]};
   const devices = {async getUserMedia(request) {assert.deepEqual(request.audio.deviceId, {exact: 'mic'}); return stream;}};
-  assert.equal(await openMicrophone({deviceId: 'mic'}, devices), stream); assert.deepEqual(applied, [{echoCancellation: {exact: 'all'}}]);
+  assert.equal(await openMicrophone({deviceId: 'mic'}, devices), stream);
+  assert.deepEqual(applied, [{...microphoneConstraints({deviceId: 'mic'}).audio, echoCancellation: {exact: 'all'}}]);
+  assert.equal(applied[0].autoGainControl, false); assert.deepEqual(applied[0].deviceId, {exact: 'mic'});
   track.applyConstraints = async () => {throw new Error('Unsupported on this device');};
   assert.equal(await openMicrophone({deviceId: 'mic'}, devices), stream, 'Keep ordinary cancellation when optional all-mode fails');
   track.getCapabilities = () => ({echoCancellation: true}); assert.equal(await openMicrophone({deviceId: 'mic'}, devices), stream);

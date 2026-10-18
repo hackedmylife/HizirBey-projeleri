@@ -11,7 +11,7 @@ export async function openMicrophone(config, devices = navigator.mediaDevices) {
   const track = stream.getAudioTracks?.()[0] || stream.getTracks()[0];
   try {
     const modes = track?.getCapabilities?.().echoCancellation;
-    if (config.backgroundGuard !== false && Array.isArray(modes) && modes.includes('all')) await track.applyConstraints({echoCancellation: {exact: 'all'}});
+    if (config.backgroundGuard !== false && Array.isArray(modes) && modes.includes('all')) await track.applyConstraints({...microphoneConstraints(config).audio, echoCancellation: {exact: 'all'}});
   } catch { /* The initial echo cancellation remains enabled. */ }
   return stream;
 }
