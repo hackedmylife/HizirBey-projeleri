@@ -53,3 +53,13 @@ test('long speech splits at a short natural pause or an eight-second maximum', (
   for (let i = 0; i < 80; i++) s.push(new Float32Array(100).fill(0.03));
   assert.equal(segments.length, 2); assert.equal(segments[1].length, 8000);
 });
+test('audio preview boundaries do not finalize punctuation until speech settles', () => {
+  let segments = 0, boundaries = 0, starts = 0;
+  const s = new Segmenter({sampleRate: 1000, onSegment() {segments++;}, onBoundary() {boundaries++;}, onSpeechStart() {starts++;}});
+  for (let i = 0; i < 17; i++) s.push(new Float32Array(1000).fill(0.03));
+  assert.equal(segments, 2); assert.equal(boundaries, 0); assert.equal(starts, 1);
+  s.push(new Float32Array(500)); assert.equal(segments, 3); assert.equal(boundaries, 0);
+  s.push(new Float32Array(500)); assert.equal(boundaries, 1);
+  s.push(new Float32Array(3000)); assert.equal(boundaries, 1);
+  s.push(new Float32Array(400).fill(0.03)); assert.equal(starts, 2);
+});

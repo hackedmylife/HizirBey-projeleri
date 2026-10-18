@@ -106,6 +106,21 @@ assert.equal((await dispatch({type: 'voice:insert', sessionId: 'stopped', data: 
 await page.keyboard.press('Enter'); assert.equal(await page.evaluate(() => globalThis.sentCount), sentBefore + 2); checks++;
 
 
+// Five preview updates plus final punctuation replace one draft and retain
+// the text that was already in the editor when dictation started.
+await page.locator('#editor').fill('Önceden yazılmış metin.');
+await dispatch({type: 'voice:bind', sessionId: 'draft-flow'});
+const fragments = ['merhaba', 'talebiniz', 'henüz', 'onaylanmadı', 'bilgi vereceğiz'];
+for (let i = 0; i < fragments.length; i++) {
+  const text = fragments.slice(0, i + 1).join(' ');
+  assert.equal((await dispatch({type: 'voice:insert', sessionId: 'draft-flow', data: {segmentId: i + 1, text, replace: true, final: false}})).ok, true);
+}
+const finalDraft = 'Merhaba, talebiniz henüz onaylanmadı. Bilgi vereceğiz.';
+assert.equal((await dispatch({type: 'voice:insert', sessionId: 'draft-flow', data: {segmentId: 6, text: finalDraft, replace: true, final: true}})).ok, true);
+assert.equal((await page.locator('#editor').innerText()).trim(), 'Önceden yazılmış metin. ' + finalDraft); checks++;
+await page.keyboard.press('Enter');
+assert.equal(await page.locator('#hizir-voice-host').isVisible(), false); checks++;
+
 // Render actual packaged UI with a local fake extension transport.
 const mime = {'.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png'};
 const server = createServer(async (req, res) => {try {const file = path.resolve(extensionPath, '.' + new URL(req.url, 'http://localhost').pathname); if (!file.startsWith(extensionPath + path.sep)) throw new Error('bad path'); const bytes = await readFile(file); res.writeHead(200, {'Content-Type': mime[path.extname(file)] || 'application/octet-stream'}); res.end(bytes);} catch {res.writeHead(404); res.end();}});

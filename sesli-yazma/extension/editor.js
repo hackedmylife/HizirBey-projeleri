@@ -43,6 +43,24 @@
     }
     throw new Error('Gönder düğmesi bulunamadı. Metnin korundu; LiveChat Gönder düğmesini kullan.');
   }
+  function write(editor, target, addition = null) {
+    editor.focus({preventScroll: true});
+    if (editor.tagName === 'TEXTAREA') {
+      Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set.call(editor, target);
+      editor.setSelectionRange(target.length, target.length);
+      editor.dispatchEvent(new InputEvent('input', {bubbles: true, inputType: 'insertText', data: addition ?? target}));
+      return;
+    }
+    const selection = window.getSelection(), range = document.createRange();
+    if (addition === null) range.selectNodeContents(editor);
+    else {
+      const last = editor.lastElementChild, container = last?.matches('p, div') ? last : editor;
+      range.selectNodeContents(container);
+      range.collapse(container.childNodes.length === 1 && container.firstChild?.nodeName === 'BR');
+    }
+    selection.removeAllRanges(); selection.addRange(range);
+    document.execCommand('insertText', false, addition ?? target);
+  }
   class Binding {
     constructor() {
       this.editor = find();
@@ -54,32 +72,23 @@
     }
     assert() {if (!this.valid()) throw new Error('Görüşme veya yazı alanı değişti. Dikte durduruldu.');}
     sendButton() {this.assert(); return findSendButton(this.editor);}
-    async insert(text) {
+    async insert(text, {replace = false} = {}) {
       this.assert();
       if (read(this.editor) !== this.expected) throw new Error('Yazı alanını elle değiştirdin. Mevcut metnin korundu; yeni dikte için Alt + H.');
       if (typeof text !== 'string' || !text.trim() || text.length > 10000) throw new Error('Aktarılacak metin geçersiz.');
-      const before = read(this.editor), addition = `${before && !/\s$/.test(before) ? ' ' : ''}${text.trim()}`;
+      const before = read(this.editor), prefix = replace ? this.initial : before;
+      const target = `${prefix}${prefix && !/\s$/.test(prefix) ? ' ' : ''}${text.trim()}`;
+      if (target === before) return before;
+      const previousSegments = [...this.segments];
       this.writing = true;
       try {
-        this.editor.focus({preventScroll: true});
-        if (this.editor.tagName === 'TEXTAREA') {
-          const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set;
-          setter.call(this.editor, before + addition); this.editor.setSelectionRange(this.editor.value.length, this.editor.value.length);
-          this.editor.dispatchEvent(new InputEvent('input', {bubbles: true, inputType: 'insertText', data: addition}));
-        } else {
-          const selection = window.getSelection(), range = document.createRange();
-          const last = this.editor.lastElementChild;
-          const container = last?.matches('p, div') ? last : this.editor;
-          range.selectNodeContents(container);
-          range.collapse(container.childNodes.length === 1 && container.firstChild?.nodeName === 'BR');
-          selection.removeAllRanges(); selection.addRange(range);
-          document.execCommand('insertText', false, addition);
-        }
+        write(this.editor, target, target.startsWith(before) ? target.slice(before.length) : null);
         await new Promise(resolve => setTimeout(resolve, 35));
         this.assert();
         const after = read(this.editor);
-        if (after !== before + addition) throw new Error('Editör metni doğrulayamadı. Metni kontrol et; otomatik tekrar eklenmedi.');
-        this.expected = after; this.lastUndo = {before, after}; this.segments.push(text.trim());
+        if (after !== target) throw new Error('Editör metni doğrulayamadı. Metni kontrol et; otomatik tekrar eklenmedi.');
+        this.expected = after; this.lastUndo = {before: replace ? this.initial : before, after, segments: replace ? [] : previousSegments};
+        this.segments = replace ? [text.trim()] : [...previousSegments, text.trim()];
         return after;
       } finally {this.writing = false;}
     }
@@ -89,12 +98,12 @@
       this.editor.focus({preventScroll: true});
       this.writing = true;
       try {
-        if (this.editor.tagName === 'TEXTAREA') {
-          Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set.call(this.editor, this.lastUndo.before);
-          this.editor.dispatchEvent(new InputEvent('input', {bubbles: true, inputType: 'historyUndo'}));
-        } else if (!document.execCommand('undo')) throw new Error('Geri alma için LiveChat içinde Ctrl + Z kullan.');
+        write(this.editor, this.lastUndo.before);
         await new Promise(resolve => setTimeout(resolve, 35));
-        this.expected = read(this.editor); this.lastUndo = null; this.segments.pop();
+        this.assert();
+        this.expected = read(this.editor);
+        if (this.expected !== this.lastUndo.before) throw new Error('Geri alma doğrulanamadı. Mevcut metni kontrol et.');
+        this.segments = this.lastUndo.segments; this.lastUndo = null;
       } finally {this.writing = false;}
     }
   }

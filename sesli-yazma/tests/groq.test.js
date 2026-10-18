@@ -67,3 +67,21 @@ test('exhausted network retries, client errors and quota guards have finite limi
   await assert.rejects(request('/models', {key: config.key, retryDelays: [0, 0], onAttempt({attempt}) {if (attempt === 2) throw new Error('Yerel ücretsiz kota doldu.');}, fetcher: async () => {calls++; return new Response('{}', {status: 503});}}), /Yerel ücretsiz kota/);
   assert.equal(calls, 1);
 });
+test('whole-draft punctuation rejects invented filler and does not force a terminal dot', async () => {
+  const settings = {...config, punctuationOnly: true};
+  const result = await correct('merhaba çekim henüz onaylanmadı', settings, undefined, async (_url, init) => {
+    const body = JSON.parse(init.body), user = JSON.parse(body.messages[1].content);
+    assert.equal(user.examples, undefined); assert.match(body.messages[0].content, /Kelime|kelime/);
+    return response({choices: [{message: {content: JSON.stringify({text: 'Merhaba, değerli üyemiz. Çekim henüz onaylanmadı.'})}}]});
+  });
+  assert.equal(result.text, 'Merhaba çekim henüz onaylanmadı'); assert.equal(result.corrected, false);
+  const incomplete = await correct('eğer işleminiz', settings, undefined, async () => response({choices: [{message: {content: '{"text":"Eğer işleminiz"}'}}]}));
+  assert.equal(incomplete.text, 'Eğer işleminiz'); assert.equal(incomplete.corrected, true);
+});
+test('punctuation examples exclude learned changes that add words', async () => {
+  const raw = 'merhaba iyi günler', safe = {from: raw, to: 'Merhaba, iyi günler.'};
+  await correct(raw, {...config, punctuationOnly: true, pairs: [safe, {from: raw, to: 'Merhaba, değerli üyemiz. İyi günler.'}]}, undefined, async (_url, init) => {
+    assert.deepEqual(JSON.parse(JSON.parse(init.body).messages[1].content).examples, [safe]);
+    return response({choices: [{message: {content: JSON.stringify({text: safe.to})}}]});
+  });
+});

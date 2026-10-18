@@ -1,8 +1,8 @@
 import test, {afterEach} from 'node:test';
 import assert from 'node:assert/strict';
 const id = 'audio-test', origin = `chrome-extension://${id}/`, events = [], worklets = [], tracks = [], contexts = [];
-let listener, waiting = null, unsafeSpeech = false, quotaWait = null, correctionWait = null, latestSession;
-const fetchEvents = [];
+let listener, waiting = null, unsafeSpeech = false, quotaWait = null, correctionWait = null, latestSession, speechTexts = [], correctionOutput = null;
+const fetchEvents = [], correctionInputs = [];
 globalThis.chrome = {runtime: {id, getURL: path => origin + path, onMessage: {addListener(fn) {listener = fn;}}, async sendMessage(message) {
   events.push(message);
   if (message.type === 'audio:reserve' && message.kind === 'speech' && quotaWait?.sessionId === message.sessionId && quotaWait.remaining-- > 0) return {ok: true, data: {waitMs: quotaWait.waitMs}};
@@ -17,11 +17,13 @@ globalThis.AudioContext = class {
   async resume() {}
 };
 globalThis.AudioWorkletNode = class {constructor() {this.port = {}; worklets.push(this);} connect() {} disconnect() {}};
-globalThis.fetch = async url => {
+globalThis.fetch = async (url, init) => {
   fetchEvents.push(url);
   if (waiting) await new Promise(resolve => {waiting.resolve = resolve;});
   if (correctionWait && url.endsWith('/chat/completions')) await new Promise(resolve => {correctionWait.resolve = resolve;});
-  const data = url.endsWith('/audio/transcriptions') ? {text: unsafeSpeech ? 'Erişim ve Altyazı M.K.' : 'merhaba çekim henüz onaylanmadı', segments: [{avg_logprob: -0.1, no_speech_prob: 0.01, compression_ratio: 1.1}]} : {choices: [{message: {content: '{"text":"Merhaba. Çekim henüz onaylanmadı."}'}}]};
+  const raw = url.endsWith('/chat/completions') ? JSON.parse(JSON.parse(init.body).messages[1].content).text : '';
+  if (raw) correctionInputs.push(raw);
+  const data = url.endsWith('/audio/transcriptions') ? {text: unsafeSpeech ? 'Erişim ve Altyazı M.K.' : speechTexts.shift() || 'merhaba çekim henüz onaylanmadı', segments: [{avg_logprob: -0.1, no_speech_prob: 0.01, compression_ratio: 1.1}]} : {choices: [{message: {content: JSON.stringify({text: correctionOutput ? correctionOutput(raw) : 'Merhaba. Çekim henüz onaylanmadı.'})}}]};
   return new Response(JSON.stringify(data), {status: 200, headers: {'Content-Type': 'application/json'}});
 };
 await import('../extension/offscreen.js');
@@ -29,17 +31,20 @@ const send = (type, sessionId, config) => new Promise(resolve => {if (type === '
 afterEach(async () => {
   await send('capture:cancel', latestSession);
   const releaseSpeech = waiting?.resolve, releaseCorrection = correctionWait?.resolve;
-  waiting = null; correctionWait = null; quotaWait = null; unsafeSpeech = false;
+  waiting = null; correctionWait = null; quotaWait = null; unsafeSpeech = false; speechTexts = []; correctionOutput = null; correctionInputs.length = 0;
   releaseSpeech?.(); releaseCorrection?.();
 });
 const config = {key: 'test-only-placeholder', model: 'whisper-large-v3', terms: [], correction: true, sensitivity: 0.008, pauseMs: 750};
 const push = (count, level) => {for (let i = 0; i < count; i++) worklets.at(-1).port.onmessage?.({data: new Float32Array(2048).fill(level)});};
 async function until(fn, timeout = 1000) {const deadline = Date.now() + timeout; while (!fn() && Date.now() < deadline) await new Promise(resolve => setTimeout(resolve, 5)); assert.ok(fn());}
-test('offscreen VAD to transcription and correction produces one ordered result', async () => {
+test('offscreen writes an immediate draft then punctuates the complete text', async () => {
   assert.equal((await send('capture:start', 'one', config)).ok, true);
-  push(4, 0.04); push(7, 0);
-  await until(() => events.some(x => x.type === 'audio:result' && x.sessionId === 'one'));
-  const result = events.find(x => x.type === 'audio:result' && x.sessionId === 'one');
+  push(4, 0.04); push(9, 0);
+  await until(() => events.some(x => x.type === 'audio:result' && x.sessionId === 'one' && x.final));
+  const results = events.filter(x => x.type === 'audio:result' && x.sessionId === 'one');
+  assert.equal(results[0].text, 'Merhaba çekim henüz onaylanmadı'); assert.equal(results[0].final, false);
+  assert.ok(results.every(x => x.replace));
+  const result = results.at(-1);
   assert.equal(result.text, 'Merhaba. Çekim henüz onaylanmadı.');
   await send('capture:cancel', 'one'); assert.ok(tracks.at(-1).stopped); assert.equal(contexts.at(-1).state, 'closed');
 });
@@ -57,16 +62,19 @@ test('stop flushes the last spoken words and releases microphone resources', asy
   await send('capture:start', 'three', config); push(4, 0.04);
   await send('capture:finish', 'three');
   await until(() => events.some(x => x.type === 'audio:done' && x.sessionId === 'three'));
-  assert.equal(events.filter(x => x.type === 'audio:result' && x.sessionId === 'three').length, 1);
+  assert.equal(events.filter(x => x.type === 'audio:result' && x.sessionId === 'three').length, 2);
+  assert.equal(events.filter(x => x.type === 'audio:result' && x.sessionId === 'three').at(-1).final, true);
   assert.ok(tracks.at(-1).stopped); assert.equal(contexts.at(-1).state, 'closed');
 });
-test('hallucinated subtitle text never reaches the editor and closes the microphone', async () => {
+test('one hallucinated segment is blocked while later clean speech continues', async () => {
   unsafeSpeech = true;
   await send('capture:start', 'unsafe', config); push(4, 0.04); push(7, 0);
-  await until(() => events.some(x => x.type === 'audio:error' && x.sessionId === 'unsafe'));
+  await until(() => events.some(x => x.type === 'audio:warning' && x.sessionId === 'unsafe'));
   assert.equal(events.some(x => x.type === 'audio:result' && x.sessionId === 'unsafe'), false);
-  assert.ok(tracks.at(-1).stopped); assert.equal(contexts.at(-1).state, 'closed');
-  unsafeSpeech = false;
+  assert.equal(tracks.at(-1).stopped, false); unsafeSpeech = false;
+  push(4, 0.04); push(9, 0);
+  await until(() => events.some(x => x.type === 'audio:result' && x.sessionId === 'unsafe'));
+  assert.ok(events.filter(x => x.type === 'audio:result' && x.sessionId === 'unsafe').every(x => !x.text.includes('M.K.')));
 });
 test('long provider delay buffers past the old four-segment limit and pauses capture safely', async () => {
   waiting = {};
@@ -114,14 +122,51 @@ test('canceling a quota wait sends no provider request or stale text', async () 
 });
 test('fast mode bounds stalled correction and ignores its late response', async () => {
   correctionWait = {};
-  await send('capture:start', 'slow-correction', {...config, fastMode: true}); push(4, 0.04); push(7, 0);
+  await send('capture:start', 'slow-correction', {...config, fastMode: true}); push(4, 0.04); push(9, 0);
   await until(() => Boolean(correctionWait.resolve)); const started = Date.now();
-  await until(() => events.some(x => x.type === 'audio:result' && x.sessionId === 'slow-correction'), 4500);
+  await until(() => events.some(x => x.type === 'audio:result' && x.sessionId === 'slow-correction' && x.final), 4500);
   const results = events.filter(x => x.type === 'audio:result' && x.sessionId === 'slow-correction');
-  assert.equal(results.length, 1); assert.equal(results[0].text, 'Merhaba çekim henüz onaylanmadı.');
-  assert.match(results[0].warning, /dil düzeltmesi yetişmedi/); assert.ok(Date.now() - started < 4000);
+  assert.equal(results.length, 2); assert.equal(results.at(-1).text, 'Merhaba çekim henüz onaylanmadı');
+  assert.match(results.at(-1).warning, /Noktalama kontrolü yetişmedi/); assert.ok(Date.now() - started < 4000);
   const release = correctionWait.resolve; correctionWait = null; release();
   await new Promise(resolve => setTimeout(resolve, 30));
-  assert.equal(events.filter(x => x.type === 'audio:result' && x.sessionId === 'slow-correction').length, 1);
+  assert.equal(events.filter(x => x.type === 'audio:result' && x.sessionId === 'slow-correction').length, 2);
   await send('capture:cancel', 'slow-correction');
+});
+test('five chunks of a long sentence stay continuous and receive one whole-text punctuation pass', async () => {
+  speechTexts = ['çekim talebiniz ile ilgili', 'kontrollerimiz sürüyor henüz', 'onaylanmadı bu nedenle', 'bir süre daha beklemenizi', 'rica ediyoruz bilgi vereceğiz'];
+  const expected = 'Çekim talebiniz ile ilgili kontrollerimiz sürüyor henüz onaylanmadı bu nedenle bir süre daha beklemenizi rica ediyoruz bilgi vereceğiz';
+  correctionOutput = raw => raw + '.';
+  await send('capture:start', 'long-sentence', config); push(282, 0.04);
+  await until(() => events.filter(x => x.type === 'audio:result' && x.sessionId === 'long-sentence').length === 4);
+  assert.equal(correctionInputs.length, 0, 'Audio chunk boundaries must not trigger punctuation');
+  assert.equal(tracks.at(-1).stopped, false);
+  push(9, 0);
+  await until(() => events.some(x => x.type === 'audio:result' && x.sessionId === 'long-sentence' && x.final));
+  const results = events.filter(x => x.type === 'audio:result' && x.sessionId === 'long-sentence');
+  assert.equal(results.length, 6); assert.equal(results.at(-1).text, expected + '.');
+  assert.ok(results.slice(0, -1).every(x => !/[.!?]$/.test(x.text)));
+  assert.deepEqual(correctionInputs, [expected]); assert.ok(results.every(x => x.replace));
+  assert.equal(tracks.at(-1).stopped, false, 'A final period never stops capture');
+});
+test('new speech invalidates delayed punctuation without replacing the continuing draft', async () => {
+  speechTexts = ['ilk bölüm', 'devam eden cümle']; correctionOutput = raw => raw + '.'; correctionWait = {};
+  await send('capture:start', 'resume', config); push(4, 0.04); push(9, 0);
+  await until(() => Boolean(correctionWait.resolve)); const release = correctionWait.resolve;
+  push(4, 0.04); correctionWait = null; push(9, 0);
+  await until(() => events.some(x => x.type === 'audio:result' && x.sessionId === 'resume' && x.final));
+  release(); await new Promise(resolve => setTimeout(resolve, 20));
+  const results = events.filter(x => x.type === 'audio:result' && x.sessionId === 'resume');
+  assert.equal(results.at(-1).text, 'İlk bölüm devam eden cümle.');
+  assert.equal(results.filter(x => x.final).length, 1);
+});
+test('three consecutive rejected chunks close the microphone without inserting unsafe text', async () => {
+  unsafeSpeech = true; await send('capture:start', 'repeated-unsafe', config);
+  for (let i = 0; i < 3; i++) {
+    push(4, 0.04); push(9, 0);
+    await until(() => events.filter(x => x.sessionId === 'repeated-unsafe' && ['audio:warning', 'audio:error'].includes(x.type)).length >= i + 1);
+  }
+  assert.ok(events.some(x => x.sessionId === 'repeated-unsafe' && x.type === 'audio:error'));
+  assert.equal(events.some(x => x.sessionId === 'repeated-unsafe' && x.type === 'audio:result'), false);
+  assert.equal(tracks.at(-1).stopped, true);
 });

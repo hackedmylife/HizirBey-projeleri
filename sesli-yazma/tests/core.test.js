@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {cleanSettings, basicText, guardCorrection, emptyMemory, validateMemory, addCorrection, serializeBackup, relevantExamples, quotaReservation, QuotaWaitError, liveChatUrl, MEMORY_LIMIT, textBytes} from '../extension/lib/core.js';
+import {cleanSettings, basicText, draftText, guardCorrection, guardPunctuation, emptyMemory, validateMemory, addCorrection, serializeBackup, relevantExamples, quotaReservation, QuotaWaitError, liveChatUrl, MEMORY_LIMIT, textBytes} from '../extension/lib/core.js';
 
 test('only supported models and explicit free consent survive configuration', () => {
   const settings = cleanSettings({model: 'paid-unlisted-model', freeConfirmed: 'true', cloudConsent: true, sensitivity: 100, pauseMs: 0});
@@ -80,4 +80,15 @@ test('burst quota waits for the oldest rolling slot without weakening hard limit
   assert.equal(quotaReservation(usage, 'speech', 1, now + 60050).speech, 19);
   assert.throws(() => quotaReservation({...usage, speech: 1800}, 'speech', 1, now + 2000), error => !(error instanceof QuotaWaitError) && /günlük/.test(error.message));
   assert.throws(() => quotaReservation({...usage, audio: 27000}, 'speech', 1, now + 2000), error => !(error instanceof QuotaWaitError) && /ses kullanım/.test(error.message));
+});
+test('preview omits guessed sentence marks while amounts, times, URLs and email survive', () => {
+  assert.equal(draftText('merhaba. çekim, henüz onaylanmadı!'), 'Merhaba çekim henüz onaylanmadı');
+  assert.equal(draftText('1.500,75 TL, saat 17:30. https://ornek.com/a?x=1, bilgi@ornek.com.'), '1.500,75 TL saat 17:30 https://ornek.com/a?x=1 bilgi@ornek.com');
+});
+test('final punctuation cannot add, delete, reorder or complete spoken words', () => {
+  const raw = 'merhaba talebiniz henüz onaylanmadı bilgi vereceğiz';
+  assert.equal(guardPunctuation(raw, 'Merhaba. Talebiniz henüz onaylanmadı; bilgi vereceğiz.').ok, true);
+  for (const text of ['Merhaba, değerli üyemiz. Talebiniz henüz onaylanmadı; bilgi vereceğiz.', 'Talebiniz henüz onaylanmadı; bilgi vereceğiz.', 'Merhaba bilgi vereceğiz talebiniz henüz onaylanmadı']) assert.equal(guardPunctuation(raw, text).ok, false);
+  assert.equal(guardPunctuation('eğer işleminiz', 'Eğer işleminiz onaylanırsa bilgi vereceğiz.').ok, false);
+  assert.equal(guardPunctuation('can', 'Çan.').ok, false, 'Diacritics cannot silently change a word');
 });

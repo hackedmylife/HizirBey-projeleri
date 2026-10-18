@@ -1,4 +1,4 @@
-HIZIR BEY SESLİ YAZMA — 0.1.5
+HIZIR BEY SESLİ YAZMA — 0.1.6
 
 1) ZIP'i bilgisayarında sabit bir klasöre çıkar. Örnek: Belgeler\HizirBey-Sesli-Yazma
 2) Chrome adres çubuğuna chrome://extensions yaz.
@@ -12,8 +12,9 @@ HIZIR BEY SESLİ YAZMA — 0.1.5
    Bu test yereldir; ses kaydı tutulmaz ve gönderilmez. 15 saniyede kapanır.
 8) Bağlantıyı kontrol et ile model erişimini denetleyebilirsin.
 9) LiveChat sekmesini bir kez yenile ve bir müşteri görüşmesi aç.
-10) ALT + H ile konuşmaya başla. Metin yazım/noktalama işleminden sonra
-    doğrudan LiveChat mesaj alanına eklenir.
+10) ALT + H ile konuşmaya başla. Metin hızlıca tek taslakta birikir.
+    Noktalama, en az 1 saniyelik durakta veya dinlemeyi bitirince bütün
+    taslak üzerinden kontrol edilir. Ses parçası sonuna zorla nokta konmaz.
 11) Metni oku. Hazır olduğunda ENTER ile kendin gönder.
 
 WIN + H
@@ -42,13 +43,17 @@ KULLANIM
 - Görüşme veya sekme değişiminde kayıt kapanır.
 - Alanı elle değiştirirsen geç gelen sonuç mevcut yazını ezmez.
   Gerekirse eklenti simgesinden Son dikte metnini kopyala.
-- Yazım/noktalama düzeltmesi doğruluğu artırmayı hedefler; tutarları,
+- Son kontrolde modelin kelime eklemesi, silmesi veya değiştirmesi
+  engellenir. Geri al bütün dikte taslağını kaldırır ve mikrofonu kapatır.
+- Ses tanıma ve noktalama doğruluğu artırmayı hedefler; tutarları,
   özel isimleri ve işlemin durumunu göndermeden önce kontrol et.
 
 ŞÜPHELİ DİKTE KORUMASI
 Altyazı/kapanış kalıbı, tek başına MK/M.K. veya düşük güvenli sonuç
-algılanırsa o parça yazılmaz ve mikrofon kapanır. Eklenti simgesinden
-uyarıyı oku; mevcut metni kontrol edip yeniden dikte başlat.
+algılanırsa o parça yazılmaz. Panelden uyarıyı oku ve o bölümü tekrar
+söyle; tek şüpheli parça mikrofonu kapatmaz. Art arda üç şüpheli parçada
+veya son aktarımda uygunsuz sonuçta mikrofon kapanır; mevcut metni
+kontrol edip yeniden dikte başlat.
 Denetim, anlaşılamayan metni tahmin ederek tamamlamaz. Yanlış özel adları
 ve her kelime hatasını yakalaması garanti değildir; göndermeden önce oku.
 
@@ -58,11 +63,11 @@ Türkçe dikteyi başlat/durdur alanını ALT + H olarak ayarla. Başka bir
 eklenti aynı kısayolu kullanıyorsa onun atamasını değiştir.
 
 GECİKME VE MİKROFON
-- Cümle sonu bekleme artık 0,5 saniye. İstekler arasındaki sabit 3,5
+- Taslağı aktarma beklemesi 0,5 saniye. İstekler arasındaki sabit 3,5
   saniyelik ara kaldırıldı. Dakikalık uygulama sınırında sıra beklenir.
-- Hızlı aktarım varsayılan açık: dil düzeltmesi 2,5 saniyede yetişmezse
-  denetlenmiş temel metin uyarıyla yazılır. Daha uzun düzeltme beklemek
-  istersen bu ayarı kapat; bütçe 10 saniyeye çıkar. Bu süreler ses tanıma
+- Hızlı aktarım varsayılan açık: son noktalama kontrolü 2,5 saniyede
+  yetişmezse denetlenmiş taslak uyarıyla korunur; zorla nokta eklenmez.
+  Daha uzun noktalama kontrolü beklemek istersen bu ayarı kapat; bütçe 10 saniyeye çıkar. Bu süreler ses tanıma
   ve ağ gecikmesini içermez. Son aktarım süresi küçük panelde görünür.
 - Yavaş bağlantıda ses sıraya alınır. Ses tanımada 45 saniyelik yanıt
   süresiyle en fazla 3 deneme yapılır; yeniden denemeler kotaya dahildir.

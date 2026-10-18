@@ -11,17 +11,17 @@ const profile = await mkdtemp(path.join(os.tmpdir(), 'hb-voice-qa-')), extension
 await cp(path.join(root, 'extension'), extension, {recursive: true});
 // Isolated test copy: the shipped extension contains no mock, test hook or override.
 await appendFile(path.join(extension, 'offscreen.js'), `
-const qa = {hold: true, quota: false, unsafe: false, transientFailures: 1, requests: [], release: null};
+const qa = {hold: true, quota: false, unsafe: false, transientFailures: 1, requests: [], release: null, fragments: [], long: false};
 globalThis.fetch = async (url, init) => {
   qa.requests.push(String(url));
   if (qa.quota) return new Response('{}', {status:429, headers:{'retry-after':'1'}});
   if (qa.unsafe && String(url).endsWith('/audio/transcriptions')) return new Response(JSON.stringify({text:'Erişim ve Altyazı M.K. Ses deneme 1-2.',segments:[{avg_logprob:-0.1,no_speech_prob:0.01,compression_ratio:1.1}]}),{status:200,headers:{'Content-Type':'application/json'}});
   if (String(url).endsWith('/audio/transcriptions') && qa.transientFailures > 0) {qa.transientFailures--;return new Response('{}',{status:503});}
   if (String(url).endsWith('/audio/transcriptions') && qa.hold) await new Promise((resolve,reject) => {qa.release=resolve;init.signal.addEventListener('abort',()=>reject(new DOMException('Aborted','AbortError')),{once:true});});
-  const data = String(url).endsWith('/audio/transcriptions') ? {text:'merhaba çekiminiz henüz onaylanmadı',segments:[{avg_logprob:-0.1,no_speech_prob:0.01,compression_ratio:1.1}]} : {choices:[{message:{content:JSON.stringify({text:'Merhaba. Çekiminiz henüz onaylanmadı.'})}}]};
+  const data = String(url).endsWith('/audio/transcriptions') ? {text:qa.fragments.shift()||'merhaba çekiminiz henüz onaylanmadı',segments:[{avg_logprob:-0.1,no_speech_prob:0.01,compression_ratio:1.1}]} : {choices:[{message:{content:JSON.stringify({text:qa.long?JSON.parse(JSON.parse(init.body).messages[1].content).text+'.':'Merhaba. Çekiminiz henüz onaylanmadı.'})}}]};
   return new Response(JSON.stringify(data),{status:200,headers:{'Content-Type':'application/json'}});
 };
-chrome.runtime.onMessage.addListener((m,s,r)=>{if(m?.target!=='qa'||s.id!==chrome.runtime.id)return false;if(m.type==='qa:get')r({requests:qa.requests,waiting:Boolean(qa.release)});else if(m.type==='qa:release'){qa.hold=false;qa.release?.();qa.release=null;r(true);}else if(m.type==='qa:unsafe'){qa.unsafe=true;qa.hold=false;qa.transientFailures=0;r(true);}else if(m.type==='qa:quota'){qa.quota=true;qa.hold=false;r(true);}return false;});
+chrome.runtime.onMessage.addListener((m,s,r)=>{if(m?.target!=='qa'||s.id!==chrome.runtime.id)return false;if(m.type==='qa:get')r({requests:qa.requests,waiting:Boolean(qa.release)});else if(m.type==='qa:release'){qa.hold=false;qa.release?.();qa.release=null;r(true);}else if(m.type==='qa:unsafe'){qa.unsafe=true;qa.hold=false;qa.transientFailures=0;r(true);}else if(m.type==='qa:long'){qa.long=true;qa.hold=false;qa.transientFailures=0;qa.fragments=['çekim talebiniz ile ilgili','kontrollerimiz sürüyor henüz','onaylanmadı bu nedenle','bir süre daha beklemenizi','rica ediyoruz bilgi vereceğiz'];active.worklet.port.onmessage=null;for(let i=0;i<282;i++)active.segmenter.push(new Float32Array(Math.round(active.sampleRate*.128)).fill(.04));for(let i=0;i<9;i++)active.segmenter.push(new Float32Array(Math.round(active.sampleRate*.128)));r(true);}else if(m.type==='qa:quota'){qa.quota=true;qa.hold=false;r(true);} return false;});
 `);
 const context = await chromium.launchPersistentContext(path.join(profile, 'profile'), {executablePath: process.env.CHROMIUM_PATH, channel: 'chromium', headless: true, args: ['--no-sandbox', '--disable-extensions-except=' + extension, '--load-extension=' + extension, '--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream', '--autoplay-policy=no-user-gesture-required', ...(process.env.TEST_AUDIO ? ['--use-file-for-fake-audio-capture=' + process.env.TEST_AUDIO] : [])]});
 let checks = 0;
@@ -70,7 +70,7 @@ try {
   assert.equal(await page.locator('#hizir-voice-host').locator('#indicator').isVisible(), true); checks++;
   await page.locator('#editor').focus(); await page.keyboard.press('Enter'); assert.equal(await page.evaluate(() => globalThis.sentCount), 0); checks++;
   await qa('qa:release');
-  await page.waitForFunction(() => document.getElementById('editor').innerText.includes('henüz onaylanmadı'), {timeout: 15000});
+  await page.waitForFunction(() => document.getElementById('editor').innerText.includes('Merhaba. Çekiminiz henüz onaylanmadı.'), undefined, {timeout: 15000});
   assert.equal(((await page.locator('#editor').innerText()).match(/henüz onaylanmadı/g) || []).length, 1, 'The retried segment is inserted only once');
   const usage = await worker.evaluate(async () => (await chrome.storage.local.get('hbVoice.usage.v1'))['hbVoice.usage.v1']);
   assert.equal(usage.speech, 2); assert.equal(usage.text, 1); checks++;
@@ -97,6 +97,18 @@ try {
   await page.keyboard.press('Enter');
   assert.equal(await page.evaluate(() => globalThis.sentCount), 2); assert.equal(await page.evaluate(() => globalThis.sendClicks), 2); checks++;
   await page.evaluate(() => {globalThis.nativeEnterSends = true;});
+  // Feed 36 seconds of deterministic PCM into the isolated test copy's
+  // segmenter; real Worklet capture was exercised above. No hook is shipped.
+  await page.locator('#editor').fill('Önceden yazılmış metin.');
+  await toggle(); await listening(); await qa('qa:long');
+  const longDraft = 'Çekim talebiniz ile ilgili kontrollerimiz sürüyor henüz onaylanmadı bu nedenle bir süre daha beklemenizi rica ediyoruz bilgi vereceğiz.';
+  await page.waitForFunction(text => document.getElementById('editor').innerText.trim() === 'Önceden yazılmış metin. ' + text, longDraft, {timeout: 15000});
+  assert.equal((await sessionStore()).status.recording, true);
+  assert.equal(((await page.locator('#editor').innerText()).match(/çekim talebiniz/gi) || []).length, 1); checks++;
+  const longRequests = (await qa('qa:get')).requests;
+  assert.equal(longRequests.filter(x => x.endsWith('/audio/transcriptions')).length, 5); assert.equal(longRequests.filter(x => x.endsWith('/chat/completions')).length, 1); checks++;
+  await page.keyboard.press('Enter'); await page.waitForTimeout(400);
+  assert.equal(await page.evaluate(() => globalThis.sentCount), 3); assert.equal((await sessionStore()).session, null); checks++;
   // Repeated recordings exercise close/reopen and mic cleanup.
   await page.locator('#editor').fill(''); await page.waitForTimeout(500);
   await toggle(); await listening();
@@ -107,9 +119,13 @@ try {
   await page.locator('#editor').fill('Korunacak mevcut metin.');
   await toggle(); await listening(); await qa('qa:unsafe');
   const unsafeUntil = Date.now() + 20000;
-  while (Date.now() < unsafeUntil) {if ((await sessionStore()).status.phase === 'error') break; await page.waitForTimeout(200);}
-  const rejected = await sessionStore(); assert.equal(rejected.status.phase, 'error'); assert.match(rejected.status.message, /Şüpheli dikte yazılmadı/); assert.equal(rejected.session, null); checks++;
-  assert.equal((await page.locator('#editor').innerText()).trim(), 'Korunacak mevcut metin.'); assert.equal(await page.locator('#hizir-voice-host').isVisible(), false); assert.equal(await page.evaluate(() => globalThis.sentCount), 2); checks++;
+  while (Date.now() < unsafeUntil) {if ((await sessionStore()).status.warning.includes('net anlaşılamadığı')) break; await page.waitForTimeout(200);}
+  const rejected = await sessionStore(); assert.notEqual(rejected.status.phase, 'error'); assert.match(rejected.status.warning, /net anlaşılamadığı/); assert.ok(rejected.session); assert.equal(rejected.status.recording, true); checks++;
+  assert.equal((await page.locator('#editor').innerText()).trim(), 'Korunacak mevcut metin.'); assert.equal(await page.locator('#hizir-voice-host').isVisible(), true); assert.equal(await page.evaluate(() => globalThis.sentCount), 3); checks++;
+  await toggle();
+  const cleanStopUntil = Date.now() + 5000;
+  while ((await sessionStore()).session && Date.now() < cleanStopUntil) await page.waitForTimeout(100);
+  await page.waitForTimeout(500);
   // Fail closed at provider quota, without another provider or upgrade request.
   await toggle(); await listening();
   await qa('qa:quota');

@@ -1,3 +1,16 @@
+# 0.1.6 — Uzun dikte ve cümle tamamlanınca noktalama
+
+18 Ekim 2026
+
+- Her ses parçasına ayrı son nokta ekleyen akış kaldırıldı. Hızlı, noktalaması geçici taslak tek bir alanda birikir; her güncelleme önceki taslağın üstüne uygulanır, aynı metin tekrar tekrar eklenmez.
+- Noktalama, en az 1 saniyelik durakta veya normal durdurmada bütün taslak üzerinden kontrol edilir. Ses parçası sınırı cümle sınırı sayılmaz. Yeni konuşma eski kontrolü iptal eder; geç gelen noktalama devam eden metni ezmez.
+- Noktalama modelinin kelime ekleme, silme, sıralama veya değiştirmesi engellenir. Sayı, olumsuzluk ve işlem durumu denetimleri korunur. Uygun öğrenilmiş örnekler de aynı kelime koşuluyla sınanır.
+- Tek bir şüpheli ses parçasında mikrofon hemen kapanmaz; o parça yazılmaz ve tekrar söyleme uyarısı verilir. Art arda üç reddetmede kayıt güvenle kapanır. Son aktarım koruması uygunsuz metinde hemen durmaya devam eder.
+- Noktalama bütçesi dolarsa taslak korunur; zorla nokta eklenmez. 0.1.4 hız ve bağlantı politikası korunur. Nokta veya virgül dinlemeyi bitirmez.
+- Geri al mevcut dikte taslağını kaldırır ve tekrar eklenmesini önlemek için dinlemeyi kapatır. Oturum başındaki metin korunur. Elle düzenleme, görüşme değişimi, Enter ile kullanıcı gönderimi ve geç sonuç korumaları sürer.
+- Taslak 8.000 karakterle sınırlandırılır; mevcut metin korunur. Merkezdeki 20 px nokta, logo, Win + H yönlendirmesi, anahtar ve sözlük korunur.
+- Kontrollü testler gerçek kullanıcının ses kaydı yerine geçmez; ses tanımanın bütün kelime hatalarının sıfırlandığı iddia edilmez.
+
 # 0.1.5 — Büyük kırmızı nokta ve tek Enter ile gönderim
 
 18 Ekim 2026

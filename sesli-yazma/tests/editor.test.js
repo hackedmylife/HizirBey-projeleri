@@ -7,7 +7,7 @@ function fixture({note = false} = {}) {
   const window = new Window({url: 'https://my.livechatinc.com/chats/DEMO01'});
   window.document.body.innerHTML = `<main data-chat-id="DEMO01"><div data-testid="chat-feed"><div data-testid="DEMO01001_1-reaction"></div></div><div id="composer"><div id="editor" data-testid="chat-feed-text-area-test-id" contenteditable="true" data-lexical-editor="true" role="textbox"></div><div><p>${note ? "Type an internal note, the customer won't see this message" : 'Type your message'}</p></div></div></main>`;
   window.HTMLElement.prototype.getClientRects = function () {return this.isConnected ? [{width: 500, height: 100}] : [];};
-  window.document.execCommand = (command, _, text) => {if (command !== 'insertText') return false; const editor = window.document.getElementById('editor'); editor.textContent += text; editor.dispatchEvent(new window.InputEvent('input', {bubbles: true, inputType: 'insertText', data: text})); return true;};
+  window.document.execCommand = (command, _, text) => {if (command !== 'insertText') return false; const editor = window.document.getElementById('editor'), selection = window.getSelection(); const replace = selection.rangeCount && !selection.getRangeAt(0).collapsed; editor.textContent = replace ? text : editor.textContent + text; editor.dispatchEvent(new window.InputEvent('input', {bubbles: true, inputType: 'insertText', data: text})); return true;};
   window.eval(source);
   return window;
 }
@@ -58,4 +58,19 @@ test('disabled or ambiguous Send controls preserve the reviewed draft', async ()
     assert.equal(doc.getElementById('editor').innerText, 'Korunacak taslak.');
     await window.happyDOM.close();
   }
+});
+test('five draft revisions and final punctuation update one dictated span without duplicates', async () => {
+  const window = fixture(), editor = window.document.getElementById('editor'); editor.innerText = 'Önceden yazılmış metin.';
+  const binding = new window.HizirVoiceEditor.Binding();
+  for (const text of ['Merhaba', 'Merhaba talebiniz', 'Merhaba talebiniz henüz', 'Merhaba talebiniz henüz onaylanmadı', 'Merhaba talebiniz henüz onaylanmadı bilgi vereceğiz', 'Merhaba, talebiniz henüz onaylanmadı. Bilgi vereceğiz.']) await binding.insert(text, {replace: true});
+  assert.equal(editor.innerText, 'Önceden yazılmış metin. Merhaba, talebiniz henüz onaylanmadı. Bilgi vereceğiz.');
+  assert.equal(binding.segments.length, 1);
+  await binding.undo(); assert.equal(editor.innerText, 'Önceden yazılmış metin.'); assert.equal(binding.segments.length, 0);
+  await window.happyDOM.close();
+});
+test('late punctuation never overwrites manual edits to a provisional draft', async () => {
+  const window = fixture(), editor = window.document.getElementById('editor'), binding = new window.HizirVoiceEditor.Binding();
+  await binding.insert('Taslak metin', {replace: true}); editor.innerText = 'Kullanıcının kontrol ettiği metin.';
+  await assert.rejects(binding.insert('Taslak metin.', {replace: true}), /elle değiştirdin/);
+  assert.equal(editor.innerText, 'Kullanıcının kontrol ettiği metin.'); await window.happyDOM.close();
 });

@@ -169,7 +169,7 @@ async function handle(message, sender) {
       const mine = session, response = await tellTab('voice:undo');
       if (session !== mine) return false;
       if (!response?.ok) throw new Error(response?.error || 'Son dikte geri alınamadı.');
-      await publish({canUndo: false, warning: '', message: 'Son dikte geri alındı.'}); return true;
+      await cancel('Son dikte geri alındı. Yeni dikte için Alt + H.', 'idle', true); return true;
     }
     if (message.type === 'ui:cancel') return cancel();
   }
@@ -194,6 +194,7 @@ async function handle(message, sender) {
     if (!audioSender(sender) || !session || session.id !== message.sessionId) return false;
     if (message.type === 'audio:reserve') return reserve(message.kind, message.seconds || 0);
     if (message.type === 'audio:examples') return relevantExamples(String(message.text || '').slice(0, 10000), (await getMemory()).pairs);
+    if (message.type === 'audio:warning') return publish({warning: String(message.warning || '').slice(0, 1000)}, false);
     if (message.type === 'audio:meter') {
       const pendingSeconds = Math.max(0, Math.ceil(Number(message.pendingSeconds) || 0));
       const waiting = message.waiting && message.processing;
@@ -207,7 +208,7 @@ async function handle(message, sender) {
       if (message.segmentId <= (mine.lastSegment || 0)) return true;
       // Claim before the first await: duplicate delivery must never write twice.
       mine.lastSegment = message.segmentId;
-      const data = {segmentId: message.segmentId, text: message.text, raw: message.raw, warning: message.warning || ''};
+      const data = {segmentId: message.segmentId, text: message.text, raw: message.raw, replace: message.replace === true, final: message.final !== false, warning: message.warning || ''};
       // Keep a temporary recovery copy if an editor rejects insertion. Never auto-replay it.
       await publish({lastText: data.text, lastRaw: data.raw, warning: data.warning, message: data.warning || 'Metin yazı alanına eklendi.'});
       if (session !== mine) return false;

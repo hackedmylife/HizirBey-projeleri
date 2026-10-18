@@ -1,4 +1,4 @@
-export const VERSION = '0.1.5';
+export const VERSION = '0.1.6';
 export const MEMORY_LIMIT = 10_000_000;
 export const SPEECH_MODELS = ['whisper-large-v3', 'whisper-large-v3-turbo'];
 export const TEXT_MODEL = 'openai/gpt-oss-20b';
@@ -28,15 +28,34 @@ export function cleanSettings(value = {}) {
 export function normalize(text) {return String(text).toLocaleLowerCase('tr-TR').normalize('NFD').replace(/\p{M}/gu, '').replace(/ı/g, 'i');}
 export function words(text) {return normalize(text).match(/[\p{L}\p{N}]+/gu) || [];}
 export function textBytes(value) {return new TextEncoder().encode(JSON.stringify(value)).byteLength;}
-export function basicText(value, terms = []) {
+export function basicText(value, terms = [], {terminal = true} = {}) {
   let text = String(value || '').normalize('NFC').replace(/[\u0000-\u0008\u000B-\u001F\u007F]/g, '').replace(/[ \t]+/g, ' ').replace(/ +([,.;:!?])/g, '$1').replace(/([!?]){3,}/g, '$1').trim();
   for (const term of terms.slice(0, 200)) {
     const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     text = text.replace(new RegExp(`(?<![\\p{L}\\p{N}])${escaped}(?![\\p{L}\\p{N}])`, 'giu'), term);
   }
   text = text.replace(/(^|[.!?]\s+)([\p{L}])/gu, (_, start, letter) => start + letter.toLocaleUpperCase('tr-TR'));
-  if (text && !/[.!?…:;]$/.test(text)) text += '.';
+  if (terminal && text && !/[.!?…:;]$/.test(text)) text += '.';
   return text;
+}
+// ASR punctuation is provisional. Keep number separators, URLs and addresses;
+// sentence punctuation is decided from the complete draft after speech settles.
+export function draftText(value, terms = []) {
+  const source = String(value || '');
+  const protectedRanges = [...source.matchAll(/(?:https?:\/\/|www\.)[^\s]+|[\p{L}\p{N}._%+-]+@[\p{L}\p{N}.-]+\.[\p{L}]{2,}/gu)].map(x => [x.index, x.index + x[0].replace(/[,.!?;:]+$/, '').length]);
+  const text = source.replace(/[.,!?;:…]/gu, (mark, at) => {
+    if (protectedRanges.some(([start, end]) => at >= start && at < end)) return mark;
+    if (/[.,:]/.test(mark) && /\d/.test(source[at - 1] || '') && /\d/.test(source[at + 1] || '')) return mark;
+    return ' ';
+  });
+  return basicText(text, terms, {terminal: false});
+}
+export function guardPunctuation(original, candidate, terms = []) {
+  const check = guardCorrection(original, candidate, terms);
+  if (!check.ok) return check;
+  const lexical = text => String(text).normalize('NFC').toLocaleLowerCase('tr-TR').match(/[\p{L}\p{N}]+/gu) || [];
+  if (!sameArray(lexical(original), lexical(candidate))) return {ok: false, reason: 'Noktalama sırasında kelime eklendi, silindi veya değişti.'};
+  return check;
 }
 function digits(text) {return (text.match(/\d+(?:[.,:/-]\d+)*/g) || []).map(x => x.replace(/,/g, '.'));}
 function sameArray(a, b) {return a.length === b.length && a.every((x, i) => x === b[i]);}

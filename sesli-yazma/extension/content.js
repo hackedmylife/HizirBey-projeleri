@@ -54,7 +54,7 @@
       insertion = insertion.catch(() => {}).then(async () => {
         if (active !== mine) throw new Error('Dikte oturumu değişti; metin eklenmedi.');
         if (message.data.segmentId && message.data.segmentId <= mine.lastSegment) return;
-        await mine.binding.insert(message.data.text);
+        await mine.binding.insert(message.data.text, {replace: message.data.replace === true});
         if (active !== mine) throw new Error('Görüşme değişti.');
         mine.lastSegment = message.data.segmentId || mine.lastSegment;
       });

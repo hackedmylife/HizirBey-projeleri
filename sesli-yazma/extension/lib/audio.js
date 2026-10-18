@@ -16,14 +16,24 @@ export function wavBlob(samples, sampleRate, gain = 1) {
 }
 export function concatFrames(frames) {const result = new Float32Array(frames.reduce((n, x) => n + x.length, 0)); let offset = 0; for (const frame of frames) {result.set(frame, offset); offset += frame.length;} return result;}
 export class Segmenter {
-  constructor({sampleRate, threshold = 0.005, pauseMs = 500, maxSeconds = 8, splitAfterSeconds = 4, onSegment}) {
-    Object.assign(this, {sampleRate, threshold, pauseMs, maxSeconds, splitAfterSeconds, onSegment});
+  constructor({sampleRate, threshold = 0.005, pauseMs = 500, maxSeconds = 8, splitAfterSeconds = 4, settleMs = 1000, onSegment, onSpeechStart, onBoundary}) {
+    Object.assign(this, {sampleRate, threshold, pauseMs, maxSeconds, splitAfterSeconds, settleMs, onSegment, onSpeechStart, onBoundary});
     this.frames = []; this.pre = []; this.length = 0; this.silence = 0; this.voice = 0;
+    this.utterance = false; this.quiet = 0;
   }
   push(frame) {
     let sum = 0; for (const v of frame) sum += v * v;
     const rms = Math.sqrt(sum / Math.max(1, frame.length));
     const speaking = rms >= this.threshold;
+    if (speaking) {
+      if (!this.utterance) {this.utterance = true; this.onSpeechStart?.();}
+      this.quiet = 0;
+    } else if (this.utterance) {
+      this.quiet += frame.length;
+      if (this.quiet / this.sampleRate * 1000 >= Math.max(this.pauseMs, this.settleMs)) {
+        this.flush(); this.utterance = false; this.quiet = 0; this.onBoundary?.();
+      }
+    }
     if (!this.length && !speaking) {this.pre.push(frame); while (this.pre.reduce((n, x) => n + x.length, 0) > this.sampleRate * 0.3) this.pre.shift(); return {rms, buffered: false};}
     if (!this.length) {this.frames = this.pre.splice(0); this.length = this.frames.reduce((n, x) => n + x.length, 0);}
     this.frames.push(frame); this.length += frame.length;
@@ -40,5 +50,5 @@ export class Segmenter {
     this.frames = []; this.pre = []; this.length = 0; this.silence = 0; this.voice = 0;
     if (samples) this.onSegment(samples, {silenceMs});
   }
-  clear() {this.frames = []; this.pre = []; this.length = 0; this.silence = 0; this.voice = 0;}
+  clear() {this.frames = []; this.pre = []; this.length = 0; this.silence = 0; this.voice = 0; this.utterance = false; this.quiet = 0;}
 }
