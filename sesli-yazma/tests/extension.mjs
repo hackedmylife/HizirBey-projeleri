@@ -21,7 +21,7 @@ globalThis.fetch = async (url, init) => {
   const data = String(url).endsWith('/audio/transcriptions') ? {text:qa.fragments.shift()||'merhaba çekiminiz henüz onaylanmadı',segments:[{avg_logprob:-0.1,no_speech_prob:0.01,compression_ratio:1.1}]} : {choices:[{message:{content:JSON.stringify({text:qa.long?JSON.parse(JSON.parse(init.body).messages[1].content).text+'.':'Merhaba. Çekiminiz henüz onaylanmadı.'})}}]};
   return new Response(JSON.stringify(data),{status:200,headers:{'Content-Type':'application/json'}});
 };
-chrome.runtime.onMessage.addListener((m,s,r)=>{if(m?.target!=='qa'||s.id!==chrome.runtime.id)return false;if(m.type==='qa:get')r({requests:qa.requests,waiting:Boolean(qa.release)});else if(m.type==='qa:release'){qa.hold=false;qa.release?.();qa.release=null;r(true);}else if(m.type==='qa:unsafe'){qa.unsafe=true;qa.hold=false;qa.transientFailures=0;r(true);}else if(m.type==='qa:long'){qa.requests=[];qa.long=true;qa.hold=false;qa.transientFailures=0;qa.fragments=['çekim talebiniz ile ilgili','kontrollerimiz sürüyor henüz','onaylanmadı bu nedenle','bir süre daha beklemenizi','rica ediyoruz bilgi vereceğiz'];active.worklet.port.onmessage=null;for(let i=0;i<282;i++)active.segmenter.push(new Float32Array(Math.round(active.sampleRate*.128)).fill(.04));for(let i=0;i<9;i++)active.segmenter.push(new Float32Array(Math.round(active.sampleRate*.128)));r(true);}else if(m.type==='qa:quota'){qa.quota=true;qa.hold=false;r(true);} return false;});
+chrome.runtime.onMessage.addListener((m,s,r)=>{if(m?.target!=='qa'||s.id!==chrome.runtime.id)return false;if(m.type==='qa:get')r({requests:qa.requests,waiting:Boolean(qa.release)});else if(m.type==='qa:release'){qa.hold=false;qa.release?.();qa.release=null;r(true);}else if(m.type==='qa:unsafe'){qa.unsafe=true;qa.hold=false;qa.transientFailures=0;r(true);}else if(m.type==='qa:long'){qa.requests=[];qa.long=true;qa.hold=false;qa.transientFailures=0;qa.fragments=['çekim talebiniz ile ilgili','kontrollerimiz sürüyor henüz','onaylanmadı bu nedenle','bir süre daha beklemenizi','rica ediyoruz bilgi vereceğiz'];active.worklet.port.onmessage=null;for(let i=0;i<282;i++)active.segmenter.push(new Float32Array(Math.round(active.sampleRate*.128)).fill(.04));for(let i=0;i<9;i++)active.segmenter.push(new Float32Array(Math.round(active.sampleRate*.128)));r(true);}else if(m.type==='qa:window'){qa.requests=[];qa.long=true;qa.hold=false;qa.transientFailures=0;active.worklet.port.onmessage=null;r(true);}else if(m.type==='qa:preview'||m.type==='qa:reject'){active.worklet.port.onmessage=null;if(m.type==='qa:preview')qa.fragments=[m.text];for(let i=0;i<4;i++)active.segmenter.push(new Float32Array(Math.round(active.sampleRate*.128)).fill(.04));for(let i=0;i<(m.type==='qa:reject'?9:4);i++)active.segmenter.push(new Float32Array(Math.round(active.sampleRate*.128)));r(true);}else if(m.type==='qa:settle'){for(let i=0;i<4;i++)active.segmenter.push(new Float32Array(Math.round(active.sampleRate*.128)));r(true);}else if(m.type==='qa:quota'){qa.quota=true;qa.hold=false;r(true);} return false;});
 `);
 const context = await chromium.launchPersistentContext(path.join(profile, 'profile'), {executablePath: process.env.CHROMIUM_PATH, channel: 'chromium', headless: true, args: ['--no-sandbox', '--disable-extensions-except=' + extension, '--load-extension=' + extension, '--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream', '--autoplay-policy=no-user-gesture-required', ...(process.env.TEST_AUDIO ? ['--use-file-for-fake-audio-capture=' + process.env.TEST_AUDIO] : [])]});
 let checks = 0;
@@ -43,7 +43,7 @@ try {
   const browserSource = await readFile(path.join(root, 'tests/browser.mjs'), 'utf8');
   const fixture = browserSource.match(/const fixture = `([\s\S]*?)`;/)[1];
   await context.route('https://my.livechatinc.com/**', route => route.fulfill({body: fixture, contentType: 'text/html'}));
-  const qa = type => worker.evaluate(type => chrome.runtime.sendMessage({target: 'qa', type}), type);
+  const qa = (type, data = {}) => worker.evaluate(message => chrome.runtime.sendMessage({target: 'qa', ...message}), {type, ...data});
   page = await context.newPage(); await page.goto('https://my.livechatinc.com/chats/DEMOCHAT01');
   await page.bringToFront();
   assert.equal(await page.locator('#hizir-voice-host').isVisible(), false); checks++;
@@ -112,6 +112,25 @@ try {
   assert.equal((await sessionStore()).status.busy, false);
   await page.keyboard.press('Enter'); await page.waitForTimeout(400);
   assert.equal(await page.evaluate(() => globalThis.sentCount), 3); assert.equal((await sessionStore()).session, null); checks++;
+  // Successive ASR previews describe the same growing audio window. They
+  // must update one span, not produce "örnek örnek com örnek com tr".
+  await page.locator('#editor').fill('Korunan başlangıç.');
+  await toggle(); await listening(); await qa('qa:window');
+  for (const text of ['örnek', 'örnek com', 'örnek com tr']) {
+    await qa('qa:preview', {text});
+    await page.waitForFunction(text => document.getElementById('editor').innerText.trim() === 'Korunan başlangıç. ' + text, text[0].toLocaleUpperCase('tr-TR') + text.slice(1));
+    checks++;
+  }
+  await qa('qa:settle');
+  await page.waitForFunction(() => document.getElementById('editor').innerText.trim() === 'Korunan başlangıç. Örnek com tr.');
+  const previewRequests = (await qa('qa:get')).requests;
+  assert.equal(previewRequests.filter(x => x.endsWith('/audio/transcriptions')).length, 3);
+  assert.equal(previewRequests.filter(x => x.endsWith('/chat/completions')).length, 1); checks++;
+  const previewReadyUntil = Date.now() + 5000;
+  while ((await sessionStore()).status.busy && Date.now() < previewReadyUntil) await page.waitForTimeout(100);
+  assert.equal((await sessionStore()).status.recording, true);
+  await page.keyboard.press('Enter'); await page.waitForTimeout(400);
+  assert.equal(await page.evaluate(() => globalThis.sentCount), 4); assert.equal((await sessionStore()).session, null); checks++;
   // Repeated recordings exercise close/reopen and mic cleanup.
   await page.locator('#editor').fill(''); await page.waitForTimeout(500);
   await toggle(); await listening();
@@ -124,7 +143,17 @@ try {
   const unsafeUntil = Date.now() + 20000;
   while (Date.now() < unsafeUntil) {if ((await sessionStore()).status.warning.includes('net anlaşılamadığı')) break; await page.waitForTimeout(200);}
   const rejected = await sessionStore(); assert.notEqual(rejected.status.phase, 'error'); assert.match(rejected.status.warning, /net anlaşılamadığı/); assert.ok(rejected.session); assert.equal(rejected.status.recording, true); checks++;
-  assert.equal((await page.locator('#editor').innerText()).trim(), 'Korunacak mevcut metin.'); assert.equal(await page.locator('#hizir-voice-host').isVisible(), true); assert.equal(await page.evaluate(() => globalThis.sentCount), 3); checks++;
+  assert.equal((await page.locator('#editor').innerText()).trim(), 'Korunacak mevcut metin.'); assert.equal(await page.locator('#hizir-voice-host').isVisible(), true); assert.equal(await page.evaluate(() => globalThis.sentCount), 4); checks++;
+  await qa('qa:settle');
+  for (let count = 2; count <= 4; count++) {
+    await qa('qa:reject');
+    const rejectedUntil = Date.now() + 5000;
+    while (!(await sessionStore()).status.warning.includes(count + ' ses bölümü') && Date.now() < rejectedUntil) await page.waitForTimeout(100);
+    const state = await sessionStore();
+    assert.equal(state.status.recording, true); assert.ok(state.session); assert.match(state.status.warning, new RegExp(count + ' ses bölümü'));
+    assert.match(state.status.warning, /Yanlış anlaşılabilecek/); checks++;
+  }
+  assert.equal((await page.locator('#editor').innerText()).trim(), 'Korunacak mevcut metin.'); checks++;
   await toggle();
   const cleanStopUntil = Date.now() + 5000;
   while ((await sessionStore()).session && Date.now() < cleanStopUntil) await page.waitForTimeout(100);

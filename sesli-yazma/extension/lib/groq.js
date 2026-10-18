@@ -5,7 +5,7 @@ export class ProviderError extends Error {
   constructor(message, {status = 0, retryAfter = 0, retryable = false} = {}) {super(message); this.name = 'ProviderError'; this.status = status; this.retryAfter = retryAfter; this.retryable = retryable;}
 }
 export class RejectedTranscriptionError extends ProviderError {
-  constructor(reason) {super(`${reason} Şüpheli dikte yazılmadı.`); this.name = 'RejectedTranscriptionError';}
+  constructor(reason) {super(`${reason} Şüpheli dikte yazılmadı.`); this.name = 'RejectedTranscriptionError'; this.reason = reason;}
 }
 function checkAbort(signal) {if (signal?.aborted) throw new DOMException('İptal edildi.', 'AbortError');}
 export function abortableDelay(ms, signal) {

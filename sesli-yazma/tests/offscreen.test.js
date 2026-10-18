@@ -2,7 +2,7 @@ import test, {afterEach} from 'node:test';
 import assert from 'node:assert/strict';
 const id = 'audio-test', origin = `chrome-extension://${id}/`, events = [], worklets = [], tracks = [], contexts = [];
 let listener, waiting = null, unsafeSpeech = false, quotaWait = null, correctionWait = null, latestSession, speechTexts = [], correctionOutput = null;
-const fetchEvents = [], correctionInputs = [];
+const fetchEvents = [], correctionInputs = [], speechBytes = [];
 globalThis.chrome = {runtime: {id, getURL: path => origin + path, onMessage: {addListener(fn) {listener = fn;}}, async sendMessage(message) {
   events.push(message);
   if (message.type === 'audio:reserve' && message.kind === 'speech' && quotaWait?.sessionId === message.sessionId && quotaWait.remaining-- > 0) return {ok: true, data: {waitMs: quotaWait.waitMs}};
@@ -19,6 +19,7 @@ globalThis.AudioContext = class {
 globalThis.AudioWorkletNode = class {constructor() {this.port = {}; worklets.push(this);} connect() {} disconnect() {}};
 globalThis.fetch = async (url, init) => {
   fetchEvents.push(url);
+  if (url.endsWith('/audio/transcriptions')) speechBytes.push(init.body.get('file').size);
   if (waiting) await new Promise(resolve => {waiting.resolve = resolve;});
   if (correctionWait && url.endsWith('/chat/completions')) await new Promise(resolve => {correctionWait.resolve = resolve;});
   const raw = url.endsWith('/chat/completions') ? JSON.parse(JSON.parse(init.body).messages[1].content).text : '';
@@ -93,6 +94,7 @@ test('long provider delay buffers past the old four-segment limit and pauses cap
   assert.equal(events.some(x => x.type === 'audio:result' && x.sessionId === 'backlog'), false);
 });
 test('consecutive utterances transfer without an artificial 3.5-second request gap', async () => {
+  speechTexts = ['merhaba', 'merhaba devam ediyor'];
   await send('capture:start', 'burst', {...config, correction: false, pauseMs: 500});
   const started = Date.now();
   push(4, 0.04); push(4, 0); push(4, 0.04); push(4, 0);
@@ -160,13 +162,67 @@ test('new speech invalidates delayed punctuation without replacing the continuin
   assert.equal(results.at(-1).text, 'İlk bölüm devam eden cümle.');
   assert.equal(results.filter(x => x.final).length, 1);
 });
-test('three consecutive rejected chunks close the microphone without inserting unsafe text', async () => {
+test('repeated rejected chunks stay blocked without closing the microphone; clean speech still works', async () => {
   unsafeSpeech = true; await send('capture:start', 'repeated-unsafe', config);
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < 4; i++) {
     push(4, 0.04); push(9, 0);
-    await until(() => events.filter(x => x.sessionId === 'repeated-unsafe' && ['audio:warning', 'audio:error'].includes(x.type)).length >= i + 1);
+    await until(() => events.filter(x => x.sessionId === 'repeated-unsafe' && x.type === 'audio:warning').length >= i + 1);
   }
-  assert.ok(events.some(x => x.sessionId === 'repeated-unsafe' && x.type === 'audio:error'));
+  assert.equal(events.some(x => x.sessionId === 'repeated-unsafe' && x.type === 'audio:error'), false);
   assert.equal(events.some(x => x.sessionId === 'repeated-unsafe' && x.type === 'audio:result'), false);
-  assert.equal(tracks.at(-1).stopped, true);
+  assert.equal(tracks.at(-1).stopped, false);
+  const warning = events.filter(x => x.sessionId === 'repeated-unsafe' && x.type === 'audio:warning').at(-1).warning;
+  assert.match(warning, /4 ses bölümü/); assert.match(warning, /Yanlış anlaşılabilecek/); assert.match(warning, /mikrofonu/);
+  unsafeSpeech = false; push(4, 0.04); push(9, 0);
+  await until(() => events.some(x => x.sessionId === 'repeated-unsafe' && x.type === 'audio:result'));
+  assert.equal(tracks.at(-1).stopped, false);
+  assert.ok(events.filter(x => x.sessionId === 'repeated-unsafe' && x.type === 'audio:result').every(x => !x.text.includes('M.K.') && x.warning.includes('4 ses bölümü')));
+});
+test('cumulative recognition replaces its own partial text instead of adding it again', async () => {
+  speechTexts = ['Örnek', 'Örnek com', 'Örnek com tr']; correctionOutput = raw => raw;
+  await send('capture:start', 'partial-window', {...config, pauseMs: 500});
+  for (let i = 0; i < 3; i++) {
+    push(4, 0.04); push(4, 0);
+    await until(() => events.filter(x => x.sessionId === 'partial-window' && x.type === 'audio:result' && !x.final).length >= i + 1);
+  }
+  const results = events.filter(x => x.sessionId === 'partial-window' && x.type === 'audio:result');
+  assert.deepEqual(results.map(x => x.text), ['Örnek', 'Örnek com', 'Örnek com tr']);
+  const bytes = speechBytes.slice(-3); assert.ok(bytes[0] < bytes[1] && bytes[1] < bytes[2], 'The model receives growing audio, not instructions to delete repeated words');
+  push(4, 0); await until(() => events.some(x => x.sessionId === 'partial-window' && x.final));
+  assert.deepEqual(correctionInputs, ['Örnek com tr']);
+});
+test('actual spoken repetitions survive and a rejected preview can recover with more audio', async () => {
+  unsafeSpeech = true;
+  await send('capture:start', 'window-recovery', {...config, pauseMs: 500, correction: false}); push(4, 0.04); push(4, 0);
+  await until(() => events.some(x => x.sessionId === 'window-recovery' && x.type === 'audio:warning'));
+  unsafeSpeech = false; speechTexts = ['evet evet talebiniz bekliyor'];
+  push(4, 0.04); push(4, 0);
+  await until(() => events.some(x => x.sessionId === 'window-recovery' && x.type === 'audio:result'));
+  const result = events.filter(x => x.sessionId === 'window-recovery' && x.type === 'audio:result').at(-1);
+  assert.equal(result.text, 'Evet evet talebiniz bekliyor'); assert.equal(result.warning, ''); assert.equal(tracks.at(-1).stopped, false);
+});
+test('during a delayed request, obsolete previews are coalesced and quota counts only sent windows', async () => {
+  waiting = {}; speechTexts = ['ilk bölüm', 'ilk bölüm ve devamı tamamlandı'];
+  await send('capture:start', 'window-coalesce', {...config, pauseMs: 500, correction: false});
+  push(4, 0.04); push(4, 0); await until(() => Boolean(waiting.resolve));
+  for (let i = 0; i < 3; i++) {push(4, 0.04); push(4, 0);}
+  const before = events.filter(x => x.sessionId === 'window-coalesce' && x.type === 'audio:reserve');
+  assert.equal(before.length, 1);
+  const release = waiting.resolve; waiting = null; release();
+  await until(() => events.filter(x => x.sessionId === 'window-coalesce' && x.type === 'audio:result').length === 2);
+  const results = events.filter(x => x.sessionId === 'window-coalesce' && x.type === 'audio:result');
+  assert.equal(results.at(-1).text, 'İlk bölüm ve devamı tamamlandı');
+  assert.equal(events.filter(x => x.sessionId === 'window-coalesce' && x.type === 'audio:reserve').length, 2);
+});
+test('an unchanged ASR result does not rewrite a reviewed or already punctuated draft', async () => {
+  speechTexts = ['evet']; correctionOutput = raw => raw + '.';
+  await send('capture:start', 'unchanged-preview', {...config, pauseMs: 500});
+  push(4, 0.04); push(4, 0);
+  await until(() => events.some(x => x.sessionId === 'unchanged-preview' && x.type === 'audio:result'));
+  speechTexts = ['evet']; push(4, 0.04); push(4, 0);
+  await until(() => events.filter(x => x.sessionId === 'unchanged-preview' && x.type === 'audio:reserve').length === 2);
+  push(4, 0);
+  await until(() => events.some(x => x.sessionId === 'unchanged-preview' && x.final));
+  const results = events.filter(x => x.sessionId === 'unchanged-preview' && x.type === 'audio:result');
+  assert.deepEqual(results.map(x => x.text), ['Evet', 'Evet.']);
 });

@@ -15,9 +15,13 @@ test('normal Turkish speech passes with its actual quality metadata', () => {
 test('missing or malformed quality metadata never bypasses the guard', () => {
   for (const segments of [undefined, [], [{}], [{...good, avg_logprob: null}], [{...good, no_speech_prob: 2}], [{...good, compression_ratio: 0}]]) assert.equal(inspectTranscription({text: good.text, segments}).ok, false);
 });
-test('weak decoding, likely silence and repetition are rejected even in mixed speech', () => {
-  for (const patch of [{avg_logprob: -1.2}, {no_speech_prob: 0.8}, {compression_ratio: 3}]) assert.equal(inspectTranscription({text: good.text, segments: [good, {...good, ...patch}]}).ok, false);
+test('weak decoding and corroborated repetition are rejected even in mixed speech', () => {
+  for (const patch of [{avg_logprob: -1.2}, {avg_logprob: -0.7, compression_ratio: 3}, {text: 'işleminiz bekliyor işleminiz bekliyor işleminiz bekliyor', compression_ratio: 3}]) assert.equal(inspectTranscription({text: good.text, segments: [good, {...good, ...patch}]}).ok, false);
   assert.deepEqual(inspectTranscription({text: 'gürültü', segments: [{...good, avg_logprob: -1.3, no_speech_prob: 0.95}]}), {ok: true, text: ''});
+});
+test('confident speech is not discarded on no-speech or compression score alone', () => {
+  for (const patch of [{no_speech_prob: 0.85}, {compression_ratio: 2.8}, {no_speech_prob: 0.9, compression_ratio: 3}]) assert.deepEqual(inspectTranscription({text: good.text, segments: [{...good, ...patch}]}), {ok: true, text: good.text});
+  assert.equal(inspectTranscription({text: good.text, segments: [good, {...good, avg_logprob: -1.3, no_speech_prob: 0.95}]}).ok, false, 'Do not splice a silent or unreliable segment out of mixed speech');
 });
 test('unsafe segment content cannot hide behind a clean top-level transcript', () => {
   assert.equal(inspectTranscription({text: good.text, segments: [good, {...good, text: 'Altyazı M.K.'}]}).ok, false);

@@ -1,4 +1,4 @@
-HIZIR BEY SESLİ YAZMA — 0.1.6
+HIZIR BEY SESLİ YAZMA — 0.1.7
 
 1) ZIP'i bilgisayarında sabit bir klasöre çıkar. Örnek: Belgeler\HizirBey-Sesli-Yazma
 2) Chrome adres çubuğuna chrome://extensions yaz.
@@ -13,6 +13,8 @@ HIZIR BEY SESLİ YAZMA — 0.1.6
 8) Bağlantıyı kontrol et ile model erişimini denetleyebilirsin.
 9) LiveChat sekmesini bir kez yenile ve bir müşteri görüşmesi aç.
 10) ALT + H ile konuşmaya başla. Metin hızlıca tek taslakta birikir.
+    Kısa duraklardaki kısmi tanımalar aynı bölümün metnini günceller;
+    her önizleme baştan sona eklenmez.
     Noktalama, en az 1 saniyelik durakta veya dinlemeyi bitirince bütün
     taslak üzerinden kontrol edilir. Ses parçası sonuna zorla nokta konmaz.
 11) Metni oku. Hazır olduğunda ENTER ile kendin gönder.
@@ -51,9 +53,10 @@ KULLANIM
 ŞÜPHELİ DİKTE KORUMASI
 Altyazı/kapanış kalıbı, tek başına MK/M.K. veya düşük güvenli sonuç
 algılanırsa o parça yazılmaz. Panelden uyarıyı oku ve o bölümü tekrar
-söyle; tek şüpheli parça mikrofonu kapatmaz. Art arda üç şüpheli parçada
-veya son aktarımda uygunsuz sonuçta mikrofon kapanır; mevcut metni
-kontrol edip yeniden dikte başlat.
+söyle. Art arda reddetmeler mikrofonu kapatmaz. Panelde kaç bölümün
+yazılamadığı ve nedeni görünür. Aynı ses bölümü sonraki bağlamla temiz
+tanınırsa uyarısı kalkar. Son aktarım koruması uygunsuz sonuç görürse
+mikrofon kapanır; mevcut metni kontrol edip yeniden dikte başlat.
 Denetim, anlaşılamayan metni tahmin ederek tamamlamaz. Yanlış özel adları
 ve her kelime hatasını yakalaması garanti değildir; göndermeden önce oku.
 

@@ -21,10 +21,26 @@ export function inspectTranscription(result) {
   if (!Array.isArray(segments) || !segments.length || segments.some(s => !s || !['avg_logprob', 'no_speech_prob', 'compression_ratio'].every(key => Number.isFinite(s[key])) || s.no_speech_prob < 0 || s.no_speech_prob > 1 || s.compression_ratio <= 0)) return {ok: false, reason: 'Ses tanıma güven ölçümleri alınamadı.'};
   // Whisper's silence rule combines no-speech probability with weak decoding.
   if (segments.every(s => s.no_speech_prob > 0.6 && s.avg_logprob < -1)) return {ok: true, text: ''};
-  if (segments.some(s => s.avg_logprob < -1 || s.no_speech_prob > 0.6 || s.compression_ratio > 2.4)) return {ok: false, reason: 'Ses net anlaşılamadı veya tekrar eden metin üretildi.'};
+  // no_speech_prob alone is not a voice-activity verdict. Whisper itself
+  // accepts a confident decode despite a high no-speech score. Compression
+  // also needs corroboration: normal repetitive support wording can compress well.
+  if (segments.some(s => s.avg_logprob < -1)) return {ok: false, reason: 'Ses tanıma güveni düşük; bu bölüm net anlaşılamadı.'};
+  if (segments.some(s => s.compression_ratio > 2.4 && (s.avg_logprob < -0.5 || repetitionLoop(s.text || text)))) return {ok: false, reason: 'Ses tanımada düşük güvenli veya döngü halinde tekrarlanan metin algılandı.'};
   // Check each segment too: an unsafe suffix must not hide inside valid speech.
   if (segments.some(s => typeof s.text === 'string' && s.text.trim() && dictationTextRisk(s.text))) return {ok: false, reason: 'Ses parçasında şüpheli içerik algılandı.'};
   return {ok: true, text};
+}
+
+function repetitionLoop(value) {
+  const tokens = normalize(value).match(/[\p{L}\p{N}]+/gu) || [];
+  for (let size = 1; size <= Math.min(8, Math.floor(tokens.length / 3)); size++) {
+    for (let start = 0; start + size * 3 <= tokens.length; start++) {
+      let length = size;
+      while (start + length < tokens.length && tokens[start + length] === tokens[start + length % size]) length++;
+      if (length >= Math.max(6, size * 3) && length >= tokens.length * 0.6) return true;
+    }
+  }
+  return false;
 }
 
 export const REJECTED_DICTATION = 'Şüpheli dikte yazılmadı; mikrofon kapatıldı. Mevcut metni kontrol et, ardından yeniden dikte başlat.';

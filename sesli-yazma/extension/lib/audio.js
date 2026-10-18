@@ -15,6 +15,18 @@ export function wavBlob(samples, sampleRate, gain = 1) {
   return new Blob([buffer], {type: 'audio/wav'});
 }
 export function concatFrames(frames) {const result = new Float32Array(frames.reduce((n, x) => n + x.length, 0)); let offset = 0; for (const frame of frames) {result.set(frame, offset); offset += frame.length;} return result;}
+// A half-second preview is not a new sentence. Re-recognize nearby chunks
+// together, then replace this window's own text instead of appending it twice.
+// No text-similarity deduplication: genuinely repeated spoken words survive.
+export class SpeechWindows {
+  constructor(sampleRate, maxSeconds = 12) {this.sampleRate = sampleRate; this.maxSeconds = maxSeconds; this.nextId = 1; this.current = null;}
+  append(samples) {
+    if (!this.current || this.current.samples.length + samples.length > this.sampleRate * this.maxSeconds) this.current = {windowId: this.nextId++, samples};
+    else this.current = {...this.current, samples: concatFrames([this.current.samples, samples])};
+    return this.current;
+  }
+  boundary() {this.current = null;}
+}
 export class Segmenter {
   constructor({sampleRate, threshold = 0.005, pauseMs = 500, maxSeconds = 8, splitAfterSeconds = 4, settleMs = 1000, onSegment, onSpeechStart, onBoundary}) {
     Object.assign(this, {sampleRate, threshold, pauseMs, maxSeconds, splitAfterSeconds, settleMs, onSegment, onSpeechStart, onBoundary});

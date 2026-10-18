@@ -1,11 +1,11 @@
-import {Segmenter, wavBlob} from './lib/audio.js';
+import {Segmenter, SpeechWindows, wavBlob} from './lib/audio.js';
 import {transcribe, correct, abortableDelay, RejectedTranscriptionError} from './lib/groq.js';
 import {draftText} from './lib/core.js';
 import {withTimeBudget} from './lib/timing.js';
 
 let active = null;
-// Includes the in-flight request. Stop capturing before the next 8-second segment
-// would exceed roughly two minutes in RAM; drain everything already captured.
+// Includes the in-flight request and cumulative window snapshots, including
+// their repeated context. Limit RAM and drain everything already captured.
 const PAUSE_PENDING_SECONDS = 106;
 async function ask(session, type, data = {}) {
   const response = await chrome.runtime.sendMessage({type, sessionId: session.id, ...data});
@@ -22,8 +22,23 @@ async function cleanup(s) {
 }
 async function fail(s, error) {
   if (active !== s) return;
-  active = null; s.controller.abort(); s.queue.length = 0; s.segmenter?.clear(); await cleanup(s);
+  active = null; s.controller.abort(); s.queue.length = 0; s.segmenter?.clear(); s.windows?.boundary(); await cleanup(s);
   if (error.name !== 'AbortError') await ask(s, 'audio:error', {error: error.message || 'Ses işlenemedi.'}).catch(() => {});
+}
+function rejectionWarning(s) {
+  if (!s.gaps.size) return '';
+  const latest = [...s.gaps.values()].at(-1);
+  return `${s.gaps.size} ses bölümü net anlaşılamadığı için tam yazılamadı. ${latest} Taslağı kontrol et; eksik bölümü kısa bir duraktan sonra tekrar söyle. Dinleme sürüyor.${s.rejected >= 3 ? ' Sorun sürüyorsa mikrofonu ve ortam gürültüsünü kontrol et.' : ''}`;
+}
+function queueSpeech(s, samples, spokenAt) {
+  const window = s.windows.append(samples), job = {kind: 'speech', ...window, spokenAt};
+  // Keep only the newest queued preview of this same audio window. Never
+  // cancel or repeat an in-flight request merely because new speech arrived.
+  const index = s.queue.findIndex(x => x.kind === 'speech' && x.windowId === job.windowId);
+  if (index < 0) s.queue.push(job);
+  else {s.pendingSeconds -= s.queue[index].samples.length / s.sampleRate; s.queue[index] = job;}
+  s.pendingSeconds += job.samples.length / s.sampleRate;
+  void drain(s);
 }
 function queueFinal(s, force = false) {
   if (active !== s) return;
@@ -89,26 +104,31 @@ async function drain(s) {
     while (s.queue.length && active === s) {
       const job = s.queue.shift();
       if (job.kind === 'final') {await finalize(s, job); s.requestState = null; continue;}
-      const {samples, spokenAt} = job;
+      const {samples, spokenAt, windowId} = job;
       const duration = samples.length / s.sampleRate;
       let raw;
       try {raw = await transcribe(wavBlob(samples, s.sampleRate, s.config.micGain), {...s.config, connection: connection(s, 'speech', duration)}, s.controller.signal);}
       catch (error) {
         if (!(error instanceof RejectedTranscriptionError)) throw error;
+        if (active !== s) return;
         s.pendingSeconds = Math.max(0, s.pendingSeconds - duration); s.requestState = null;
         s.rejected++;
-        if (s.rejected >= 3) throw new Error('Art arda üç ses parçası net anlaşılamadı. Şüpheli metin yazılmadı; mevcut taslağı kontrol edip mikrofonu yeniden başlat.');
-        s.warning = 'Bir ses parçası net anlaşılamadığı için yazılmadı. Bu bölümü tekrar söyle; dinleme sürüyor.';
+        s.gaps.set(windowId, error.reason);
+        s.warning = rejectionWarning(s);
         await ask(s, 'audio:warning', {warning: s.warning}); continue;
       }
       if (active !== s) return;
       s.requestState = null;
       if (!raw) {s.pendingSeconds = Math.max(0, s.pendingSeconds - duration); continue;}
       s.rejected = 0;
-      const next = draftText(`${s.raw} ${raw}`, s.config.terms);
+      const pieces = new Map(s.pieces); pieces.set(windowId, raw);
+      const next = draftText([...pieces].sort(([a], [b]) => a - b).map(([, text]) => text).join(' '), s.config.terms);
       if (next.length > 8000) throw new Error('Taslak uzunluk sınırına ulaştı. Mevcut metni kontrol edip gönder; yeni dikte başlat.');
-      s.raw = next; s.rawVersion++; s.lastSpokenAt = spokenAt;
-      await deliver(s, next);
+      const previousWarning = s.warning;
+      s.pieces = pieces; s.gaps.delete(windowId); s.warning = rejectionWarning(s);
+      s.lastSpokenAt = spokenAt;
+      if (next !== s.raw) {s.raw = next; s.rawVersion++; await deliver(s, next);}
+      else if (previousWarning !== s.warning) await ask(s, 'audio:warning', {warning: s.warning});
       s.pendingSeconds = Math.max(0, s.pendingSeconds - duration);
     }
   } catch (error) {await fail(s, error);}
@@ -122,7 +142,7 @@ async function drain(s) {
 }
 async function start(id, config) {
   if (active) {const old = active; active = null; old.controller.abort(); await cleanup(old);}
-  const s = {id, config, queue: [], raw: '', rawVersion: 0, finalizedVersion: -1, utterance: 0, rejected: 0, warning: '', pendingSeconds: 0, nextResult: 1, pausedForBacklog: false, controller: new AbortController(), recording: true, processing: false, startedAt: Date.now(), lastMeter: 0, lastVoice: Date.now()};
+  const s = {id, config, queue: [], pieces: new Map(), gaps: new Map(), raw: '', rawVersion: 0, finalizedVersion: -1, utterance: 0, rejected: 0, warning: '', pendingSeconds: 0, nextResult: 1, pausedForBacklog: false, controller: new AbortController(), recording: true, processing: false, startedAt: Date.now(), lastMeter: 0, lastVoice: Date.now()};
   active = s;
   try {
     s.stream = await navigator.mediaDevices.getUserMedia({audio: {channelCount: 1, echoCancellation: true, noiseSuppression: true, autoGainControl: true, ...(config.deviceId ? {deviceId: {exact: config.deviceId}} : {})}});
@@ -130,13 +150,13 @@ async function start(id, config) {
     s.context = new AudioContext({sampleRate: 16000}); s.sampleRate = s.context.sampleRate;
     await s.context.audioWorklet.addModule(chrome.runtime.getURL('worklet.js'));
     if (active !== s) {await cleanup(s); throw new Error('Kayıt iptal edildi.');}
+    s.windows = new SpeechWindows(s.sampleRate);
     s.segmenter = new Segmenter({sampleRate: s.sampleRate, threshold: config.sensitivity, pauseMs: config.pauseMs,
       onSpeechStart() {s.utterance++; s.correction?.abort();},
-      onBoundary() {queueFinal(s);},
+      onBoundary() {s.windows.boundary(); queueFinal(s);},
       onSegment(samples, {silenceMs} = {}) {
       if (active !== s) return;
-      s.pendingSeconds += samples.length / s.sampleRate;
-      s.queue.push({kind: 'speech', samples, spokenAt: Date.now() - (silenceMs || 0)}); void drain(s);
+      queueSpeech(s, samples, Date.now() - (silenceMs || 0));
       if (s.pendingSeconds >= PAUSE_PENDING_SECONDS && s.recording) {
         s.pausedForBacklog = true;
         queueMicrotask(() => {if (active === s) void finish(id);});
@@ -175,7 +195,7 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
   (async () => {
     if (message.type === 'capture:start') return start(message.sessionId, message.config);
     if (message.type === 'capture:finish') return finish(message.sessionId);
-    if (message.type === 'capture:cancel') {const s = active; if (s?.id === message.sessionId) {active = null; s.controller.abort(); s.queue.length = 0; s.segmenter?.clear(); await cleanup(s);} return true;}
+    if (message.type === 'capture:cancel') {const s = active; if (s?.id === message.sessionId) {active = null; s.controller.abort(); s.queue.length = 0; s.segmenter?.clear(); s.windows?.boundary(); await cleanup(s);} return true;}
     throw new Error('Geçersiz mikrofon işlemi.');
   })().then(data => respond({ok: true, data}), error => respond({ok: false, error: error.message}));
   return true;

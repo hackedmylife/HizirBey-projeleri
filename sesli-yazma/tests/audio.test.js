@@ -1,6 +1,19 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {Segmenter, wavBlob, boostSample} from '../extension/lib/audio.js';
+import {Segmenter, SpeechWindows, wavBlob, boostSample} from '../extension/lib/audio.js';
+test('nearby previews share one bounded audio window without duplicating samples', () => {
+  const windows = new SpeechWindows(1000);
+  const first = windows.append(new Float32Array(600).fill(0.03));
+  const next = windows.append(new Float32Array(900).fill(0.04));
+  assert.equal(first.windowId, next.windowId); assert.equal(first.samples.length, 600);
+  assert.equal(next.samples.length, 1500); assert.equal(next.samples[599], first.samples[599]);
+  assert.ok(Math.abs(next.samples[600] - 0.04) < 1e-6);
+  windows.boundary(); const afterPause = windows.append(new Float32Array(400));
+  assert.notEqual(afterPause.windowId, next.windowId); assert.equal(afterPause.samples.length, 400);
+  const full = windows.append(new Float32Array(11500)); assert.equal(full.windowId, afterPause.windowId);
+  const rollover = windows.append(new Float32Array(300));
+  assert.notEqual(rollover.windowId, full.windowId); assert.equal(rollover.samples.length, 300);
+});
 test('WAV has correct mono PCM headers and bounded sample values', async () => {
   const blob = wavBlob(new Float32Array([-2, 0, 2]), 16000), buffer = await blob.arrayBuffer(), data = new DataView(buffer);
   assert.equal(new TextDecoder().decode(buffer.slice(0, 4)), 'RIFF'); assert.equal(data.getUint32(24, true), 16000); assert.equal(data.getUint16(22, true), 1); assert.equal(data.getInt16(44, true), -32768); assert.equal(data.getInt16(48, true), 32767);

@@ -1,3 +1,14 @@
+# 0.1.7 — Kısmi tanımada tekrar birikmesini ve üç ret sonrası durmayı düzeltme
+
+18 Ekim 2026
+
+- Kısa duraklarla süren aynı konuşmanın sesleri, en fazla 12 saniyelik tanıma penceresinde birleştirilir. Güncel sonuç yalnızca o pencerenin eski metnini yeniler; büyüyen kısmi tanımalar ayrı cümle gibi eklenmez. Gerçekte söylenen tekrarları benzer kelime diye silen bir metin filtresi kullanılmaz.
+- Bağlantı gecikmesinde, aynı pencerenin henüz gönderilmemiş ara önizlemeleri en yenisiyle birleştirilir. Devam eden istek iptal edilip yeniden başlatılmaz. Aynı sesin tekrar değerlendirilen bağlamı da her isteğin ses kotasına sayılır. Ortak pencere kullanımı gerçek konuşma doğruluğu veya sabit gecikme garantisi değildir.
+- Üç ret sonrası mikrofonu kapatan koşul kaldırıldı. Şüpheli bölüm yazılmaz; eksik bölüm sayısı ve ret nedeni gösterilir, dinleme sürer. Sonraki temiz ses yazılabilir. Aynı pencere daha fazla sesle temiz tanınırsa o pencerenin uyarısı kaldırılır; önceki pencerelerde atlanan bölümlerin uyarısı saklanır.
+- Yüksek sessizlik olasılığı tek başına net tanınan konuşmayı reddetmez. Sıkıştırma oranı düşük güven veya belirgin tekrar döngüsüyle birlikte değerlendirilir. Eksik güven ölçümü, düşük çözüm güveni, MK/altyazı ve son aktarım korumaları sürer.
+- Aynı metni döndüren önizleme editörü gereksiz yere yeniden yazmaz. Tamamlanan taslağın noktalama, kelime/sayı koruması, elle düzenleme, Enter, sekme/görüşme, süre ve kota sınırları korunur.
+- 20 px merkez noktası, logo, Win + H yönlendirmesi, ayarlar, API anahtarı ve sözlük korunur. Gerçek kullanıcı sesiyle Türkçe doğruluk henüz ölçülmemiştir.
+
 # 0.1.6 — Uzun dikte ve cümle tamamlanınca noktalama
 
 18 Ekim 2026
