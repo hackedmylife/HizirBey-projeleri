@@ -91,4 +91,7 @@ test('final punctuation cannot add, delete, reorder or complete spoken words', (
   for (const text of ['Merhaba, değerli üyemiz. Talebiniz henüz onaylanmadı; bilgi vereceğiz.', 'Talebiniz henüz onaylanmadı; bilgi vereceğiz.', 'Merhaba bilgi vereceğiz talebiniz henüz onaylanmadı']) assert.equal(guardPunctuation(raw, text).ok, false);
   assert.equal(guardPunctuation('eğer işleminiz', 'Eğer işleminiz onaylanırsa bilgi vereceğiz.').ok, false);
   assert.equal(guardPunctuation('can', 'Çan.').ok, false, 'Diacritics cannot silently change a word');
+  assert.equal(guardPunctuation('-500 TL ve %5', '500 TL ve %5.').ok, false);
+  assert.equal(guardPunctuation('1.500,75 TL', '1,500.75 TL.').ok, false);
+  assert.equal(guardPunctuation('%5 bekliyor', '5 bekliyor.').ok, false);
 });

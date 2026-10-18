@@ -55,6 +55,8 @@ export function guardPunctuation(original, candidate, terms = []) {
   if (!check.ok) return check;
   const lexical = text => String(text).normalize('NFC').toLocaleLowerCase('tr-TR').match(/[\p{L}\p{N}]+/gu) || [];
   if (!sameArray(lexical(original), lexical(candidate))) return {ok: false, reason: 'Noktalama sırasında kelime eklendi, silindi veya değişti.'};
+  const amounts = text => (String(text).match(/(?:[+−-]\s*)?\d+(?:[.,:/-]\d+)*|[%₺$€£]/gu) || []).map(x => x.replace(/\s/g, ''));
+  if (!sameArray(amounts(original), amounts(candidate))) return {ok: false, reason: 'Sayı işareti, ayırıcı veya yüzde değişti.'};
   return check;
 }
 function digits(text) {return (text.match(/\d+(?:[.,:/-]\d+)*/g) || []).map(x => x.replace(/,/g, '.'));}
