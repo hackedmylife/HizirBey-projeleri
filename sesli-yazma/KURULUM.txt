@@ -77,8 +77,9 @@ GECİKME VE MİKROFON
 - “Bağlantı bekleniyor” sırasında metni tekrar dikte etmene gerek yoktur.
   İşlem tamamlanınca oku ve Enter'a bas. Beklerken basılan Enter sonradan
   otomatik gönderime dönüşmez.
-- Bekleyen ses yaklaşık 2 dakikaya yaklaşırsa mikrofon kapanır, alınmış
-  ses sırayla işlenir. Yeni konuşmadan önce tamamlanmasını bekle ve Alt + H
+- İşlenen ve sıradaki ses pencereleri yaklaşık 2 dakikaya yaklaşırsa
+  mikrofon kapanır; alınmış ses sırayla işlenir. Tekrar tanınan bağlam
+  da bu süreye ve her isteğin ses kotasına dahildir. Yeni konuşmadan önce tamamlanmasını bekle ve Alt + H
   ile yeniden başlat. Beklemeyi iptal etmek için Alt + H kullanabilirsin.
 - Kalıcı bağlantı kesintisinde denemeler tükenince hata gösterilir.
   Yazı alanındaki metin korunur; tamamlanmayan ses kalıcı kaydedilmez.
