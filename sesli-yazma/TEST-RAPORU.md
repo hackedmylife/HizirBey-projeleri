@@ -1,83 +1,46 @@
-# Hızır Bey Sesli Yazma 0.1.5 — Doğrulama
+# Hızır Bey Sesli Yazma 0.1.6 — Doğrulama
 
 18 Ekim 2026
 
 | Kontrol | Sonuç | Kapsam |
 | --- | --- | --- |
-| Birim / DOM / oturum testleri | **68 / 68 geçti** | Hız bütçesi, art arda hızlı aktarım, kota sırasında iptal/devam, MK/altyazı ve kalite denetimi, son aktarım koruması, Türkçe anlam, WAV/VAD/kazanç, iptal, tampon sınırı, anahtar ve yedek |
-| ESLint | **Geçti** | Uygulama, testler ve JavaScript yardımcıları |
-| Sözdizimi ve manifest | **Geçti** | Alt + H sözleşmesi, kaynaklar, dar host listesi ve kimlik bilgisi taraması |
-| Chromium arayüz / editör | **34 kontrol geçti** | Logonun yüklenmesi, masaüstü/mobil taşma, simge paneli, gizli boşta görünüm, dinleme/işleme sırasında farklı pencere boyutlarında ortalı kırmızı nokta, aktarım süresi, hızlı mod, geri al, mikrofon ayarları, tek Enter/Shift+Enter, basılı tuş, pasif düğme, durdurulmuş taslak ve iki farklı Enter ayarı |
-| Gerçek MV3 uzantısı + sahte mikrofon / API | **25 kontrol geçti** | Offscreen AudioWorklet → ses isteği → 503 sonrası tekrar → 26 saniye gecikme → düzeltme → tek ekleme → kullanıcının Enter'ı; kota sayacı, şüpheli altyazı cevabının engellenmesi/mevcut yazının korunması, 20 px ortalanmış kırmızı nokta, aktarım süresi, tek Gönder tıklaması, mikrofon bağlamının kapanması, durdurulmuş taslakta Enter, görüşme değişimi ve 429 |
+| Birim / DOM / oturum | **78 / 78 geçti** | Uzun taslak, tamamlanınca noktalama, kelime/sayı koruması, geç sonuç, şüpheli parça, mikrofon, kota, hafıza ve anahtar |
+| ESLint | **Geçti** | Uygulama, testler ve yardımcılar |
+| Sözdizimi / manifest / kaynak taraması | **Geçti** | 22 uzantı dosyası, Alt + H, dar host listesi ve kimlik bilgisi desenleri |
+| Chromium arayüz / editör | **36 kontrol geçti** | Altı taslak güncellemesi, önceden yazılan metin, tek Enter, Shift + Enter, çift gönderim koruması, 20 px nokta ve arayüz |
+| Gerçek MV3 / sahte mikrofon ve API | **28 kontrol geçti** | Ses isteği, 503/26 saniye bekleme, tek taslak, normal durdurma, uzun dikte, şüpheli parça ve 429 |
 
-Başarılı CI çalışması: [Sesli Yazma QA](https://github.com/hackedmylife/HizirBey-projeleri/actions/runs/39069246996). MV3 testinin çıktı günlüğü ayrıca okunmuş, 25 kontrolün tamamlandığı doğrulanmıştır.
+CI: [Sesli Yazma QA](https://github.com/hackedmylife/HizirBey-projeleri/actions/runs/39138098796).
+CI günlüğünde 78 test, 36 arayüz ve 28 MV3 kontrolünün başarı satırları ayrıca okunarak doğrulanmıştır.
+Kaynak commit: `b1952e06cf9da539c11daa680f3757cf978a8625`.
+Teslimdeki 22 uygulama dosyası bu kaynakla bayt düzeyinde eşleştirilir. Sonraki teslim commit'i yalnızca raporu, proje özetini ve kurulum arşivini ekler.
 
-Doğrulanan uygulama kaynak commit'i: `3e454830e32a4c17139c4f69fd5935eef6248c09`. Teslimdeki 22 uygulama dosyası bu kaynakla bayt düzeyinde eşleştirilmiştir; daha sonraki teslim commit'i rapor, proje özeti ve kurulum arşivini ekler.
+## Uzun dikte ve noktalama
 
-## Gerçek olarak doğrulananlar
+- Birim testinde yaklaşık 36 saniyelik yapay PCM beş ses parçasına ayrılır. İlk dört parça sırasında noktalama çağrısı yapılmaz. Son durakta beş parça tek taslakta birikir ve bir kez bütün metin kontrol edilir. Son nokta mikrofonu kapatmaz.
+- Ses tanımanın parça sonlarına koyduğu geçici nokta/virgüller taslakta cümle sınırı olarak kullanılmaz. Sayı ayırıcıları, saatler, URL ve e-posta örnekleri korunur. Noktalama sınırı, en az 1 saniyelik durak veya normal durdurmadır; 0,5 saniyelik taslak aktarımı ayrı kalır.
+- Kelime ekleyen, eksilten, sıralayan veya değiştiren model çıktısı reddedilir. Büyük/küçük harf dışında harf değişimi, tutar ayırıcısı, eksi/artı ve yüzde değişimi de sınanır. Eksik cümleye zorla nokta eklenmez.
+- Kullanıcı yeniden konuştuğunda bekleyen noktalama iptal edilir. Gecikmiş cevap yeni taslağı ezmez. Bütçe dolarsa temel taslak uyarıyla kalır; tahmini son nokta eklenmez.
+- Editör testlerinde beş önizleme ve son noktalama aynı dikteyi yeniler; baştaki metin korunur, tekrar ekleme olmaz. Elle değiştirilmiş taslağı geç noktalama ezmez. Geri al, mevcut dikte taslağını kaldırır; yeniden eklenmesini önlemek için dinleme kapanır.
+- Gerçek MV3 testinin uzun senaryosu, test kopyasındaki Segmenter'a yaklaşık 36 saniyelik PCM besler; diğer senaryolar gerçek offscreen AudioWorklet ve tarayıcının sahte mikrofonunu kullanır. Uzun senaryodaki gerçek mikrofon mesajları, yalnızca o test kopyasında kapatılır. Bu kanca dağıtılan uzantıda yoktur.
 
-- Chrome Manifest V3 uzantısı yüklenir; logolu ayarlar açılır, anahtar kaydı ve mikrofon izni akışı çalışır.
-- Chrome offscreen belgesinde AudioWorklet mikrofon akışı işlenir. Test kaydı deterministik yapay sestir; canlı kullanıcı sesi değildir.
-- Servis çağrıları özel test kopyasında taklit edilir. Gerçek API anahtarı veya ücretli/ücretsiz gerçek Groq tüketimi kullanılmaz. Ücretsiz kota/429 durumu taklitle sınanır.
-- LiveChat URL'sine yerel test cevabı döndürülür. Gerçek müşteri veya gerçek müşteri hesabı açılmaz; mesaj gönderilmez.
-- Üretim uzantısında test kancası veya taklit servis yoktur. Teste özel değişiklikler geçici kopyada kalır ve kurulum ZIP'ine girmez.
-- İlk metin yazılmadan veya editör yazarken Enter engellenir; sonradan otomatik gönderim olmaz. Hazır dikte için gerçek Enter, bağlı görüşmenin Gönder düğmesini bir kez çalıştırır ve oturum biter. Gönderilen, yazı alanında görülen taslaktır; bekleyen dikte iptal edilir.
-- Görüşme değiştiğinde geç gelen sonuç yeni alana yazılmaz. İç not ve elle değiştirilmiş metin kontrolleri editör testlerinde doğrulanır.
-- İlk ses isteğine 503 cevabı verilir; ikinci istek 26 saniye bekletilir. Bu sırada yeni bir gereksiz istek oluşmaz, Enter göndermez; sonuç yalnızca bir kez eklenir. İki ses denemesinin de ücretsiz kota sayacına girdiği doğrulanır.
-- Ses tanımada ağ hatalarında en fazla üç deneme, zaman aşımında önceki isteğin iptali, bekleme sırasında iptal ve 400/401/403/429 hatalarında tekrar yapılmaması birim testlerinde doğrulanır.
-- Eski dört-parçalık kuyruk sınırını aşan gecikme taklidiyle yaklaşık iki dakikalık ses tamponunda mikrofonun kapanması ve iptalde geç sonuç eklenmemesi doğrulanır. Bu, sonsuz çevrimdışı kayıt iddiası değildir.
-- %135 kazancın düşük sesi yükselttiği, yüksek örneklerin sınırda kaldığı ve ham VAD verisinin değiştirilmediği doğrulanır. Yeni eşik sessiz sesi algılar; düşük seviyeli yapay gürültüyü konuşma saymaz. Gerçek ortam gürültüsü ayrıca denenmelidir.
-- Güncelleme sırasında API anahtarı ve kişisel sözlük korunur. Eski varsayılan eşik taşınır; diğer özel eşikler korunur.
-- 10 MB'a yakın hafıza JSON yedeği aynı kapasite sınırında yeniden içe alınır. Anahtar bu yedekte yoktur.
+## Güvenlik, gönderim ve gecikme
 
-## 0.1.5 büyük nokta ve Enter ile gönderim
+- MK/altyazı ve düşük güven ölçümü denetimleri korunur. Bir şüpheli ses parçası yazılmaz, uyarı verilir ve dinleme sürer; kullanıcı o bölümü tekrar söylemelidir. Ardından temiz parçanın yazılabildiği sınanır. Art arda üç reddetmede mikrofon kapanır. Son aktarım sınırındaki uygunsuz metin hemen oturumu kapatır.
+- Hazır dikte için kullanıcının gerçek Enter basışı aynı görüşmenin etkin Gönder düğmesini bir kez çalıştırır. Dinlemeyi normal bitirdikten sonra da taslağın Enter bağı korunur. Tuş basılı tutulduğunda çift gönderim olmaz; Shift + Enter göndermez. İlk metin gelmeden basılan Enter sonradan otomatik gönderime dönüşmez.
+- Enter sonrası mikrofon bağlamının kapanması ve geç sonucun eklenmemesi sınanır. Görüşme/sekme değişimi, iç not, elle düzenleme ve farklı gönder düğmesi korumaları sürer.
+- 503 sonrası ikinci ses isteği 26 saniye kasıtlı bekletilir; tekrar veya erken gönderim oluşmaması kontrol edilir. Bu 26 saniye gerçek servis gecikmesi ölçümü değildir. Her deneme yerel kotaya girer. 429 tekrar edilmez; başka sağlayıcı veya ücretli plana geçilmez.
+- Dakikalık yerel kota beklemesi iptal edilebilir. Günlük/ses sınırı, yaklaşık iki dakikalık bekleyen ses, 90 saniye sessizlik, 15 dakika oturum ve 8.000 karakter taslak sınırları korunur.
+- Anahtar, mikrofon izni ve sözlük güncellemede korunur. Yaklaşık 10 MB hafıza yedeği yeniden içe alınabilir; anahtar dışa aktarılmaz. Noktalamada kullanılan öğrenilmiş örnekler de kelime korumasından geçer.
 
-- Noktanın çapı 20 piksel olarak ölçülür; masaüstü ve dar pencerede merkezi korunur. Ekran görüntüsü ayrıca incelenmiştir.
-- Tarayıcı testinde LiveChat benzeri editörün hem Enter-gönder hem Enter-satır tercihi kullanılır. Dikte için gerçek Enter, Gönder düğmesini tam bir kez çalıştırır; yerel Enter dinleyicisinden ikinci gönderim oluşmaz.
-- Hazır dikte varken kayıt/bekleme durumu Enter’ı engellemez. Enter sonrası oturum bırakılır ve geç sonuç eklenmez. Tuşu basılı tutmak çift göndermez; Shift + Enter gönderimi tetiklemez. Betikle oluşturulmuş tuş olayı Gönder düğmesini çalıştıramaz.
-- İlk sonuç beklerken basılan Enter gönderim yapmaz ve sonraya saklanmaz. Editörün metin eklemesi sırasında Enter engellenir.
-- Normal durdurma mikrofonu kapatır, noktayı gizler ve yalnızca hazır taslağın Enter bağını korur. Bu aşamada geç sonuç reddedilir. Gerçek MV3/sahte mikrofon testinde normal durdurmadan sonra Enter-satır tercihine rağmen taslağın gönderildiği doğrulanır.
-- Gerçek MV3 testinde aktif dikteyi Enter ile gönderince offscreen mikrofon bağlamının kapandığı ayrıca sorgulanır.
-- Kapalı Gönder düğmesinde metnin korunması tarayıcıda; eksik, belirsiz ve başka görüşmedeki düğmenin kullanılmaması DOM testlerinde doğrulanır.
-- Bu kontroller gerçek Chrome uzantısını ve sahte LiveChat/API yanıtlarını kullanır. Kullanıcının canlı LiveChat hesabındaki son kabul testi ayrıca gerekir.
+## Doğrulamanın sınırları
 
-## 0.1.4 gecikme ve merkezdeki nokta
+- Testlerde gerçek kullanıcı sesi, gerçek Groq anahtarı veya gerçek müşteri görüşmesi kullanılmaz. LiveChat adresine yerel test sayfası döndürülür. Gerçek hesaba mesaj gönderilmez.
+- Türkçe kelime doğruluğu, şive, ortam gürültüsü, özel adlar ve kullanıcının bildirdiği olayın kendi ses kaydıyla yeniden üretimi henüz ölçülmemiştir. Noktalama koruması, ses tanımanın kendisinin bütün kelime hatalarını tespit etmez.
+- Durak, cümlenin anlam bakımından kesin bittiğini kanıtlamaz. Yeni konuşmada taslak yeniden değerlendirilir; bu sürüm bütün nokta ve virgüllerin kusursuzluğunu garanti etmez.
+- Canlı LiveChat'in kendi Lexical durum yönetimi, kullanıcının Workspace kesintileri ve gerçek Free hesabının gecikme/kotaları için cihazda son kabul testi gerekir.
+- Fiziksel Windows Win + H / FastKeys / AutoHotkey yönlendirmesi Linux testlerinde çalıştırılmaz. Chrome'un Alt + H komutu korunur.
 
-- Varsayılan 500 ms durakla cümle kapanması ve uzun konuşmanın kısa doğal durakta veya yaklaşık 8 saniyede parçalanması doğrulanır.
-- Taklit API ile arka arkaya iki konuşma parçasının 1 saniyelik test sınırı içinde, sırayla ve sabit 3,5 saniyelik ara olmadan aktarıldığı doğrulanır. Bu rakam gerçek Groq yanıt süresi ölçümü değildir.
-- Dil düzeltmesi taklitle bekletilir. Hızlı moddaki 2,5 saniyelik bütçe dolunca yalnızca denetlenmiş temel metnin uyarıyla bir kez aktarıldığı, sonradan gelen düzeltmenin yeniden yazılmadığı doğrulanır. Bütçe ses tanıma/ağ süresini sınırlamaz.
-- Dakikalık yerel kota dolunca istek tüketmeden bekleme bilgisi döner; sıra açılınca aynı ses işlenir. Beklerken iptal edilirse sağlayıcıya istek ve editöre sonuç gitmez. Günlük/ses kullanım sınırları korunur.
-- Noktanın yatay ve dikey merkezde olduğu hem gerçek MV3 uzantısında hem masaüstü/dar pencere boyutlarında ölçülür. Tıklamaları engellemez. Son aktarım süresi küçük panelde görünür; gerçek MV3 testinde kasıtlı ağ beklemesinin bu süreye dahil olduğu doğrulanır.
-- Eski varsayılan beklemenin 500 ms'ye geçişinde anahtar, izin ve sözlük korunur; özel durak ve hızlı mod seçimleri saklanır.
-- Gerçek kullanıcı mikrofonu, Groq hesabı ve Workspace bağlantısında uçtan uca gecikme ölçülmemiştir. Her koşulda birkaç saniyede bitme garantisi verilmez.
+## Paket
 
-## 0.1.3 şüpheli dikte koruması
-
-- Bilinen altyazı/kapanış kalıpları ile MK/M.K. varyantları, yüksek güven ölçümleriyle gelse bile otomatik yazılmaz. Şüpheli parçanın tamamı reddedilir; kısmen silinerek farklı metin kurulmaz.
-- Ses tanıma cevabında segment güven verileri zorunlu tutulur. Ortalama log olasılığı < -1, konuşma olmama olasılığı > 0,6 veya sıkıştırma oranı > 2,4 olan tek bir segment bile karışık parçanın aktarımını durdurur. Bütün segmentler sessizlik koşulunu sağlıyorsa metin atlanır.
-- Aynı metin denetimi dil düzeltmesi adayında ve editöre son aktarımda uygulanır. Şüpheli düzeltme yerine yalnızca temiz, denetlenmiş temel metin kullanılabilir.
-- Gerçek MV3 uzantısı testinde API'ye bilinen altyazı hatası döndürülür. Mevcut yazının aynen kaldığı, bu sonucun hiç eklenmediği, mesaj gönderilmediği ve mikrofonun kapanarak uyarı ürettiği doğrulanır.
-- Eski düzeltme uyarısı kritik reddetme mesajının önüne geçmez. Son sessizlik kırpması, yeni bir bulut isteği veya ek bekleme gerektirmez.
-- Görseldeki kullanıcının orijinal ses kaydı mevcut değildir. Görselden hata biçimi teşhis edilmiştir; gerçek seste aynı olayın yeniden üretildiği iddia edilmez. Bu bir kelime doğruluğu garantisi değildir; özellikle özel adlar ve sayılar yine okunmalıdır.
-
-## Panel ve görünüm kontrolleri
-
-- Sayfa boşta hiçbir panel veya düğme göstermez. Dinleme ve metin hazırlanırken ekranın tam ortasında 20 px kırmızı nokta görünür; nokta tıklamaları engellemez. Enter ile gönderim veya iptalde gizlenir.
-- Eklenti simgesinden açılan küçük panelde logo, Başlat/Durdur/İptal, geri al, ayarlar, süre/seviye ve isteğe bağlı son metin kopyası doğrulanmıştır. Panel ve merkezdeki noktanın ekran görüntüleri ayrıca incelenmiştir.
-- İlk metin yazılmadan Enter koruması devam eder. Yazılmış dikte tek Enter ile gönderilir. Hazır dikte geri alınabilir; elle değiştirilmiş metin geri alınmaz.
-- Win + H, Chrome'un desteklemediği Windows tuşu nedeniyle yardımcı eşleştirmeyle sunulur. Manifestte çalışan Alt + H komutu korunur. AutoHotkey v2 yardımcısı yalnızca Chrome öndeyken tuş yönlendirir; otomatik kurulmaz/başlatılmaz. FastKeys yönergesi mevcut şablonların genel ayarlarını değiştirmez.
-
-## Henüz ölçülmeyenler
-
-- Kullanıcının kendi mikrofonunda Türkçe kelime hata oranı, şive/ortam gürültüsü ve gecikme; yeni kalite eşiklerinin gereksiz reddetme oranı. Gerçek bir MK baş harfi/kod veya video kalıbı amaçlanmışsa filtre fazla sıkı davranabilir.
-- Güncel canlı LiveChat uygulamasının kendi Lexical durum yönetimiyle son kabul testi. Test sayfası gerçek editörün bilinen seçicilerini ve tarayıcı metin düzenlemesini kullanır; uygulamanın tüm iç mantığını çalıştırmaz.
-- Gerçek Free Groq hesabının kişiye özgü kotaları, model erişimi veya canlı servis gecikmesi.
-- Kullanıcının Workspace bağlantısının tüm kesinti/yeniden bağlanma biçimleri. Test kontrollü gecikme ve geçici hata üretir; kalıcı internet kesintisini giderdiği iddia edilmez.
-- Windows üzerinde fiziksel Win + H yönlendirmesi, AutoHotkey v2 çalışma testi ve kullanıcının FastKeys yapılandırması henüz doğrulanmadı. Linux/Chromium kontrolleri bu dış Windows yardımcısını çalıştırmaz.
-- Bütün tarayıcı/işletim sistemi kısayol çakışmaları. Alt + H manifest ve komut ataması olarak kontrol edilir; kullanıcının Chrome profilinde ayrıca kontrol edilir.
-
-İlk kullanımda kontrollü test görüşmesinde kısa bir cümle dene. Tutar, özel ad ve işlem durumunu göndermeden önce oku. Bu rapor yüzde 100 doğruluk iddiası değildir.
-
-## Paket kontrolü
-
-Kurulum arşivi yalnızca 22 uzantı dosyası, dört yönerge/rapor belgesi ve iki Windows yardımcı/yönerge dosyası içerir. Paketleme betiği uzantı kaynaklarını ve ZIP içeriğini kimlik bilgisi desenleri için tarar; ZIP CRC kontrolü ve SHA-256 özeti üretir. Anahtar, token dosyası, oturum, kullanıcı hafızası, test profili veya ses dosyası paketlenmez.
+Arşiv 22 uzantı dosyası, dört yönerge/rapor ve iki Windows dosyası içerir. Kaynak ve ZIP içeriği kimlik bilgisi desenleri için taranır; CRC ve SHA-256 kontrol edilir. Kullanıcı anahtarı, hafızası, ses, test profili veya üretim test kancası paketlenmez.
