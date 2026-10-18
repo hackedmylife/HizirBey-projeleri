@@ -1,3 +1,12 @@
+# 0.1.8 — Son dikteyi yeniden yazdırma
+
+18 Ekim 2026
+
+- Kontrol paneline Yeniden yazdır düğmesi eklendi. Son dikte aynı görüşmenin yazı alanına yerleştirilir; mevcut aynı metin ikinci kez eklenmez. Alan boşaltılmışsa veya dikte geri alınmışsa geri getirilebilir. Elle yazılmış farklı dolu metin korunur.
+- İşlem yalnızca kullanıcının düğmeye basmasıyla başlar; önce dinleme ve bekleyen ses kapanır. Ek API çağrısı veya yeni ses tanıma yapılmaz; mevcut son metin geri konur. Kullanıcının gerçek Enter basışı gönderir.
+- Son diktenin görüşme bağı, normal durdurmada ve servis işçisinin uyku / uyanmasında korunur. Gönderim, görüşme / sekme / sayfa değişimi ve yeni dikte bağı geçersiz kılar. Geç ses sonucu yeniden eklenmez.
+- Son metin ve bağ yalnızca güvenilir chrome.storage.session alanındadır. Kalıcı ses saklanmaz. Anahtar, sözlük, logo, kısayol ve merkezdeki 20 px nokta korunur.
+
 # 0.1.7 — Kısmi tanımada tekrar birikmesini ve üç ret sonrası durmayı düzeltme
 
 18 Ekim 2026

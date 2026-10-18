@@ -1,5 +1,6 @@
 import {VERSION} from './lib/core.js';
 const $ = id => document.getElementById(id);
+let rewriting = false;
 const ask = async message => {const r = await chrome.runtime.sendMessage(message); if (!r?.ok) throw new Error(r?.error || 'Eklenti bağlantısı kurulamadı.'); return r.data;};
 function showError(error) {$('error').hidden = false; $('error').textContent = error.message;}
 function render(state) {
@@ -7,6 +8,7 @@ function render(state) {
   $('statusDot').classList.toggle('live', Boolean(state.recording || state.busy));
   $('toggle').textContent = state.phase === 'finishing' ? 'İptal' : state.sessionId ? 'Durdur' : 'Başlat';
   $('undo').disabled = !state.sessionId || state.busy || !state.canUndo;
+  $('rewrite').disabled = rewriting || !state.canRewrite;
   $('timer').textContent = `${String(Math.floor((state.seconds || 0) / 60)).padStart(2, '0')}:${String((state.seconds || 0) % 60).padStart(2, '0')}`;
   document.querySelectorAll('#meter i').forEach((item, i) => {item.style.height = `${4 + Math.round((state.level || 0) * (i === 2 ? 13 : i % 2 ? 9 : 5))}px`;});
   $('last').hidden = !state.lastText; $('lastText').value = state.lastText || '';
@@ -18,6 +20,13 @@ $('version').textContent = VERSION;
 $('toggle').onclick = async () => {$('toggle').disabled = true; $('error').hidden = true; try {await ask({type: 'ui:toggle'}); await load();} catch (error) {showError(error);} finally {$('toggle').disabled = false;}};
 $('options').onclick = () => ask({type: 'ui:options'}).catch(showError);
 $('undo').onclick = async () => {$('undo').disabled = true; try {await ask({type: 'ui:undo'}); await load();} catch (error) {showError(error);}};
+$('rewrite').onclick = async () => {
+  rewriting = true; $('rewrite').disabled = true; $('error').hidden = true;
+  $('rewriteState').textContent = 'Son dikte yazılıyor…';
+  try {const result = await ask({type: 'ui:rewrite'}); $('rewriteState').textContent = result?.message || 'Metni kontrol et.';}
+  catch (error) {$('rewriteState').textContent = 'Metnin korundu.'; showError(error);}
+  finally {rewriting = false; await load().catch(showError);}
+};
 $('copy').onclick = async () => {try {await navigator.clipboard.writeText($('lastText').value); $('copy').textContent = 'Kopyalandı';} catch {showError(new Error('Metni seçip Ctrl + C ile kopyalayabilirsin.'));}};
 chrome.runtime.onMessage.addListener(message => {if (message?.target === 'ui' && message.type === 'voice:status') render(message.data);});
 load().catch(showError);

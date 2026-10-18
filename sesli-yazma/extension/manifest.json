@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Hızır Bey Sesli Yazma",
   "short_name": "Hızır Bey Dikte",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "minimum_chrome_version": "116",
   "description": "Alt+H ile Türkçe dikte, kontrollü yazım düzeltmesi ve LiveChat yazı alanına aktarım. Mesajı sen Enter ile gönderirsin.",
   "permissions": ["storage", "unlimitedStorage", "offscreen", "activeTab", "clipboardWrite"],

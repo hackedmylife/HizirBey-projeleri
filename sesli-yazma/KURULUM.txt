@@ -1,4 +1,4 @@
-HIZIR BEY SESLİ YAZMA — 0.1.7
+HIZIR BEY SESLİ YAZMA — 0.1.8
 
 1) ZIP'i bilgisayarında sabit bir klasöre çıkar. Örnek: Belgeler\HizirBey-Sesli-Yazma
 2) Chrome adres çubuğuna chrome://extensions yaz.
@@ -31,6 +31,12 @@ kontrol paneli açılır. Dinleme ve yazım sırasında ekranın tam ortasında 
 20 piksel kırmızı nokta görünür. Paneli kapatmak tek başına mikrofonu durdurmaz.
 
 KULLANIM
+- Panelde Yeniden yazdır: son dikteyi aynı görüşmenin yazı alanına
+  geri koyar. Dinleme kapanır; ek API isteği yapılmaz. Metin zaten
+  alandaysa ikinci kez eklenmez. Alanı boşalttıysan veya dikteyi geri
+  aldıysan yeniden doldurabilirsin. Elle yazılmış farklı dolu metin
+  korunur. Göndermek için metni okuyup ENTER kullan. Görüşme / sekme
+  değişince veya mesaj gönderilince bu düğme devre dışı kalır.
 - ALT + H'ye yeniden basmak dinlemeyi bitirir; son cümle hazırlanır.
 - Dikte yazıldıktan sonra ENTER, görüşmenin Gönder düğmesini bir kez
   çalıştırır. LiveChat Enter ayarın satır açmak olsa da taslak gönderilir.

@@ -121,6 +121,34 @@ assert.equal((await page.locator('#editor').innerText()).trim(), 'Önceden yazı
 await page.keyboard.press('Enter');
 assert.equal(await page.locator('#hizir-voice-host').isVisible(), false); checks++;
 
+// Explicit recovery is local, idempotent and remains bound to this composer.
+await page.locator('#editor').fill('Başlangıç.');
+await dispatch({type: 'voice:bind', sessionId: 'rewrite-flow'});
+await dispatch({type: 'voice:insert', sessionId: 'rewrite-flow', data: {segmentId: 1, text: 'Son dikte.', replace: true}});
+await dispatch({type: 'voice:release', sessionId: 'rewrite-flow', keepRewrite: true});
+await page.locator('#editor').fill('');
+const sendsBeforeRewrite = await page.evaluate(() => globalThis.sentCount);
+assert.equal((await dispatch({type: 'voice:rewrite', sessionId: 'rewrite-flow', text: 'Son dikte.'})).ok, true);
+assert.equal((await page.locator('#editor').innerText()).trim(), 'Son dikte.'); checks++;
+assert.equal((await dispatch({type: 'voice:rewrite', sessionId: 'rewrite-flow', text: 'Son dikte.'})).unchanged, true);
+assert.equal((await page.locator('#editor').innerText()).trim(), 'Son dikte.'); checks++;
+assert.equal(await page.evaluate(() => globalThis.sentCount), sendsBeforeRewrite);
+assert.equal(await page.locator('#hizir-voice-host').isVisible(), false); checks++;
+await page.locator('#editor').fill('Elle yazılmış farklı metin.');
+assert.equal((await dispatch({type: 'voice:rewrite', sessionId: 'rewrite-flow', text: 'Son dikte.'})).ok, false);
+assert.equal((await page.locator('#editor').innerText()).trim(), 'Elle yazılmış farklı metin.'); checks++;
+await page.locator('#editor').fill('');
+await dispatch({type: 'voice:rewrite', sessionId: 'rewrite-flow', text: 'Son dikte.'});
+await page.keyboard.press('Enter');
+assert.equal(await page.evaluate(() => globalThis.sentCount), sendsBeforeRewrite + 1);
+assert.equal(await page.evaluate(() => globalThis.__messages.some(x => x.type === 'content:sent' && x.sessionId === 'rewrite-flow')), true); checks++;
+assert.equal((await dispatch({type: 'voice:rewrite', sessionId: 'rewrite-flow', text: 'Son dikte.'})).ok, false); checks++;
+await page.locator('#editor').fill(''); await dispatch({type: 'voice:bind', sessionId: 'rewrite-other'});
+await dispatch({type: 'voice:release', sessionId: 'rewrite-other', keepRewrite: true});
+await page.locator('main').evaluate(x => {x.dataset.chatId = 'DIFFERENT01';}); await page.waitForTimeout(120);
+assert.equal((await dispatch({type: 'voice:rewrite', sessionId: 'rewrite-other', text: 'Son dikte.'})).ok, false);
+assert.equal((await page.locator('#editor').innerText()).trim(), ''); checks++;
+
 // Render actual packaged UI with a local fake extension transport.
 const mime = {'.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png'};
 const server = createServer(async (req, res) => {try {const file = path.resolve(extensionPath, '.' + new URL(req.url, 'http://localhost').pathname); if (!file.startsWith(extensionPath + path.sep)) throw new Error('bad path'); const bytes = await readFile(file); res.writeHead(200, {'Content-Type': mime[path.extname(file)] || 'application/octet-stream'}); res.end(bytes);} catch {res.writeHead(404); res.end();}});
@@ -146,12 +174,20 @@ await options.screenshot({path: path.join(output, 'settings-mobile.png'), fullPa
 const popup = await context.newPage(); await popup.setViewportSize({width: 550, height: 260}); await popup.goto(`http://127.0.0.1:${port}/popup.html`); await popup.waitForFunction(() => document.getElementById('setup').textContent.includes('Ayarları'));
 assert.equal(await popup.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
 assert.equal(await popup.locator('.panel-logo').evaluate(x => x.complete && x.naturalWidth > 0), true); checks++;
+assert.equal(await popup.locator('#rewrite').isDisabled(), true); checks++;
 await popup.screenshot({path: path.join(output, 'popup.png')});
 await popup.locator('#toggle').click(); assert.equal(await popup.evaluate(() => globalThis.__uiMessages.some(x => x.type === 'ui:toggle')), true); checks++;
 await popup.evaluate(() => globalThis.__uiListeners.forEach(fn => fn({type: 'voice:status', target: 'ui', data: {sessionId: 'qa', phase: 'finishing', busy: true, recording: false, seconds: 20, level: 0.4, message: 'Son cümle hazırlanıyor…', canUndo: true, lastText: 'Merhaba.', lastLatencyMs: 1250}})));
 assert.equal(await popup.locator('#toggle').textContent(), 'İptal'); assert.equal(await popup.locator('#undo').isDisabled(), true); assert.equal(await popup.locator('#timer').textContent(), '00:20'); checks++;
 assert.equal(await popup.locator('#latency').textContent(), 'Son aktarım: 1,3 sn'); assert.equal(await popup.locator('#latency').isVisible(), true); checks++;
 await popup.screenshot({path: path.join(output, 'popup-active.png')});
+assert.equal(await popup.locator('#rewrite').isDisabled(), true); checks++;
+await popup.evaluate(() => globalThis.__uiListeners.forEach(fn => fn({type: 'voice:status', target: 'ui', data: {phase: 'idle', busy: false, recording: false, canRewrite: true, lastText: 'Son dikte.', message: 'Son dikte hazır.'}})));
+assert.equal(await popup.locator('#rewrite').isEnabled(), true); checks++;
+await popup.screenshot({path: path.join(output, 'popup-rewrite.png'), fullPage: true});
+await popup.locator('#rewrite').click();
+await popup.waitForFunction(() => globalThis.__uiMessages.some(x => x.type === 'ui:rewrite'));
+assert.equal(await popup.evaluate(() => globalThis.__uiMessages.filter(x => x.type === 'ui:rewrite').length), 1); checks++;
 await popup.evaluate(() => globalThis.__uiListeners.forEach(fn => fn({type: 'voice:status', target: 'ui', data: {phase: 'error', busy: false, recording: false, warning: 'Önceki düzeltme uyarısı.', message: 'Şüpheli dikte yazılmadı; mikrofon kapatıldı.'}})));
 assert.equal(await popup.locator('#status').textContent(), 'Şüpheli dikte yazılmadı; mikrofon kapatıldı.'); checks++;
 assert.deepEqual(errors, []); checks++;

@@ -1,6 +1,6 @@
 # Hızır Bey Sesli Yazma
 
-Chrome / LiveChat için logolu Türkçe dikte uzantısı. Güncel sürüm: **0.1.7**.
+Chrome / LiveChat için logolu Türkçe dikte uzantısı. Güncel sürüm: **0.1.8**.
 
 **Win + H (Windows yönlendirmesiyle) → konuş → metni oku → Enter ile gönder.**
 
@@ -13,6 +13,8 @@ Kurulum paketini sabit bir klasöre çıkar. Chrome'da `chrome://extensions` adr
 Groq hesabını **Free** planında tut, ödeme yöntemi ekleme ve Developer plana yükseltme. Anahtarı yalnızca eklentinin kendi ayar sayfasına bir kez gir. Free hesap ve ses işleme onaylarını kaydet, “Mikrofonu dene” ile mikrofon iznini tamamla. LiveChat sayfasını yenile. Kısayol başka eklentiye atanmışsa `chrome://extensions/shortcuts` sayfasından Alt + H ata.
 
 ## Davranış
+
+- Paneldeki **Yeniden yazdır**, son dikte metnini aynı görüşmenin yazı alanına geri koyar. Hazırlık sürerken kapalıdır; tıklanınca dinleme / bekleyen ses kapanır. Metin zaten alandaysa tekrar eklenmez. Silinen alan veya geri alınan dikte yeniden doldurulabilir; elle yazılmış farklı dolu metnin üzerine yazılmaz. Enter ile kullanıcı gönderir. Gönderim, görüşme / sekme / sayfa değişimi veya yeni dikte önceki yazdırma bağını kapatır. Son metin tarayıcı oturumu boyunca geçici olarak tutulur; bu işlem ek API çağrısı yapmaz ve ses kaydı saklamaz.
 
 - Başlatma/durdurma: Windows yönlendirmesi açıkken Win + H; doğrudan Chrome komutu Alt + H. Durdururken son ses parçası tamamlanır.
 - Sayfada geniş çubuk yoktur. Dinleme veya metin hazırlanması sürerken ekranın tam ortasında tıklamaları engellemeyen 20 px kırmızı nokta görünür; işlem bitince kaybolur. Logolu Başlat/Durdur, geri al ve ayarlar paneli yalnızca Chrome eklenti simgesine tıklanınca açılır. Paneli kapatmak dikteyi durdurmaz.

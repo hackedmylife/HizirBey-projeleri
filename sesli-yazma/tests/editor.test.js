@@ -74,3 +74,31 @@ test('late punctuation never overwrites manual edits to a provisional draft', as
   await assert.rejects(binding.insert('Taslak metin.', {replace: true}), /elle değiştirdin/);
   assert.equal(editor.innerText, 'Kullanıcının kontrol ettiği metin.'); await window.happyDOM.close();
 });
+test('explicit rewrite restores a removed dictation and repeat clicks never duplicate it', async () => {
+  const window = fixture(), editor = window.document.getElementById('editor'), binding = new window.HizirVoiceEditor.Binding();
+  await binding.insert('Son dikte.', {replace: true}); editor.innerText = '';
+  const result = await binding.rewrite('Son dikte.');
+  assert.equal(result.unchanged, false); assert.equal(editor.innerText, 'Son dikte.');
+  let writes = 0; editor.addEventListener('input', () => writes++);
+  assert.equal((await result.binding.rewrite('Son dikte.')).unchanged, true);
+  assert.equal(editor.innerText, 'Son dikte.'); assert.equal(writes, 0);
+  await window.happyDOM.close();
+});
+test('rewrite preserves a manual draft and never crosses a conversation or note boundary', async () => {
+  const window = fixture(), editor = window.document.getElementById('editor'), binding = new window.HizirVoiceEditor.Binding();
+  await binding.insert('Dikte sonucu.', {replace: true}); editor.innerText = 'Elle düzelttiğim ayrı metin.';
+  await assert.rejects(binding.rewrite('Dikte sonucu.'), /farklı bir metin/);
+  assert.equal(editor.innerText, 'Elle düzelttiğim ayrı metin.');
+  editor.innerText = ''; window.document.querySelector('main').dataset.chatId = 'OTHER01';
+  await assert.rejects(binding.rewrite('Dikte sonucu.'), /Görüşme/); assert.equal(editor.innerText, '');
+  await window.happyDOM.close();
+});
+test('rewrite after undo retains the prefix; clearing everything does not resurrect that prefix', async () => {
+  const window = fixture(), editor = window.document.getElementById('editor'); editor.innerText = 'Başlangıç.';
+  const binding = new window.HizirVoiceEditor.Binding(); await binding.insert('Son dikte.', {replace: true}); await binding.undo();
+  const restored = await binding.rewrite('Son dikte.');
+  assert.equal(editor.innerText, 'Başlangıç. Son dikte.');
+  editor.innerText = ''; const cleared = await restored.binding.rewrite('Son dikte.');
+  assert.equal(editor.innerText, 'Son dikte.'); assert.equal(cleared.binding.initial, '');
+  await window.happyDOM.close();
+});

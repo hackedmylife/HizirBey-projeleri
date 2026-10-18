@@ -106,6 +106,18 @@
         this.segments = this.lastUndo.segments; this.lastUndo = null;
       } finally {this.writing = false;}
     }
+    async rewrite(text) {
+      this.assert();
+      const current = read(this.editor);
+      if (current !== this.expected && current !== this.initial && current.trim()) throw new Error('Yazı alanında farklı bir metin var. Korundu; alanı boşaltıp yeniden dene veya son dikteyi kopyala.');
+      // A deliberately cleared field becomes the new prefix. Do not bring back
+      // text the user removed, and never use textual similarity to delete words.
+      const binding = current === this.expected || current === this.initial ? this : new Binding();
+      if (binding === this) binding.expected = current;
+      const before = read(binding.editor);
+      await binding.insert(text, {replace: true});
+      return {binding, unchanged: before === read(binding.editor)};
+    }
   }
   globalThis.HizirVoiceEditor = {Binding, read, find, isNote};
 })();

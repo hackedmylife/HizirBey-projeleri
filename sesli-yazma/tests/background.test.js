@@ -3,13 +3,13 @@ import assert from 'node:assert/strict';
 import {STORE} from '../extension/lib/core.js';
 const id = 'qa-extension', origin = `chrome-extension://${id}/`;
 const local = {}, session = {}, messages = [], access = [];
-let listener, hasOffscreen = false;
+let listener, hasOffscreen = false, activeTab = 42;
 const event = () => ({addListener() {}});
 const storage = data => ({async get(key) {return {[key]: data[key]};}, async set(value) {Object.assign(data, structuredClone(value));}, async remove(key) {delete data[key];}, async setAccessLevel(value) {access.push(value.accessLevel);}});
 globalThis.chrome = {
   runtime: {id, getURL: path => origin + path, async getContexts() {return hasOffscreen ? [{documentUrl: origin + 'offscreen.html'}] : [];}, async sendMessage(message) {messages.push(structuredClone(message)); return {ok: true, data: true};}, async openOptionsPage() {messages.push({openedOptions: true});}, onMessage: {addListener(fn) {listener = fn;}}, onInstalled: event()},
   storage: {local: storage(local), session: storage(session)},
-  tabs: {async query() {return [{id: 42}];}, async get(tabId) {return {id: tabId, url: 'https://my.livechatinc.com/chats/qa'};}, async sendMessage(tabId, message) {messages.push({toTab: tabId, ...structuredClone(message)}); return {ok: true};}, async create() {}, onActivated: event(), onRemoved: event(), onUpdated: event()},
+  tabs: {async query() {return [{id: activeTab}];}, async get(tabId) {return {id: tabId, url: 'https://my.livechatinc.com/chats/qa'};}, async sendMessage(tabId, message) {messages.push({toTab: tabId, ...structuredClone(message)}); return {ok: true};}, async create() {}, onActivated: event(), onRemoved: event(), onUpdated: event()},
   action: {async setBadgeText() {}, async setBadgeBackgroundColor() {}},
   offscreen: {async createDocument() {hasOffscreen = true;}, async closeDocument() {hasOffscreen = false;}},
   commands: {async getAll() {return [{name: 'toggle-dictation', shortcut: 'Alt+H'}];}, onCommand: event()}
@@ -108,4 +108,42 @@ test('without explicit Free and cloud consent no new capture starts', async () =
   await send('ui:save', {settings: {freeConfirmed: false, cloudConsent: false}});
   assert.equal((await send('content:toggle', {}, content)).ok, false);
   assert.equal((await send('ui:get')).data.status.sessionId, null);
+});
+test('explicit rewrite stops capture and uses the saved text, without another speech request or late insertion', async () => {
+  await send('ui:save', {settings: {freeConfirmed: true, cloudConsent: true}});
+  assert.equal((await send('ui:rewrite')).ok, false);
+  await send('content:toggle', {}, content);
+  const sessionId = (await send('ui:get')).data.status.sessionId;
+  await send('audio:result', {sessionId, segmentId: 1, text: 'Son dikte.', raw: 'son dikte'}, audio);
+  await send('audio:meter', {sessionId, recording: true, processing: true}, audio);
+  assert.equal((await send('ui:get')).data.status.canRewrite, false); assert.equal((await send('ui:rewrite')).ok, false);
+  await send('audio:meter', {sessionId, recording: true, processing: false}, audio);
+  assert.equal((await send('ui:get')).data.status.canRewrite, true);
+  assert.equal((await send('ui:rewrite', {}, content)).ok, false);
+  activeTab = 99; assert.equal((await send('ui:rewrite')).ok, false); activeTab = 42;
+  const count = messages.filter(x => x.type === 'capture:start').length;
+  assert.equal((await send('ui:rewrite')).ok, true);
+  const state = (await send('ui:get')).data.status;
+  assert.equal(state.sessionId, null); assert.equal(state.recording, false); assert.equal(state.canRewrite, true);
+  const rewrite = messages.filter(x => x.type === 'voice:rewrite').at(-1);
+  assert.equal(rewrite.text, 'Son dikte.'); assert.equal(rewrite.sessionId, sessionId); assert.equal(rewrite.toTab, 42);
+  assert.equal(messages.filter(x => x.type === 'capture:start').length, count);
+  assert.equal((await send('audio:result', {sessionId, segmentId: 2, text: 'Geç gelen.', raw: 'geç gelen'}, audio)).data, false);
+  await send('content:sent', {sessionId}, content);
+  assert.equal((await send('ui:get')).data.status.canRewrite, false); assert.equal((await send('ui:rewrite')).ok, false);
+});
+test('normal completion and service-worker restart retain recovery; a conversation change invalidates it', async () => {
+  await send('content:toggle', {}, content);
+  const sessionId = (await send('ui:get')).data.status.sessionId;
+  await send('audio:result', {sessionId, segmentId: 1, text: 'Kurtarılacak dikte.', raw: 'kurtarılacak dikte'}, audio);
+  await send('audio:done', {sessionId}, audio);
+  assert.equal((await send('ui:get')).data.status.canRewrite, true);
+  hasOffscreen = false;
+  await import('../extension/background.js?worker-restart');
+  assert.equal((await send('ui:get')).data.status.canRewrite, true);
+  assert.equal((await send('ui:rewrite')).ok, true);
+  assert.ok(messages.some(x => x.type === 'voice:release' && x.sessionId === sessionId && x.keepRewrite));
+  await send('content:cancel', {sessionId, reason: 'Görüşme değişti.'}, content);
+  assert.equal((await send('ui:get')).data.status.canRewrite, false);
+  assert.equal((await send('ui:get')).data.status.lastText, 'Kurtarılacak dikte.', 'The copyable recovery text survives without an editor target');
 });

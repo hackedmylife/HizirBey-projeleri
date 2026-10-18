@@ -40,9 +40,21 @@
       respond({ok: true}); return false;
     }
     if (message.type === 'voice:release') {
-      if (message.keepDraft && active.binding.segments.length && active.binding.valid()) {active.reviewOnly = true; active.busy = false; active.recording = false; renderIndicator();}
+      if ((message.keepRewrite || (message.keepDraft && active.binding.segments.length)) && active.binding.valid()) {active.reviewOnly = true; active.busy = false; active.recording = false; renderIndicator();}
       else detach();
       respond({ok: true}); return false;
+    }
+    if (message.type === 'voice:rewrite') {
+      const mine = active;
+      insertion = insertion.catch(() => {}).then(async () => {
+        if (active !== mine) throw new Error('Görüşme değişti; metin yazılmadı.');
+        if (!mine.reviewOnly || mine.recording || mine.busy) throw new Error('Önce dinlemenin durmasını bekle.');
+        const result = await mine.binding.rewrite(message.text);
+        if (active !== mine) throw new Error('Görüşme değişti; metni kontrol et.');
+        mine.binding = result.binding; renderIndicator();
+        return {ok: true, unchanged: result.unchanged};
+      });
+      insertion.then(respond, error => respond({ok: false, error: error.message})); return true;
     }
     if (active.reviewOnly) {respond({ok: false, error: 'Dikte tamamlandı. Geç gelen metin eklenmedi.'}); return false;}
     if (message.type === 'voice:undo') {
@@ -86,7 +98,7 @@
     detach();
     // Only the user's trusted gesture can reach this path. Use LiveChat's own
     // send button once, regardless of its Enter/newline preference.
-    if (!mine.reviewOnly) ask({type: 'content:sent', sessionId: mine.id, from, to}).catch(() => {});
+    ask({type: 'content:sent', sessionId: mine.id, from, to}).catch(() => {});
     sendButton?.click();
   }
   document.addEventListener('keydown', beforeSend, true);

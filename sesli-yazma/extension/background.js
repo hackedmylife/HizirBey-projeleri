@@ -4,20 +4,23 @@ import {dictationTextRisk, REJECTED_DICTATION} from './lib/safety.js';
 
 const extensionOrigin = chrome.runtime.getURL('');
 const offscreenUrl = chrome.runtime.getURL('offscreen.html');
-let session = null, status = {phase: 'idle', message: 'Dikteye hazır', busy: false, recording: false, lastText: '', lastRaw: ''};
+let session = null, rewriteTarget = null, status = {phase: 'idle', message: 'Dikteye hazır', busy: false, recording: false, lastText: '', lastRaw: ''};
 let memoryCache = null, toggleChain = Promise.resolve(), ledgerChain = Promise.resolve(), offscreenCreation = null, offscreenClosing = null;
 const boot = (async () => {
   await chrome.storage.local.setAccessLevel({accessLevel: 'TRUSTED_CONTEXTS'});
   await chrome.storage.session.setAccessLevel({accessLevel: 'TRUSTED_CONTEXTS'});
   const saved = (await chrome.storage.session.get(STORE.runtime))[STORE.runtime];
   const contexts = await chrome.runtime.getContexts({contextTypes: ['OFFSCREEN_DOCUMENT']});
-  if (saved?.session && contexts.length) {session = saved.session; status = saved.status;}
-  else await chrome.storage.session.remove(STORE.runtime);
+  if (saved?.status) {
+    status = saved.status; rewriteTarget = saved.rewriteTarget || null;
+    if (saved.session && contexts.length) session = saved.session;
+    else {status = {...status, phase: status.phase === 'error' ? 'error' : 'idle', busy: false, recording: false, canUndo: false, level: 0}; await chrome.storage.session.set({[STORE.runtime]: {session, status, rewriteTarget}});}
+  } else await chrome.storage.session.remove(STORE.runtime);
 })();
 const getSettings = async () => cleanSettings((await chrome.storage.local.get(STORE.settings))[STORE.settings]);
 const getKey = async () => (await chrome.storage.local.get(STORE.credentials))[STORE.credentials]?.key || '';
 async function getMemory() {return memoryCache || (await chrome.storage.local.get(STORE.memory))[STORE.memory] || emptyMemory();}
-function view() {return {...status, sessionId: session?.id || null, tabId: session?.tabId || null};}
+function view() {return {...status, sessionId: session?.id || null, tabId: session?.tabId || null, canRewrite: Boolean(rewriteTarget && status.lastText && !status.busy)};}
 async function tellTab(type, data = {}) {
   if (!session) return null;
   return chrome.tabs.sendMessage(session.tabId, {type, sessionId: session.id, ...data}, {frameId: 0});
@@ -27,7 +30,7 @@ async function publish(patch = {}, persist = true) {
   const stateChanged = ['phase', 'recording', 'busy'].some(key => key in patch && patch[key] !== status[key]);
   status = {...status, ...patch};
   const value = view();
-  if (persist || stateChanged) await chrome.storage.session.set({[STORE.runtime]: {session, status}});
+  if (persist || stateChanged) await chrome.storage.session.set({[STORE.runtime]: {session, status, rewriteTarget}});
   if (session !== expectedSession) return view();
   chrome.action.setBadgeText({text: status.recording ? 'MIC' : status.busy ? '…' : status.phase === 'error' ? '!' : ''}).catch(() => {});
   chrome.action.setBadgeBackgroundColor({color: status.phase === 'error' ? '#b0493d' : '#a78641'}).catch(() => {});
@@ -55,7 +58,7 @@ async function closeIdleOffscreen() {
 async function cancel(message = 'Dinleme durduruldu.', phase = 'idle', keepDraft = false) {
   const old = session; session = null; memoryCache = null;
   if (old) {
-    chrome.tabs.sendMessage(old.tabId, {type: 'voice:release', sessionId: old.id, message, keepDraft}, {frameId: 0}).catch(() => {});
+    await chrome.tabs.sendMessage(old.tabId, {type: 'voice:release', sessionId: old.id, message, keepDraft, keepRewrite: rewriteTarget?.sessionId === old.id}, {frameId: 0}).catch(() => {});
     await offscreen('capture:cancel', {sessionId: old.id}).catch(() => {});
   }
   if (session) return view();
@@ -80,7 +83,7 @@ async function start(tabId) {
   let binding;
   try {binding = await chrome.tabs.sendMessage(tabId, {type: 'voice:bind', sessionId: id}, {frameId: 0});} catch {throw new Error('LiveChat sayfasını bir kez yenile ve tekrar dene.');}
   if (!binding?.ok) throw new Error(binding?.error || 'LiveChat mesaj alanı bulunamadı.');
-  session = {id, tabId, startedAt: Date.now(), lastSegment: 0};
+  session = {id, tabId, startedAt: Date.now(), lastSegment: 0}; rewriteTarget = null;
   const mine = session;
   memoryCache = await getMemory();
   if (session !== mine) return view();
@@ -100,7 +103,33 @@ async function toggle(tabId) {
   if (!tabId) throw new Error('Aktif LiveChat sekmesi bulunamadı.');
   return start(tabId);
 }
-function serializedToggle(tabId) {const operation = toggleChain.then(() => toggle(tabId)); toggleChain = operation.catch(() => {}); return operation;}
+function serializedAction(action) {const operation = toggleChain.then(action); toggleChain = operation.catch(() => {}); return operation;}
+function serializedToggle(tabId) {return serializedAction(() => toggle(tabId));}
+async function rewrite() {
+  const target = rewriteTarget, text = status.lastText;
+  if (!target || !text) throw new Error('Yeniden yazdırılabilecek son dikte yok.');
+  if (status.busy) throw new Error('Metnin hazırlanmasını bekle, ardından yeniden yazdır.');
+  if (dictationTextRisk(text)) throw new Error('Şüpheli metin yeniden yazdırılmadı.');
+  const [tab] = await chrome.tabs.query({active: true, currentWindow: true});
+  if (tab?.id !== target.tabId) throw new Error('Son diktenin alındığı LiveChat görüşmesine dön.');
+  if (session) await cancel('Dinleme kapandı; son dikte yeniden yazdırılıyor.', 'idle', true);
+  else await chrome.tabs.sendMessage(target.tabId, {type: 'voice:release', sessionId: target.sessionId, keepRewrite: true}, {frameId: 0}).catch(() => {});
+  if (rewriteTarget !== target) throw new Error('Görüşme değişti; metin yazılmadı.');
+  let response;
+  try {response = await chrome.tabs.sendMessage(target.tabId, {type: 'voice:rewrite', sessionId: target.sessionId, text}, {frameId: 0});}
+  catch {throw new Error('Yazı alanına ulaşılamadı. Son dikteyi panelden kopyalayabilirsin.');}
+  if (!response?.ok) throw new Error(response?.error || 'Son dikte yeniden yazdırılamadı.');
+  if (rewriteTarget !== target) return false;
+  const message = response.unchanged ? 'Son dikte zaten yazı alanında; tekrar eklenmedi.' : 'Son dikte yeniden yazıldı. Oku, Enter ile gönder.';
+  await publish({message, phase: 'idle', busy: false, recording: false});
+  return {message};
+}
+async function invalidateTarget(tabId, message) {
+  const changed = rewriteTarget?.tabId === tabId;
+  if (changed) rewriteTarget = null;
+  if (session?.tabId === tabId) return cancel(message);
+  if (changed) await publish();
+}
 async function reserve(kind, seconds) {
   const operation = ledgerChain.then(async () => {
     const usage = (await chrome.storage.local.get(STORE.usage))[STORE.usage];
@@ -164,6 +193,7 @@ async function handle(message, sender) {
     if (message.type === 'ui:shortcuts') return chrome.tabs.create({url: 'chrome://extensions/shortcuts'});
     if (message.type === 'ui:options') return chrome.runtime.openOptionsPage();
     if (message.type === 'ui:toggle') return serializedToggle();
+    if (message.type === 'ui:rewrite') return serializedAction(rewrite);
     if (message.type === 'ui:undo') {
       if (!session || status.busy || !status.canUndo) throw new Error('Şu anda geri alınabilecek hazır dikte yok.');
       const mine = session, response = await tellTab('voice:undo');
@@ -177,6 +207,10 @@ async function handle(message, sender) {
     if (!contentSender(sender)) throw new Error('Geçersiz LiveChat bağlantısı.');
     if (message.type === 'content:toggle') return serializedToggle(sender.tab.id);
     if (message.type === 'content:options') return chrome.runtime.openOptionsPage();
+    if (['content:cancel', 'content:sent'].includes(message.type) && rewriteTarget?.sessionId === message.sessionId && rewriteTarget.tabId === sender.tab.id) {
+      rewriteTarget = null;
+      if (!session) return publish();
+    }
     if (!session || session.id !== message.sessionId || session.tabId !== sender.tab.id) return false;
     const mine = session;
     if (message.type === 'content:cancel') return cancel(message.reason || 'Görüşme değişti; dikte durduruldu.');
@@ -209,6 +243,7 @@ async function handle(message, sender) {
       // Claim before the first await: duplicate delivery must never write twice.
       mine.lastSegment = message.segmentId;
       const data = {segmentId: message.segmentId, text: message.text, raw: message.raw, replace: message.replace === true, final: message.final !== false, warning: message.warning || ''};
+      rewriteTarget = {sessionId: mine.id, tabId: mine.tabId};
       // Keep a temporary recovery copy if an editor rejects insertion. Never auto-replay it.
       await publish({lastText: data.text, lastRaw: data.raw, warning: data.warning, message: data.warning || 'Metin yazı alanına eklendi.'});
       if (session !== mine) return false;
@@ -233,7 +268,7 @@ chrome.commands.onCommand.addListener(command => {
   if (command !== 'toggle-dictation') return;
   boot.then(() => serializedToggle()).catch(error => publish({phase: 'error', busy: false, recording: false, message: error.message}));
 });
-chrome.tabs.onActivated.addListener(info => {boot.then(() => {if (session && info.tabId !== session.tabId) return cancel('Sekme değişti; mikrofon kapatıldı.');}).catch(() => {});});
-chrome.tabs.onRemoved.addListener(tabId => {boot.then(() => {if (session?.tabId === tabId) return cancel('LiveChat sekmesi kapandı.');}).catch(() => {});});
-chrome.tabs.onUpdated.addListener((tabId, change) => {boot.then(() => {if (session?.tabId === tabId && (change.status === 'loading' || change.url)) return cancel('Sayfa değişti; mikrofon kapatıldı.');}).catch(() => {});});
+chrome.tabs.onActivated.addListener(info => {boot.then(() => {const tabId = session?.tabId ?? rewriteTarget?.tabId; if (tabId && info.tabId !== tabId) return invalidateTarget(tabId, 'Sekme değişti; mikrofon kapatıldı.');}).catch(() => {});});
+chrome.tabs.onRemoved.addListener(tabId => {boot.then(() => invalidateTarget(tabId, 'LiveChat sekmesi kapandı.')).catch(() => {});});
+chrome.tabs.onUpdated.addListener((tabId, change) => {boot.then(() => {if (change.status === 'loading' || change.url) return invalidateTarget(tabId, 'Sayfa değişti; mikrofon kapatıldı.');}).catch(() => {});});
 chrome.runtime.onInstalled.addListener(details => {if (details.reason === 'install') chrome.runtime.openOptionsPage();});

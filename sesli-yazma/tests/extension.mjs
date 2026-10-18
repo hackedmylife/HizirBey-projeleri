@@ -78,10 +78,27 @@ try {
   const readyUntil = Date.now() + 5000; while ((await sessionStore()).status.busy && Date.now() < readyUntil) await page.waitForTimeout(100);
   const latency = (await sessionStore()).status.lastLatencyMs;
   assert.ok(Number.isFinite(latency) && latency >= 26000, 'Transfer timing includes deliberate network delay'); checks++;
+  // The same privileged RPC used by the popup restores the last transcript
+  // without a microphone/API call, and keeps the real Enter path working.
+  const rewrite = async () => options.evaluate(() => chrome.runtime.sendMessage({type: 'ui:rewrite'}));
+  assert.equal((await sessionStore()).status.canRewrite, true); checks++;
+  const beforeRewrite = (await page.locator('#editor').innerText()).trim();
+  assert.equal((await rewrite()).ok, true);
+  assert.equal((await page.locator('#editor').innerText()).trim(), beforeRewrite);
+  assert.equal((await sessionStore()).status.recording, false); checks++;
+  await page.locator('#editor').fill('');
+  assert.equal((await rewrite()).ok, true);
+  assert.equal((await page.locator('#editor').innerText()).trim(), beforeRewrite); checks++;
+  const repeatedRewrite = await rewrite();
+  assert.equal(repeatedRewrite.ok, true); assert.match(repeatedRewrite.data.message, /zaten/);
+  assert.equal((await page.locator('#editor').innerText()).trim(), beforeRewrite); checks++;
+  const afterRewriteUsage = await worker.evaluate(async () => (await chrome.storage.local.get('hbVoice.usage.v1'))['hbVoice.usage.v1']);
+  assert.deepEqual(afterRewriteUsage, usage); assert.equal(await page.evaluate(() => globalThis.sentCount), 0); checks++;
   await page.keyboard.press('Enter'); await page.waitForTimeout(400);
   assert.equal(await page.evaluate(() => globalThis.sentCount), 1); assert.equal((await sessionStore()).session, null); checks++;
   assert.equal(await page.evaluate(() => globalThis.sendClicks), 1); assert.equal(await page.evaluate(() => globalThis.nativeEnterCount), 0); checks++;
   assert.equal(await page.locator('#hizir-voice-host').isVisible(), false); checks++;
+  assert.equal((await sessionStore()).status.canRewrite, false); assert.equal((await rewrite()).ok, false); checks++;
   const closedUntil = Date.now() + 2000;
   while (Date.now() < closedUntil && (await worker.evaluate(() => chrome.runtime.getContexts({contextTypes: ['OFFSCREEN_DOCUMENT']}))).length) await page.waitForTimeout(100);
   assert.equal((await worker.evaluate(() => chrome.runtime.getContexts({contextTypes: ['OFFSCREEN_DOCUMENT']}))).length, 0, 'Enter closes the offscreen microphone context'); checks++;
