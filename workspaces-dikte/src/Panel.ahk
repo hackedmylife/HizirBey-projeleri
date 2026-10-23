@@ -262,7 +262,7 @@ class DikteApp {
         text := this.editor.Value
         if !DikteCore.HasText(text) {
             this.SetStatus("Kopyalanacak metin yok.")
-            if this.PanelHasFocus()
+            if this.PanelHasFocus() && DllCall("GetFocus", "Ptr") != this.editor.Hwnd
                 this.editor.Focus()
             return false
         }
@@ -277,7 +277,7 @@ class DikteApp {
             this.SetStatus("Panoya erişilemedi. Metin burada; yeniden Kopyala'ya bas.")
             return false
         } finally {
-            if this.PanelHasFocus()
+            if this.PanelHasFocus() && DllCall("GetFocus", "Ptr") != this.editor.Hwnd
                 this.editor.Focus()
         }
     }
