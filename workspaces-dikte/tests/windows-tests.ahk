@@ -79,6 +79,24 @@ class DoneFailureProbe extends DikteApp {
     }
 }
 
+class NativeCopyBridgeProbe extends DikteApp {
+    copyRequests := 0
+    RequiresBridge() {
+        return true
+    }
+    SendBridgeRequest() {
+        ; The reply exists only in the remote-looking edit control, not the
+        ; local clipboard. A real Ctrl+C is required to retrieve it.
+        this.replyControl.Value := "HB-DIKTE-2|READY|1234567890abcdef1234567890abcdef|prepared"
+        this.replyControl.Focus()
+        SendEvent("^a")
+    }
+    RequestSignalCopy() {
+        this.copyRequests += 1
+        return super.RequestSignalCopy()
+    }
+}
+
 try {
     Assert(DikteCore.IsWorkspacesProcess("workspaces.exe"), "WorkSpaces process")
     Assert(DikteCore.IsWorkspacesProcess("WorkSpacesClient.EXE"), "WorkSpaces process case")
@@ -293,6 +311,25 @@ try {
     Assert(A_Clipboard = doneFailure.editor.Value, "Post-paste error reply is replaced by actual speech")
     Assert(!doneFailure.pasteIssued && doneFailure.panelOpen, "Unconfirmed paste keeps source visible for inspection")
     doneFailure.Dispose()
+
+    copyFixture := Gui(, "Hizir Bey COPY REPLY TARGET")
+    copyEdit := copyFixture.AddEdit("w450 h90 ReadOnly")
+    copyFixture.Show()
+    Assert(WinWaitActive("ahk_id " copyFixture.Hwnd,, 3), "Copy-reply target is foreground")
+    copyProbe := NativeCopyBridgeProbe(true)
+    copyProbe.testMode := true
+    copyProbe.CaptureTarget(copyFixture.Hwnd)
+    copyProbe.replyControl := copyEdit
+    A_Clipboard := "Konuşma metni; henüz uzaktan onay yok."
+    Assert(copyProbe.RequestBridge(false, 1800), "Real Ctrl+C obtains reply without programmatic clipboard sync")
+    Assert(copyProbe.copyRequests = 1, "Acknowledgement requested by one real copy")
+    Assert(A_Clipboard = "Konuşma metni; henüz uzaktan onay yok.", "Copy transport restores local dictated text")
+    Assert(copyProbe.bridgeSession = "1234567890abcdef1234567890abcdef", "Copy reply establishes exact session")
+    copyProbe.ShowPanel()
+    Assert(!copyProbe.RequestSignalCopy(), "Copy probe refuses a changed foreground")
+    Assert(copyProbe.bridgeError = "focus", "Foreground copy failure is explicit")
+    copyProbe.Dispose()
+    copyFixture.Destroy()
     fixture.Destroy()
 
     app.Dispose()

@@ -3,19 +3,35 @@
   const PREFIX = 'HB-DIKTE-2';
   let session = null;
   let preparing = false;
+  let reply = null;
+  function clearReply(current) {
+    if (reply !== current) return;
+    const restore = document.activeElement === current.field;
+    current.field.remove(); reply = null;
+    if (restore && current.previous?.isConnected) current.previous.focus({preventScroll: true});
+  }
   async function copySignal(kind, id, detail) {
     const signal = `${PREFIX}|${kind}|${id}|${detail}`;
-    try { await navigator.clipboard.writeText(signal); }
-    catch {
-      // Extension clipboardWrite permission also permits the legacy copy path.
-      const field = document.createElement('textarea');
-      field.value = signal; field.style.cssText = 'position:fixed;left:-10000px;top:0';
-      document.body.append(field); field.select();
-      const copied = document.execCommand('copy'); field.remove();
-      if (!copied) throw new Error('clipboard');
-      if (session) session.binding.editor.focus({preventScroll: true});
-    }
+    if (reply) clearReply(reply);
+    const field = document.createElement('textarea');
+    field.dataset.hbDikteReply = ''; field.readOnly = true; field.tabIndex = -1;
+    field.setAttribute('aria-hidden', 'true');
+    field.value = signal;
+    field.style.cssText = 'position:fixed;left:-10000px;top:0;width:1px;height:1px;opacity:0';
+    const current = {field, signal, previous: document.activeElement, expires: Date.now() + 10000};
+    reply = current;
+    document.body.append(field); field.focus({preventScroll: true}); field.select();
+    // Do not write the remote clipboard programmatically: the local client
+    // explicitly presses Ctrl+C, which also triggers the remote clipboard path.
+    setTimeout(() => clearReply(current), 10000);
   }
+  window.addEventListener('copy', event => {
+    const current = reply;
+    if (!event.isTrusted || !current || document.activeElement !== current.field) return;
+    event.preventDefault(); event.stopImmediatePropagation();
+    if (Date.now() <= current.expires) event.clipboardData?.setData('text/plain', current.signal);
+    queueMicrotask(() => clearReply(current));
+  }, true);
   async function signalError(error) {
     const allowed = new Set(['editor', 'identity', 'note', 'changed', 'edited', 'focus', 'verify', 'text', 'clipboard', 'expired', 'protocol']);
     const code = allowed.has(error.message) ? error.message : 'editor';

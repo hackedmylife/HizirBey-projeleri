@@ -26,11 +26,19 @@ async function pageFor(html = fixture, route = '/chats/DEMOCHAT01') {
   for (const script of source) await page.addScriptTag({content: script});
   return page;
 }
-async function prepare(page, reset = false) { return page.evaluate(reset => globalThis.prepare(reset), reset); }
+async function collectReply(page) {
+  if (await page.locator('[data-hb-dikte-reply]').count()) await page.keyboard.press('Control+C');
+}
+async function prepare(page, reset = false) {
+  const result = await page.evaluate(reset => globalThis.prepare(reset), reset);
+  await collectReply(page);
+  return result;
+}
 async function paste(page, text) {
   await page.evaluate(t => navigator.clipboard.writeText(t), text);
   await page.keyboard.press('Control+V');
   await page.waitForTimeout(130);
+  await collectReply(page);
 }
 async function signal(page) { return page.evaluate(() => navigator.clipboard.readText()); }
 try {
@@ -169,6 +177,43 @@ try {
   await ordinary.locator('#editor').focus();
   await paste(ordinary, 'Normal elle yapıştırma çalışır.');
   assert.equal((await ordinary.locator('#editor').innerText()).trim(), 'Normal elle yapıştırma çalışır.'); checks++;
+
+  // Transport regression: programmatic clipboard writes do not cross the
+  // simulated boundary. Replies must wait for a real Ctrl+C copy event.
+  const copyTransport = await pageFor(routeOnlyFixture, '/chats/DEMOCHAT01/DEMOTHREAD01');
+  await copyTransport.evaluate(async () => {
+    await navigator.clipboard.writeText('Yerel panonun önceki içeriği.');
+    globalThis.originalWrite = navigator.clipboard.writeText.bind(navigator.clipboard);
+    navigator.clipboard.writeText = () => { throw new Error('Programmatic clipboard transport unavailable'); };
+  });
+  assert.equal((await copyTransport.evaluate(() => globalThis.prepare(false))).phase, 'prepared'); checks++;
+  assert.equal(await signal(copyTransport), 'Yerel panonun önceki içeriği.'); checks++;
+  assert.equal(await copyTransport.locator('[data-hb-dikte-reply]').count(), 1); checks++;
+  assert.equal(await copyTransport.locator('[data-hb-dikte-reply]').evaluate(e => e.readOnly), true); checks++;
+  await copyTransport.keyboard.press('Control+C');
+  assert.match(await signal(copyTransport), /^HB-DIKTE-2\|READY\|[a-f0-9]{32}\|prepared$/); checks++;
+  assert.equal(await copyTransport.locator('[data-hb-dikte-reply]').count(), 0); checks++;
+  assert.equal(await copyTransport.evaluate(() => document.activeElement.id), 'editor'); checks++;
+  assert.equal((await copyTransport.locator('#editor').innerText()).trim(), ''); checks++;
+  await copyTransport.evaluate(() => { navigator.clipboard.writeText = globalThis.originalWrite; });
+  await prepare(copyTransport);
+  await paste(copyTransport, 'Gerçek kopyalama onayıyla aktarım.');
+  assert.equal((await copyTransport.locator('#editor').innerText()).trim(), 'Gerçek kopyalama onayıyla aktarım.'); checks++;
+  assert.match(await signal(copyTransport), /\|DONE\|.*\|inserted$/); checks++;
+  assert.equal(await copyTransport.locator('[data-hb-dikte-reply]').count(), 0); checks++;
+  assert.equal(await copyTransport.evaluate(() => document.activeElement.id), 'editor'); checks++;
+  await copyTransport.locator('#editor').fill('Kullanıcının kendi kopyaladığı metin.');
+  await copyTransport.keyboard.press('Control+A'); await copyTransport.keyboard.press('Control+C');
+  assert.equal(await signal(copyTransport), 'Kullanıcının kendi kopyaladığı metin.'); checks++;
+  assert.equal(await copyTransport.evaluate(() => sent), 0); checks++;
+
+  const expiredReply = await pageFor();
+  await expiredReply.evaluate(() => globalThis.prepare(false));
+  await expiredReply.evaluate(() => { const now = Date.now(); Date.now = () => now + 11000; });
+  await expiredReply.keyboard.press('Control+C');
+  assert.equal(await expiredReply.locator('[data-hb-dikte-reply]').count(), 0); checks++;
+  assert.doesNotMatch(await signal(expiredReply), /^HB-DIKTE-/); checks++;
+  assert.equal((await expiredReply.locator('#editor').innerText()).trim(), ''); checks++;
   assert.deepEqual(errors, []); checks++;
   console.log(`${checks} Chromium bridge checks passed. No message was submitted.`);
 } finally { await browser.close(); }

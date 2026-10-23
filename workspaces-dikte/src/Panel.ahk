@@ -17,13 +17,13 @@ class DikteApp {
         this.bridgeSession := ""
         this.bridgePhase := ""
         this.bridgeError := ""
-        this.bridgeTimeout := testing ? 150 : 6000
+        this.bridgeTimeout := testing ? 150 : 8000
         this.dockTarget := -1
         this.customPosition := false
         this.settingsPath := settingsPath != "" ? settingsPath : (testing ? "" : EnvGet("LOCALAPPDATA") "\HizirBey\WorkSpacesDikte\panel.ini")
         this.LoadPosition()
 
-        this.window := Gui("+AlwaysOnTop -Caption +ToolWindow +Border -DPIScale", "Hızır Bey · WorkSpaces Dikte 0.2.2")
+        this.window := Gui("+AlwaysOnTop -Caption +ToolWindow +Border -DPIScale", "Hızır Bey · WorkSpaces Dikte 0.2.3")
         this.window.BackColor := "F3F5FA"
         this.window.SetFont("s8 w400 c3451B2", "Segoe UI")
         this.dragHandle := this.window.AddText("x6 y4 w54 h23 Center Border +0x100 BackgroundE2E8FA", "↔ Taşı")
@@ -472,21 +472,40 @@ class DikteApp {
         SendEvent("^+y")
     }
 
+    RequestSignalCopy() {
+        if !this.TargetExists() || !WinActive("ahk_id " this.target) || !this.ModifiersReleased() {
+            this.bridgeError := "focus"
+            return false
+        }
+        SendLevel(0)
+        SendEvent("^c")
+        return true
+    }
+
     BridgeProblem() {
         messages := Map(
             "identity", "Görüşme tanınamadı. Chrome köprüsünü güncelle ve LiveChat'i yenile.",
             "protocol", "LiveChat'teki eski HB-DIKTE hata yazısını silip yeniden dene.",
             "note", "LiveChat'te Mesaj modunu seç. Metnin burada ve panoda.",
             "changed", "Görüşme değişti. Doğru sohbeti seçip köprü simgesinden yeniden bağlan.",
-            "edited", "LiveChat taslağı değişti. Metnin burada ve panoda; alanı kontrol et.")
+            "edited", "LiveChat taslağı değişti. Metnin burada ve panoda; alanı kontrol et.",
+            "focus", "WorkSpaces odağı değişti. Metnin burada; doğru pencereye dönüp dene.",
+            "timeout", "Pano dönüşü gelmedi. WorkSpaces'ten kendi bilgisayarına kopyalamayı kontrol et.",
+            "phase", "Köprü sürümünü 0.2.3'e güncelle, LiveChat'i yenile ve tekrar dene.")
         return messages.Has(this.bridgeError) ? messages[this.bridgeError] : "Köprü doğrulanamadı. Metnin panoda; Chrome köprüsünü ve sayfayı kontrol et."
     }
 
     WaitBridge(kind, expectedId := "", arm := false, timeoutMs := 0) {
         started := A_TickCount
         limit := timeoutMs > 0 ? timeoutMs : this.bridgeTimeout
+        nextCopy := started + 300
         while A_TickCount - started < limit {
             Sleep(60)
+            if this.RequiresBridge() && A_TickCount >= nextCopy {
+                if !this.RequestSignalCopy()
+                    return false
+                nextCopy := A_TickCount + 600
+            }
             try signal := DikteCore.BridgeSignal(A_Clipboard)
             catch
                 continue
@@ -503,13 +522,16 @@ class DikteApp {
             if signal.kind != kind
                 continue
             if kind = "READY" {
-                if !InStr("|prepared|armed|", "|" signal.detail "|") || (arm && signal.detail != "armed")
+                if !InStr("|prepared|armed|", "|" signal.detail "|") || (arm && signal.detail != "armed") {
+                    this.bridgeError := "phase"
                     return false
+                }
                 this.bridgeSession := signal.id
                 this.bridgePhase := signal.detail
             }
             return true
         }
+        this.bridgeError := "timeout"
         return false
     }
 

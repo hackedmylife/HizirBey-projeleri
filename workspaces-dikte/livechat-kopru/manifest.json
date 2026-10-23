@@ -1,10 +1,10 @@
 {
   "manifest_version": 3,
   "name": "Hızır Bey · LiveChat Aktarım Köprüsü",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Yerel Hızır Bey kutusunda tamamlanan metni seçili LiveChat yazı alanına aktarır. Mesaj göndermez; mikrofon kullanmaz.",
   "minimum_chrome_version": "120",
-  "permissions": ["activeTab", "clipboardWrite"],
+  "permissions": ["activeTab"],
   "host_permissions": ["https://my.livechatinc.com/*", "https://my.livechat.com/*"],
   "background": {"service_worker": "background.js"},
   "action": {"default_title": "Aktarım oturumunu sıfırla / bu LiveChat görüşmesine bağlan"},
