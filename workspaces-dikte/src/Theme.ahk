@@ -7,6 +7,7 @@ class DikteTheme {
         this.width := 930
         this.height := 100
         this.draws := 0
+        this.logoReady := false
         this.titleFont := this.MakeFont(14, 600)
         this.hintFont := this.MakeFont(10, 400)
         this.drawCallback := ObjBindMethod(this, "DrawButton")
@@ -19,6 +20,7 @@ class DikteTheme {
         OnMessage(0x200, this.mouseCallback)
         OnMessage(0x2A3, this.leaveCallback)
         OnMessage(0x20, this.cursorCallback)
+        this.PrepareLogo()
         ; AutoHotkey normalizes Button type bits at creation. Apply owner draw
         ; after creation, preserving the native Button control and click events.
         for button in [app.toggleButton, app.copyButton, app.closeButton] {
@@ -31,6 +33,41 @@ class DikteTheme {
     MakeFont(size, weight) {
         return DllCall("gdi32\CreateFontW", "Int", -size, "Int", 0, "Int", 0, "Int", 0, "Int", weight,
             "UInt", 0, "UInt", 0, "UInt", 0, "UInt", 1, "UInt", 0, "UInt", 0, "UInt", 5, "UInt", 0, "WStr", "Segoe UI", "Ptr")
+    }
+
+    PrepareLogo() {
+        ; Scale the existing brand asset with GDI+ rather than the legacy
+        ; Picture control stretch mode. The PNG itself is not modified.
+        input := Buffer(24, 0), token := 0
+        NumPut("UInt", 1, input)
+        if DllCall("gdiplus\GdiplusStartup", "UPtr*", &token, "Ptr", input, "Ptr", 0)
+            return
+        image := 0, bitmap := 0, graphics := 0, handle := 0
+        try {
+            if DllCall("gdiplus\GdipLoadImageFromFile", "WStr", this.app.assetDir "\logo.png", "Ptr*", &image)
+                return
+            if DllCall("gdiplus\GdipCreateBitmapFromScan0", "Int", 56, "Int", 51, "Int", 0, "Int", 0x26200A, "Ptr", 0, "Ptr*", &bitmap)
+                return
+            if DllCall("gdiplus\GdipGetImageGraphicsContext", "Ptr", bitmap, "Ptr*", &graphics)
+                return
+            DllCall("gdiplus\GdipGraphicsClear", "Ptr", graphics, "UInt", 0xFF101217)
+            DllCall("gdiplus\GdipSetInterpolationMode", "Ptr", graphics, "Int", 7)
+            DllCall("gdiplus\GdipSetPixelOffsetMode", "Ptr", graphics, "Int", 4)
+            if DllCall("gdiplus\GdipDrawImageRectI", "Ptr", graphics, "Ptr", image, "Int", 0, "Int", 0, "Int", 56, "Int", 51)
+                return
+            if DllCall("gdiplus\GdipCreateHBITMAPFromBitmap", "Ptr", bitmap, "Ptr*", &handle, "UInt", 0xFF101217)
+                return
+            this.app.logo.Value := "HBITMAP:" handle
+            this.logoReady := true
+        } finally {
+            if graphics
+                DllCall("gdiplus\GdipDeleteGraphics", "Ptr", graphics)
+            if bitmap
+                DllCall("gdiplus\GdipDisposeImage", "Ptr", bitmap)
+            if image
+                DllCall("gdiplus\GdipDisposeImage", "Ptr", image)
+            DllCall("gdiplus\GdiplusShutdown", "UPtr", token)
+        }
     }
 
     Color(rgb) {

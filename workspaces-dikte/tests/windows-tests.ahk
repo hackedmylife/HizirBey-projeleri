@@ -188,6 +188,7 @@ RunSuite() {
         App.window.Show("w930 h100 x10 y50")
         Sleep(150)
         Assert(App.theme.draws > 0, "Native buttons actually use custom drawing")
+        Assert(App.theme.logoReady, "Brand asset uses high-quality native scaling")
         for button in [App.toggleButton, App.copyButton, App.closeButton]
             Assert((DllCall("user32\GetWindowLongPtrW", "Ptr", button.Hwnd, "Int", -16, "Ptr") & 0xF) = 0xB, "Premium button style survives interaction")
         SplitPath(LogFile,, &logDir)
