@@ -1,27 +1,27 @@
-# Doğrulama — 0.2.2
+# Doğrulama — 0.2.3
 
-23 Ekim 2026. LiveChat'e düşen `HB-DIKTE-2|ERROR|…|identity` konuşma tanıma çıktısı değil, köprünün kontrol yanıtıydı. Önceki kod görüşme kimliğini yalnız sayfadaki belirli DOM niteliklerinden arıyor, bu nitelikler bulunmayınca başarısız oluyordu. Kontrol yanıtları başarısız yoklama sonrasında panoda kalabiliyor, köprü oturumu yokken yapılan yapıştırma da bunları engellemiyordu. Görsel tek başına bu yapıştırmayı hangi tuş veya ara katmanın tetiklediğini kanıtlamaz.
+23 Ekim 2026. Kullanıcı ekranında Chrome köprüsü OK gösterirken yerel araç köprüyü doğrulayamadı. Bu, Chrome alan hazırlığı ile yerel pano onayının ayrı aşamalar olduğunu gösterir; ekran görüntüsü tek başına gecikmeyi veya yön kısıtlamasını kanıtlamaz.
 
-**97 Windows kontrolü ve 95 Chromium kontrolü geçti.**
+Önceki köprü kontrol yanıtını navigator.clipboard.writeText / execCommand copy yoluyla uzak panoya yazıyordu. Yerel araç bu yazımın kendi panosuna kendiliğinden gelmesini bekliyordu. Yeni köprü onayı geçici, salt okunur bir alanda hazırlar; yerel araç aynı WorkSpaces penceresi odaktayken Ctrl+C ile onayı ister. Gerçek kopyalama olayından sonra geçici alan kaldırılır ve odak geri döner. Alan kullanılmazsa 10 saniyede kaldırılır. Köprü artık clipboardRead veya clipboardWrite izni kullanmaz; arka planda pano API'sine yazmaz.
+
+**104 Windows kontrolü ve 112 Chromium kontrolü geçti.**
 
 Yeni regresyon kapsamı:
 
-- Sayfada `chat-feed` veya `data-chat-id` bulunmayan düzende, `/chats/<görüşme>/<konu>` adresi ve tek görünür mesaj kutusuyla bağlanma ve Türkçe metin ekleme.
-- Aynı kutu yerinde kalırken görüşme veya konu adresinin değişmesi ve kutunun başka bir DOM öğesiyle değiştirilmesi durumunda aktarımı durdurma.
-- Sohbet adresi ve DOM kimliği birlikte bulunmadığında aktarımı reddetme; mevcut taslak ve iç not kontrollerini koruma.
-- Köprü oturumu yokken, kimlik hatasından sonra, hazırlıkta, aktarım açıkken, tamamlandıktan ve ekleme hatasından sonra ERROR / READY / DONE / WAIT kontrol metinlerini gerçek Ctrl+V olayında engelleme. Bozuk kimlikli ve gelecekteki protokol sürümü önekleri de engellendi. LiveChat'i taklit eden sayfanın yapıştırma işleyicisi bu kodları almadı.
-- Önceki sürümden kalmış hata kodu zaten taslaktaysa sonuna konuşma eklemeyi reddetme; normal elle yapıştırmayı koruma.
-- Yerel Windows panosunda kimlik hatası, başarı onayı, zaman aşımı ve kısayol istisnasından sonra önceki Unicode içeriğini geri getirme. Boş pano ve önceden kalmış kontrol kodu temizliği; kullanıcı o sırada başka metin kopyaladıysa onu koruma.
-- Bitirme sırasında köprü hatasında asıl konuşma metnini panoda ve panelde koruma; hedef alana hiçbir hata kodu yazmama.
-- Gerçek yerel Ctrl+V sonrasında ekleme onayı hatası simülasyonu: bir kez yapıştırma, ikinci yapıştırma yapmama, ERROR yanıtını panoda asıl konuşmayla değiştirme ve kontrol için paneli açık tutma.
-- Önceki yerel başlangıç, fareyle sürükleme, konumu hatırlama, odak yarışı, Unicode, mevcut taslağa ekleme ve mesaj gönderim sayısının sıfır kalması kontrolleri.
+- Native Windows hedefinde onay yalnız ayrı bir salt okunur Edit alanında tutuldu; yerel panoya programatik onay yazılmadı. Gerçek Ctrl+C onayı getirdi, doğru köprü oturumu bağlandı ve önceki yerel Türkçe pano içeriği geri yüklendi.
+- Yerel panel öne geçince aynı kopyalama isteğinin hedef dışına gönderilmesi reddedildi; odak hatası açıkça kaydedildi.
+- Chromium'da navigator.clipboard.writeText işlevi hata verecek şekilde kapatıldı. Köprü hazırlığı yerel panoyu değiştirmedi. Gerçek Ctrl+C, READY yanıtını getirdi; geçici alan kaldırıldı, odak mesaj kutusuna döndü ve mesaj kutusu boş kaldı.
+- Aynı akışta hazırlık / aktarım / DONE onayı; Türkçe metnin doğru eklenmesi, geçici alanın kaldırılması ve odağın geri dönmesi doğrulandı.
+- Onay kopyalandıktan sonra kullanıcının normal Ctrl+C işlemi kontrol koduyla değiştirilmedi. Süresi dolan geçici onay kopyalanmadı ve alandan temizlendi.
+- Önceki 0.2.2 kapsamındaki hata kodlarını tüm köprü durumlarında engelleme, görüşme / konu / kutu / taslak değişimini reddetme, yerel pano kurtarma, gerçek Ctrl+V sonrası belirsiz onayda ikinci yapıştırma yapmama, yerel başlangıç, gerçek fareyle sürükleme ve kalıcı konum kontrolleri geçti.
+- Tarayıcı testlerinde mesaj gönderim sayısı sıfır kaldı. Gönder düğmesi veya Enter üretilmez.
 
-[Başarılı Windows ve Chromium çalışması](https://github.com/hackedmylife/HizirBey-projeleri/actions/runs/39931458714).
+[Başarılı Windows ve Chromium çalışması](https://github.com/hackedmylife/HizirBey-projeleri/actions/runs/39934811443).
 
-Doğrulanan kaynak commit: `01a2ef4fc3309b21996b7b1eb00136edcbcfb8c3`.
+Doğrulanan kaynak commit: `ca661676e7b15989d8c472db99f7de55a0cc6b48`.
 
-Test ortamı Windows Server 2025 / 10.0.26100 ve yüklü Chrome'dur. Chromium kontrolleri gerçek pano ve güvenilir Ctrl+V olaylarıyla, sentetik LiveChat sayfalarında çalışır; gerçek LiveChat oturumu veya Amazon WorkSpaces bağlantısı değildir. Yerel mikrofon başlangıç testlerinde istekleri sayan test sınıfı kullanılır. Gerçek Windows 11 Win+H mikrofonu ve kurumun tam ekran WorkSpaces pano bağlantısı kullanıcı ortamında tekrar denenmelidir.
+Test ortamı Windows Server 2025 / 10.0.26100 ve yüklü Chrome'dur. Chromium testleri gerçek pano ve klavye olaylarıyla sentetik LiveChat sayfalarında çalışır; native testte ayrı pencere uzak onay alanını taklit eder. Gerçek Amazon WorkSpaces istemcisi, kurumun pano yönlendirmesi ve Windows 11 mikrofon hizmeti bu ortamda çalıştırılmadı. Bu sonuçlar gerçek WorkSpaces bağlantısında başarı garantisi değildir.
 
-Bu güncelleme için yerel programla birlikte **WorkSpaces Chrome köprüsü 0.2.2** kurulmalı, köprü yeniden yüklenmeli ve LiveChat sekmesi yenilenmelidir. Önceki denemeden yazı alanında kalan HB-DIKTE kodu elle silinmelidir. İki yönlü WorkSpaces metin panosu hâlâ gereklidir.
+Yerel program ve WorkSpaces Chrome köprüsü birlikte **0.2.3** yapılmalı, köprü yeniden yüklenmeli ve LiveChat sekmesi yenilenmelidir. HAZ rozeti yalnız uzak alanın hazır olduğunu belirtir. Pano dönüşü gelmezse WorkSpaces'ten yerel bilgisayara normal Ctrl+C / Ctrl+V ayrıca denenmelidir. İki yönlü pano desteği gerekir; araç kurumun yönlendirme politikasını değiştirmez. [AWS pano yönlendirme belgesi](https://docs.aws.amazon.com/workspaces/latest/adminguide/group_policy.html).
 
-Paket yalnız izin listesindeki 18 dosyayı içerir. Resmi AutoHotkey çalışma dosyası SHA-256 ile doğrulanır. Taslak, ses, ekran görüntüsü, panel.ini, token veya API anahtarı pakete eklenmez.
+Paket izin listesindeki 18 dosyayı içerir. Resmi AutoHotkey çalışma dosyası SHA-256 ile doğrulanır. Taslak, ses, ekran görüntüsü, panel.ini, token veya API anahtarı pakete eklenmez.

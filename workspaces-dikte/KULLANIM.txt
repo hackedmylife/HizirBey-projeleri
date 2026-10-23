@@ -1,12 +1,12 @@
-HIZIR BEY WORKSPACES DIKTE 0.2.2
+HIZIR BEY WORKSPACES DIKTE 0.2.3
 
 AKIS: ONCE YEREL KUTU -> BITIR -> LIVECHAT YAZI ALANI.
 Mesaj gonderilmez. Gonderimi sen yaparsin.
 
-0.2.1'DEN GUNCELLEME:
+0.2.2'DEN GUNCELLEME:
 Yerel program VE WorkSpaces Chrome koprusu guncellenmelidir.
 WorkSpaces'te yuklu livechat-kopru klasorunun dosyalarini yenileriyle degistir.
-Chrome chrome://extensions -> kopru kartinda Yenile. Surum 0.2.2 olmali.
+Chrome chrome://extensions -> kopru kartinda Yenile. Surum 0.2.3 olmali.
 LiveChat sekmesini de yenile. Eski HB-DIKTE hata yazisini yazim alanindan sil.
 Sonra yerel bilgisayarinda yeni BASLAT.cmd dosyasini calistir.
 
@@ -34,7 +34,15 @@ Iki yonlu WorkSpaces metin panosu acik olmalidir.
 
 Ayrintili kurulum ve sorun giderme: README.md
 
-0.2.2 DUZELTMELERI:
+0.2.3 DUZELTMELERI:
+Kopru onayi, uygulamanin gonderdigi gercek Ctrl+C ile alinir.
+Programatik pano yaziminin kendiliginden yerel bilgisayara gelmesi beklenmez.
+HAZ rozeti yalniz LiveChat alaninin hazir oldugunu gosterir.
+Pano donusu gelmiyorsa WorkSpaces'ten kendi bilgisayarina normal
+Ctrl+C / Ctrl+V calisip calismadigini kontrol et. Iki yon de gereklidir.
+Yerel program VE Chrome koprusu bu surumle birlikte guncellenmelidir.
+
+0.2.2'DE EKLENENLER:
 LiveChat gorusmesi, sayfada kimlik nitelikleri yoksa gorusme adresiyle taninir.
 HB-DIKTE kontrol kodlari, kopru baglanamasa bile yazim alanina yapistirilmaz.
 Aktarim hatasinda panoda konusma metnin kalir. Mesaj otomatik gonderilmez.

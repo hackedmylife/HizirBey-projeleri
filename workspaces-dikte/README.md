@@ -1,17 +1,21 @@
-# Hızır Bey · WorkSpaces Dikte 0.2.2
+# Hızır Bey · WorkSpaces Dikte 0.2.3
 
 Konuşma önce **kendi bilgisayarındaki yerel kutuya** yazılır. Win+H / Ctrl+Enter ile bitirince tamamlanan metin, WorkSpaces içindeki LiveChat yazı alanına otomatik eklenir. Mesajın gönderilmesi kullanıcıya aittir.
 
-## 0.2.1'den güncelleme
+## 0.2.2'den güncelleme
 
 Bu düzeltmede **yerel programı ve WorkSpaces Chrome köprüsünü birlikte güncelle**. Yalnız BASLAT.cmd ile yeni yerel programı açmak yeterli değildir.
 
 1. Eski yerel programı sağ alttaki simgesinden **Çıkış** ile kapat. Yeni ZIP'i tamamen çıkar ve kendi bilgisayarında **BASLAT.cmd** çalıştır.
-2. WorkSpaces'te kurulu köprünün `livechat-kopru` klasöründeki dosyaları bu paketteki yeni dosyalarla değiştir. Chrome `chrome://extensions` sayfasında **Hızır Bey · LiveChat Aktarım Köprüsü** kartının yenile düğmesine bas. Sürüm **0.2.2** olmalı. İlk kurulumsa aşağıdaki kurulum adımlarını kullan.
+2. WorkSpaces'te kurulu köprünün `livechat-kopru` klasöründeki dosyaları bu paketteki yeni dosyalarla değiştir. Chrome `chrome://extensions` sayfasında **Hızır Bey · LiveChat Aktarım Köprüsü** kartının yenile düğmesine bas. Sürüm **0.2.3** olmalı. İlk kurulumsa aşağıdaki kurulum adımlarını kullan.
 3. LiveChat sekmesini yenile. Yazı alanında önceki denemeden `HB-DIKTE…` yazısı kaldıysa onu bir kez elle sil. **Gönder** düğmesine basma.
 4. Doğru görüşmeyi seçip Win+H ile dene: önce yerel kutu, bitirince LiveChat yazı alanı.
 
-Önceki görseldeki `ERROR … identity`, konuşma tanıma çıktısı değil, köprünün görüşme doğrulama hatasıydı. Bu sürüm, sohbet kimliğini `/chats/<görüşme>/<konu>` adresinden de doğrular. Kontrol kodlarını köprü oturumu olmasa bile yapıştırma aşamasında engeller; yerel araç başarısız yoklama sonrasında eski pano içeriğini, bitirme sırasında ise konuşma metnini korur. Önceki sürümden kalan kontrol kodunun sonuna yeni konuşma eklenmesine izin verilmez; kodun elle silinmesi istenir.
+0.2.3, köprü onayının Chrome'daki programatik pano yazımından kendiliğinden yerel bilgisayara ulaşmasını beklemez. Köprü, geçici ve salt okunur bir onay alanı hazırlar. Yerel araç WorkSpaces'e gerçek **Ctrl+C** göndererek onayı alır; onay alanı kaldırılır ve odak geri döner. Bu hem hazırlık hem de ekleme onayı için kullanılır. Kopyalama yalnız aynı WorkSpaces penceresi odaktayken yapılır. Onay alanı 10 saniye içinde kullanılmazsa kaldırılır; mesaj kutusu bu alandan ayrıdır.
+
+Chrome'daki **HAZ** rozeti yalnız LiveChat alanının hazır olduğunu gösterir. Yerel pano bağlantısının doğrulandığı anlamına gelmez. Onay alınamazsa program bunu **Pano dönüşü gelmedi** olarak belirtir; metni yanlış alana körlemesine yapıştırmaz. Önceki 0.2.2 sürümündeki `OK` rozeti bu ayrımı göstermiyordu. Mevcut ekran görüntüsü, pano dönüşünün gecikmesiyle yönetici tarafından kısıtlanmasını tek başına ayırt etmeye yetmez.
+
+0.2.2'de eklenen görüşme adresiyle kimlik doğrulama, hata kodlarını yapıştırmayı engelleme ve yerel taslağı koruma sürer. Önceki sürümden kalan kontrol kodunun sonuna yeni konuşma eklenmez; kodun elle silinmesi istenir.
 
 ## Bir kez yapılacak kurulum
 
@@ -22,7 +26,7 @@ Bu düzeltmede **yerel programı ve WorkSpaces Chrome köprüsünü birlikte gü
 5. `chrome://extensions/shortcuts` sayfasında köprünün **Ctrl+Shift+Y** kısayoluna sahip olduğunu kontrol et. Kapsamı Chrome'da olsun. Yerel araç bu tuşları otomatik kullanır.
 6. LiveChat sayfasını yenile ve bir görüşme seç.
 
-Paketin doğrudan adresi: https://github.com/hackedmylife/HizirBey-projeleri/raw/refs/heads/main/paketler/Hizir-Bey-WorkSpaces-Dikte-0.2.2.zip
+Paketin doğrudan adresi: https://github.com/hackedmylife/HizirBey-projeleri/raw/refs/heads/main/paketler/Hizir-Bey-WorkSpaces-Dikte-0.2.3.zip
 
 ## Kullanım
 
@@ -44,12 +48,13 @@ Panelin yüksekliği 100 fiziksel pikseldir; ekrandaki normal 930 × 104 piksel 
 - Köprü yazı alanını odaklar, gelen yapıştırmayı aynı alana yönlendirir ve eklenen metni doğruladıktan sonra panodan yerel araca onay verir. Otomatik aktarım için WorkSpaces'in **iki yönlü metin panosu** açık olmalıdır. Dikte başlangıcında köprüye ulaşılamamışsa bitirme sırasında aynı oturuma yeniden bağlanılır; bağlantı ancak o anda ilk kez kurulmuşsa hedefi kontrol edip yeniden **Bitir ve aktar** kullanman istenir. Metin yerel kutuda kalır.
 - Bağlantı veya odak aksarsa taslak silinmez ve otomatik ikinci yapıştırma yapılmaz. **Onay gelmedi** durumunda önce LiveChat'i kontrol et.
 - **Kopyala** tamamlanmış metni düz metin olarak panoya alır; gerektiğinde doğru alana elle Ctrl+V yapabilirsin. **Son metin** önceki dikteyi getirir.
+- **Pano dönüşü gelmedi** devam ederse, WorkSpaces'te Not Defteri'ne örnek bir kelime yazıp seçerek Ctrl+C yap; kendi bilgisayarındaki Not Defteri'ne Ctrl+V ile yapışıp yapışmadığını kontrol et. Bu yönde kopyalama çalışmıyorsa köprü onayı da dönemez. AWS, pano yönünü **Copy and Paste / Copy Only / Paste Only** olarak ayrı ayrı yapılandırmaya izin verir; kurum yöneticisi gerekli yönleri kontrol etmelidir. [AWS pano yönlendirme belgesi](https://docs.aws.amazon.com/workspaces/latest/adminguide/group_policy.html). Araç bu ayarları değiştirmez.
 - Yazı alanı değiştiği için köprü durduysa yerel taslağı koru; LiveChat'te doğru görüşmeyi seçip Chrome'daki köprü simgesine tıklayarak bağlantıyı sıfırla. Devam eden taslağı gerekiyorsa Kopyala ile elle aktar. Yeni dikte için yerel **Temizle**, ardından WorkSpaces'te Win+H kullan.
 - Sağ alttaki simgeden aktarım beklemesi 1 / 2,5 saniye olarak değiştirilebilir. × şeridi gizler; programı kapatmaz.
 
 ## Veri ve gereksinimler
 
-Windows 11 x64, çalışan yerel Win+H ve mikrofon/internet erişimi gerekir. Windows'un sesli yazması Microsoft hizmetine aittir. Bu araç ses kaydı yapmaz, taslağı diske veya başka sunucuya göndermez; API anahtarı, yerel web sunucusu veya ayrı AutoHotkey kurulumu istemez. Taşınabilir resmi AutoHotkey 2.0.30 x64 çalışma dosyası pakettedir. Köprü mikrofon veya pano okuma izni istemez; yalnız kullanıcı tarafından tetiklenen yapıştırma olayındaki metni işler ve aktarım onayı için panoya yazar.
+Windows 11 x64, çalışan yerel Win+H ve mikrofon/internet erişimi gerekir. Windows'un sesli yazması Microsoft hizmetine aittir. Bu araç ses kaydı yapmaz, taslağı diske veya başka sunucuya göndermez; API anahtarı, yerel web sunucusu veya ayrı AutoHotkey kurulumu istemez. Taşınabilir resmi AutoHotkey 2.0.30 x64 çalışma dosyası pakettedir. Köprü mikrofon, pano okuma veya pano yazma izni istemez; yalnız tetiklenen gerçek kopyalama ve yapıştırma olaylarını işler. Onay için genel panoya arka planda yazan bir API kullanmaz.
 
 Yalnız panelin X/Y konumu `%LOCALAPPDATA%\HizirBey\WorkSpacesDikte\panel.ini` içinde saklanır; taslak veya ses bu dosyaya yazılmaz. Taslak ve bir önceki metin uygulama belleğinde tutulur; **Çıkış** ile kapanınca kaybolur. Pano bu akışta kullanıldığı için eski pano içeriği değişir. Kurum eklenti yüklemeyi veya pano aktarımını engelliyorsa bu işlemler kurum yöneticisi tarafından desteklenmelidir. Kurum korumaları aşılmaz.
 
