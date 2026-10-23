@@ -7,6 +7,7 @@ SendLevel(1)
 switch A_Args[1] {
     case "copy": SendEvent("^c")
     case "toggle": SendEvent("#h")
+    case "undo": SendEvent("^z")
     case "click":
         CoordMode("Mouse", "Screen")
         MouseGetPos(&oldX, &oldY)

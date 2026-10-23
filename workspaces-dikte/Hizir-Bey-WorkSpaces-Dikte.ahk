@@ -3,6 +3,7 @@
 #UseHook
 #MaxThreadsPerHotkey 1
 #Include src\Core.ahk
+#Include src\Theme.ahk
 #Include src\Panel.ahk
 
 ; Speech stays in this local edit box. Copy happens only on user request.

@@ -55,6 +55,27 @@ RunSuite() {
         Assert(!DikteCore.IsWorkspacesProcess("chrome.exe"), "Normal Chrome keeps native Win+H")
         Assert(DikteCore.HasText(" ığüşöç "), "Turkish text accepted")
         Assert(!DikteCore.HasText(" `r`n `t"), "Whitespace is not a draft")
+        punctuation := [
+            ["merhaba işleminizi kontrol ediyorum", "Merhaba işleminizi kontrol ediyorum."],
+            ["işleminizi kontrol ediyorum", "İşleminizi kontrol ediyorum."],
+            ["ışık kontrol ediliyor", "Işık kontrol ediliyor."],
+            ["yardımcı olabilir miyim", "Yardımcı olabilir miyim?"],
+            ["bekleyebilir misiniz", "Bekleyebilir misiniz?"],
+            ["Merhaba, kontrol ediyorum!", "Merhaba, kontrol ediyorum!"],
+            ["Bakiye 1.250,50 TL", "Bakiye 1.250,50 TL."],
+            ["İşlem numarası 123456", "İşlem numarası 123456"],
+            ["https://example.com/a?b=c", "https://example.com/a?b=c"],
+            ["ABC123", "ABC123"],
+            ["info@example.com", "info@example.com"],
+            ["bağlantı https://example.com", "Bağlantı https://example.com"],
+            ["  merhaba  `r`n", "  Merhaba.  `r`n"],
+            ["merhaba`r`nkontrol ediyorum", "Merhaba.`r`nKontrol ediyorum."],
+            [" `r`n `t", " `r`n `t"]]
+        for item in punctuation {
+            actual := DikteCore.FinalizeText(item[1])
+            Assert(actual = item[2], "Punctuation, Turkish casing or protected-data case")
+            Assert(DikteCore.FinalizeText(actual) = actual, "Punctuation is idempotent")
+        }
         box := DikteCore.DockBounds(0, 0, 1918, 878)
         Assert(box.w = 930 && box.h = 100, "Original compact strip dimensions retained")
         Assert(DikteCore.DockBounds(-1920, 0, 1920, 1080).x < 0, "Secondary monitor coordinates supported")
@@ -68,14 +89,14 @@ RunSuite() {
         for control in App.window
             if control.Type = "Button"
                 buttons += 1
-        Assert(buttons = 2, "Exactly two visible buttons")
-        Assert(App.toggleButton.Text = "Başlat" && App.copyButton.Text = "Kopyala", "Only start-stop and copy controls")
+        Assert(buttons = 3, "Two large actions plus a window close button")
+        Assert(App.toggleButton.Text = "Başlat" && App.copyButton.Text = "Kopyala" && App.closeButton.Text = "Kapat", "Start-stop, copy and accessible close labels")
         for width in [600, 930, 1080] {
             App.window.Show("w" width " h100")
             Sleep(60)
             App.window.GetClientPos(,, &clientWidth, &clientHeight)
             Assert(clientHeight = 100, "Panel retains 100-pixel height")
-            for control in [App.heading, App.status, App.editor, App.toggleButton, App.copyButton] {
+            for control in [App.logo, App.brandCaption, App.heading, App.status, App.editor, App.toggleButton, App.copyButton, App.closeButton] {
                 control.GetPos(&x, &y, &w, &h)
                 Assert(x >= 0 && y >= 0 && x + w <= clientWidth && y + h <= clientHeight, "Control stays inside supported panel width")
             }
@@ -105,6 +126,11 @@ RunSuite() {
         Assert(A_Clipboard = expected, "Later words do not change copied snapshot automatically")
         Drive("copy")
         Assert(A_Clipboard = App.editor.Value, "Next Ctrl+C copies latest words")
+        App.editor.Value := "yardımcı olabilir miyim"
+        Drive("copy")
+        Assert(A_Clipboard = "Yardımcı olabilir miyim?", "Live copy snapshot gets terminal punctuation")
+        Assert(App.editor.Value = "yardımcı olabilir miyim" && App.voiceRequested, "Live editor remains raw and listening during punctuated copy")
+        App.editor.Value := expected " Yeni kelimeler."
         ClickButton(App, App.copyButton)
         Assert(A_Clipboard = App.editor.Value && App.voiceRequested, "Large copy button works during dictation")
         Assert(DllCall("GetFocus", "Ptr") = App.editor.Hwnd, "Copy button returns focus to writing box")
@@ -140,6 +166,26 @@ RunSuite() {
         Assert(A_Clipboard = "Outside", "Ctrl+C outside panel uses native selected text")
         Assert(App.editor.Value = "Anında kopyalanacak metin.", "External copying leaves local draft intact")
 
+        App.ShowPanel()
+        Drive("toggle")
+        App.editor.Value := "merhaba işleminizi kontrol ediyorum"
+        A_Clipboard := "clipboard must not change on stop"
+        Drive("toggle")
+        Sleep(1100)
+        Assert(App.editor.Value = "Merhaba işleminizi kontrol ediyorum.", "Stopped dictation receives final punctuation after quiet interval")
+        Assert(!App.finalizePending && !App.voiceRequested, "Finalization completes without restarting dictation")
+        Assert(A_Clipboard = "clipboard must not change on stop", "Stop punctuation never copies automatically")
+        Drive("undo")
+        Assert(App.editor.Value = "merhaba işleminizi kontrol ediyorum", "Native Ctrl+Z undoes stopped-text punctuation")
+        App.editor.Value := "Merhaba, işleminizi kontrol ediyorum."
+        App.SetStatus("Hazır · Cümle sonları tamamlandı")
+        App.window.Show("w930 h100 x10 y50")
+        Sleep(150)
+        SplitPath(LogFile,, &logDir)
+        preview := logDir "\dikte-preview.png"
+        capture := Format('powershell.exe -NoProfile -ExecutionPolicy Bypass -File "{1}" -WindowHandle {2} -Output "{3}"', A_ScriptDir "\capture.ps1", App.window.Hwnd, preview)
+        Assert(RunWait(capture,, "Hide") = 0 && FileExist(preview), "Native premium panel preview rendered")
+
         configDir := A_Temp "\Hizir-Dikte-Local-Test-" A_TickCount
         configFile := configDir "\panel.ini"
         App.settingsPath := configFile
@@ -154,7 +200,7 @@ RunSuite() {
         Assert(Abs(movedX - oldX - 60) <= 4 && Abs(movedY - oldY - 35) <= 4, "Header still moves the panel by mouse")
         Assert(FileExist(configFile) && App.customPosition, "Moved position saved")
         Assert(Integer(IniRead(configFile, "Panel", "X")) = movedX && Integer(IniRead(configFile, "Panel", "Y")) = movedY, "INI position matches actual window")
-        Assert(!InStr(FileRead(configFile), "Anında"), "Only coordinates are written to settings")
+        Assert(!InStr(FileRead(configFile), "Merhaba"), "Only coordinates are written to settings")
         restored := DikteApp(true, configFile)
         restored.ShowPanel()
         WinGetPos(&rx, &ry,,, "ahk_id " restored.window.Hwnd)
@@ -164,6 +210,29 @@ RunSuite() {
         Assert(!restored.customPosition && restored.editor.Value != "", "Reset position retains draft")
         restored.Dispose()
         try DirDelete(configDir, true)
+        ; A separate real app process must terminate, then open normally again.
+        launch := Format('"{1}" /ErrorStdOut "{2}"', A_AhkPath, A_ScriptDir "\..\Hizir-Bey-WorkSpaces-Dikte.ahk")
+        Run(launch,, "Hide", &childPid)
+        childWindow := WinWait("Hızır Bey · Yerel Dikte 0.4.0 ahk_pid " childPid,, 4)
+        Assert(childWindow != 0, "Real app opens for close lifecycle test")
+        closeHwnd := 0
+        for control in WinGetControlsHwnd("ahk_id " childWindow)
+            if ControlGetText(control) = "Kapat"
+                closeHwnd := control
+        Assert(closeHwnd != 0, "Real app exposes top-right close button")
+        WinActivate("ahk_id " childWindow)
+        WinGetClientPos(&childX, &childY,,, "ahk_id " childWindow)
+        ControlGetPos(&cx, &cy, &cw, &ch, closeHwnd)
+        Drive("click", childX + cx + cw / 2, childY + cy + ch / 2)
+        ProcessWaitClose(childPid, 3)
+        Assert(!ProcessExist(childPid), "X terminates its own AutoHotkey process")
+        Assert(!WinExist("ahk_id " childWindow), "X removes the native window")
+        Run(launch,, "Hide", &reopenedPid)
+        reopened := WinWait("Hızır Bey · Yerel Dikte 0.4.0 ahk_pid " reopenedPid,, 4)
+        Assert(reopened != 0 && ProcessExist(reopenedPid), "Same application can be reopened after X")
+        WinClose("ahk_id " reopened)
+        ProcessWaitClose(reopenedPid, 3)
+        Assert(!ProcessExist(reopenedPid), "Native close request also terminates process")
         App.Dispose()
         receiver.Destroy()
         Results .= "`n" Passed " checks passed. Actual Windows 11 microphone recognition requires a user session.`n"

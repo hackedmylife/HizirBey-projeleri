@@ -9,30 +9,42 @@ class DikteApp {
         this.positioned := false
         this.customPosition := false
         this.lastCopiedText := ""
+        this.finalizePending := false
+        this.changedAt := A_TickCount
+        this.finalizeCallback := ObjBindMethod(this, "FinalizeStoppedText")
         this.settingsPath := settingsPath != "" ? settingsPath : (testing ? "" : EnvGet("LOCALAPPDATA") "\HizirBey\WorkSpacesDikte\panel.ini")
         this.LoadPosition()
 
-        this.window := Gui("+AlwaysOnTop -Caption +ToolWindow +Border -DPIScale", "Hızır Bey · Yerel Dikte 0.3.0")
-        this.window.BackColor := "F3F5FA"
-        this.window.SetFont("s10 w700 c27375C", "Segoe UI")
-        this.heading := this.window.AddText("x10 y6 w130 h22 +0x100", "HIZIR BEY  ↔")
-        this.window.SetFont("s8 w400 c3451B2", "Segoe UI")
-        this.status := this.window.AddText("x148 y9 w400 h18 +0x100", "Hazır · Win+H: başlat/durdur · Ctrl+C: kopyala")
-        this.window.SetFont("s11 c18233A", "Segoe UI")
-        this.editor := this.window.AddEdit("x10 y32 w570 h58 Multi WantTab -WantReturn BackgroundFFFFFF")
-        this.window.SetFont("s14 w600 c18233A", "Segoe UI")
-        this.toggleButton := this.window.AddButton("x600 y8 w160 h40 -TabStop", "Başlat")
+        this.window := Gui("+AlwaysOnTop -Caption +ToolWindow -Border -DPIScale", "Hızır Bey · Yerel Dikte 0.4.0")
+        this.window.BackColor := "101217"
+        this.logo := this.window.AddPicture("x10 y12 w56 h-1 +0x100", A_ScriptDir "\assets\logo.png")
+        this.window.SetFont("s7 w500 c9AA4B5", "Segoe UI")
+        this.brandCaption := this.window.AddText("x9 y73 w56 h14 Center +0x100", "SES → YAZI")
+        this.window.SetFont("s9 w600 cD7BA76", "Segoe UI")
+        this.heading := this.window.AddText("x86 y9 w130 h20 +0x100", "YEREL DİKTE  ↔")
+        this.window.SetFont("s8 w400 cACB4C3", "Segoe UI")
+        this.status := this.window.AddText("x230 y11 w400 h17 +0x100", "Hazır · Win+H / Ctrl+C")
+        this.window.SetFont("s11 w400 cF4F2EC", "Segoe UI")
+        this.editor := this.window.AddEdit("x90 y40 w570 h44 Multi WantTab -WantReturn -Border -E0x200 -VScroll Background181B22")
+        SendMessage(0xD3, 3, 0, this.editor.Hwnd)
+        this.editor.OnEvent("Change", ObjBindMethod(this, "TextChanged"))
+        this.window.SetFont("s11 w600 c17191E", "Segoe UI")
+        this.toggleButton := this.window.AddButton("x600 y8 w160 h40 -TabStop -Theme +0xB", "Başlat")
         this.toggleButton.OnEvent("Click", (*) => this.Toggle())
-        this.copyButton := this.window.AddButton("x600 y52 w160 h40 -TabStop", "Kopyala")
+        this.copyButton := this.window.AddButton("x600 y52 w160 h40 -TabStop -Theme +0xB", "Kopyala")
         this.copyButton.OnEvent("Click", (*) => this.CopyOnly())
+        this.closeButton := this.window.AddButton("x900 y8 w24 h24 -TabStop -Theme +0xB", "Kapat")
+        this.closeButton.OnEvent("Click", (*) => this.Quit())
+        this.theme := DikteTheme(this)
         this.window.OnEvent("Size", ObjBindMethod(this, "Resize"))
-        this.window.OnEvent("Close", (*) => this.HidePanel())
+        this.window.OnEvent("Close", (*) => this.Quit())
         this.window.OnEvent("Escape", (*) => this.MarkStopped())
         this.dragCallback := ObjBindMethod(this, "DragPanel")
         this.moveCallback := ObjBindMethod(this, "MovedPanel")
         OnMessage(0x0201, this.dragCallback)
         OnMessage(0x0232, this.moveCallback)
         if !testing {
+            TraySetIcon(A_ScriptDir "\assets\hizirbey.ico")
             A_IconTip := "Hızır Bey · Yerel Dikte | Win+H · Ctrl+C"
             A_TrayMenu.Delete()
             A_TrayMenu.Add("Paneli aç", (*) => this.ShowPanel())
@@ -52,19 +64,23 @@ class DikteApp {
 
     SetStatus(message) {
         this.status.Text := message
+        this.status.SetFont(this.voiceRequested ? "c9CD5B3" : "cACB4C3")
+        this.theme.Refresh()
     }
 
     Resize(guiObj, minMax, width, height) {
         if minMax = -1
             return
-        this.status.Move(,, Max(120, width - 330))
-        this.editor.Move(,, width - 190, 58)
-        this.toggleButton.Move(width - 170, 8, 160, 40)
-        this.copyButton.Move(width - 170, 52, 160, 40)
+        this.status.Move(,, Max(120, width - 442))
+        this.editor.Move(,, width - 312, 44)
+        this.toggleButton.Move(width - 202, 8, 160, 40)
+        this.copyButton.Move(width - 202, 52, 160, 40)
+        this.closeButton.Move(width - 30, 8, 24, 24)
+        this.theme.Resize(width, height)
     }
 
     DragPanel(wParam, lParam, msg, hwnd) {
-        if hwnd = this.heading.Hwnd || hwnd = this.status.Hwnd || hwnd = this.window.Hwnd {
+        if hwnd = this.heading.Hwnd || hwnd = this.status.Hwnd || hwnd = this.window.Hwnd || hwnd = this.logo.Hwnd || hwnd = this.brandCaption.Hwnd {
             DllCall("ReleaseCapture")
             PostMessage(0xA1, 2,,, "ahk_id " this.window.Hwnd)
             return 0
@@ -123,6 +139,8 @@ class DikteApp {
     }
 
     Dispose() {
+        SetTimer(this.finalizeCallback, 0)
+        this.theme.Dispose()
         OnMessage(0x0201, this.dragCallback, 0)
         OnMessage(0x0232, this.moveCallback, 0)
         if this.HasOwnProp("watchTimer")
@@ -211,6 +229,8 @@ class DikteApp {
             return
         this.busy := true
         try {
+            this.finalizePending := false
+            SetTimer(this.finalizeCallback, 0)
             this.ShowPanel()
             if !this.WaitReleased()
                 return
@@ -226,7 +246,7 @@ class DikteApp {
             this.RequestNativeVoice()
             this.voiceRequested := true
             this.toggleButton.Text := "Durdur"
-            this.SetStatus("Windows'ta Dinleniyor yazınca konuş · Ctrl+C: kopyala")
+            this.SetStatus("Dikte açık · Ctrl+C: kopyala")
         } finally {
             this.busy := false
         }
@@ -242,10 +262,48 @@ class DikteApp {
         SendEvent("{Escape}")
     }
 
+    TextChanged(*) {
+        this.changedAt := A_TickCount
+    }
+
     MarkStopped() {
+        wasListening := this.voiceRequested
         this.voiceRequested := false
         this.toggleButton.Text := "Başlat"
-        this.SetStatus("Durduruldu · Metin kutuda bekliyor · Ctrl+C: kopyala")
+        if wasListening {
+            this.finalizePending := true
+            this.stoppedAt := A_TickCount
+            SetTimer(this.finalizeCallback, -120)
+        }
+        this.SetStatus("Durduruldu · Metin burada")
+    }
+
+    FinalizeStoppedText() {
+        if !this.finalizePending || this.voiceRequested
+            return
+        if A_TickCount - this.stoppedAt < 700 || A_TickCount - this.changedAt < 450 {
+            if A_TickCount - this.stoppedAt < 4000
+                SetTimer(this.finalizeCallback, -120)
+            else
+                this.finalizePending := false
+            return
+        }
+        this.finalizePending := false
+        raw := this.editor.Value
+        text := DikteCore.FinalizeText(raw)
+        if text != raw {
+            start := Buffer(4, 0), finish := Buffer(4, 0)
+            SendMessage(0xB0, start.Ptr, finish.Ptr, this.editor.Hwnd)
+            left := NumGet(start, 0, "UInt"), right := NumGet(finish, 0, "UInt")
+            if left = right && right = StrLen(raw)
+                left := StrLen(text), right := left
+            SendMessage(0xB1, 0, -1, this.editor.Hwnd)
+            SendMessage(0xC2, 1, StrPtr(text), this.editor.Hwnd)
+            SendMessage(0xB1, left, right, this.editor.Hwnd)
+            if this.lastCopiedText = raw
+                this.lastCopiedText := text
+        }
+        this.SetStatus("Hazır · Cümle sonları tamamlandı")
     }
 
     StopVoice() {
@@ -268,7 +326,8 @@ class DikteApp {
 
     CopyOnly() {
         ; Snapshot immediately; no stop, wait for silence, or selection change.
-        text := this.editor.Value
+        raw := this.editor.Value
+        text := DikteCore.FinalizeText(raw)
         if !DikteCore.HasText(text) {
             this.SetStatus("Kopyalanacak metin yok.")
             if this.PanelHasFocus() && DllCall("GetFocus", "Ptr") != this.editor.Hwnd
@@ -279,8 +338,8 @@ class DikteApp {
             A_Clipboard := text
             if !ClipWait(1) || A_Clipboard != text
                 throw Error("clipboard")
-            this.lastCopiedText := text
-            this.SetStatus(this.voiceRequested ? "Kopyalandı · Dikte devam ediyor." : "Kopyalandı · Metin burada bekliyor.")
+            this.lastCopiedText := raw
+            this.SetStatus(this.voiceRequested ? "Kopyalandı · Dikte sürüyor" : "Kopyalandı · Metin burada")
             return true
         } catch {
             this.SetStatus("Panoya erişilemedi. Metin burada; yeniden Kopyala'ya bas.")
@@ -289,15 +348,6 @@ class DikteApp {
             if this.PanelHasFocus() && DllCall("GetFocus", "Ptr") != this.editor.Hwnd
                 this.FocusEditor()
         }
-    }
-
-    HidePanel() {
-        if this.busy
-            return
-        if this.voiceRequested
-            this.StopVoice()
-        this.window.Hide()
-        this.panelOpen := false
     }
 
     WatchForeground() {
@@ -317,10 +367,14 @@ class DikteApp {
     }
 
     Quit() {
-        if DikteCore.HasText(this.editor.Value) && this.editor.Value != this.lastCopiedText
-            && MsgBox("Kopyalanmamış metin var. Yine de çıkılsın mı?", "Hızır Bey", "YesNo Icon?") != "Yes"
-            return
-        ExitApp()
+        ; Close this application, including its keyboard hook and tray process.
+        ; Never terminate AutoHotkey by process name: other macros may use it.
+        if this.voiceRequested {
+            try this.FocusEditor()
+            try this.RequestNativeStop()
+        }
+        try this.Dispose()
+        ExitApp(0)
     }
 
     OnFailure(err, mode) {

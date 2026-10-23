@@ -7,7 +7,7 @@ import zipfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.3.0"
+VERSION = "0.4.0"
 RUNTIME_SHA256 = "2eab99848ebc07f8ab0cc448bf69af8c700b2fc7fcd1ff8794df743dcc58da51"
 FILES = [
     "BASLAT.cmd",
@@ -17,10 +17,14 @@ FILES = [
     "TEST-RAPORU.md",
     "src/Core.ahk",
     "src/Panel.ahk",
+    "src/Theme.ahk",
+    "assets/logo.png",
+    "assets/hizirbey.ico",
     "scripts/package.py",
     "tests/windows-tests.ahk",
     "tests/drag-driver.ahk",
     "tests/keys-driver.ahk",
+    "tests/capture.ps1",
     "vendor/AutoHotkey64.exe",
     "vendor/license.txt",
     "vendor/PROVENANCE.txt",
@@ -32,7 +36,7 @@ def validate():
         path = ROOT / relative
         if not path.is_file():
             raise ValueError(f"Missing package file: {relative}")
-        if path.suffix.lower() != ".exe":
+        if path.suffix.lower() not in {".exe", ".png", ".ico"}:
             content = path.read_text(encoding="utf-8-sig")
             if re.search(r"gh[pousr]_[A-Za-z0-9]{30,}|AIza[A-Za-z0-9_-]{30,}|(?m:^-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----$)", content):
                 raise ValueError(f"Credential-like content found: {relative}")

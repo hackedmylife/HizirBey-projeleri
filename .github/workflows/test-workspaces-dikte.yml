@@ -30,6 +30,7 @@ jobs:
           if (-not $p.WaitForExit(45000)) { $p.Kill(); throw 'AHK tests timed out' }
           Get-Content "$env:RUNNER_TEMP/ahk-stdout.txt", "$env:RUNNER_TEMP/ahk-stderr.txt" -ErrorAction SilentlyContinue
           if (Test-Path $result) { Get-Content $result }
+          if (Test-Path "$env:RUNNER_TEMP/dikte-preview.png.b64") { Get-Content "$env:RUNNER_TEMP/dikte-preview.png.b64" }
           if ($p.ExitCode -ne 0 -or -not (Test-Path $result)) { throw 'AHK tests failed' }
       - name: Check actual entry script starts and exits
         shell: pwsh
@@ -48,3 +49,4 @@ jobs:
             ${{ runner.temp }}/workspaces-tests.txt
             ${{ runner.temp }}/ahk-*.txt
             ${{ runner.temp }}/smoke-*.txt
+            ${{ runner.temp }}/dikte-preview.png
