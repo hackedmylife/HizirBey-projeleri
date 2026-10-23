@@ -1,4 +1,4 @@
-HIZIR BEY WORKSPACES DIKTE 0.2.0
+HIZIR BEY WORKSPACES DIKTE 0.2.1
 
 AKIS: ONCE YEREL KUTU -> BITIR -> LIVECHAT YAZI ALANI.
 Mesaj gonderilmez. Gonderimi sen yaparsin.
@@ -26,3 +26,9 @@ Kopru LiveChat'te farkli gorusmeye gecildiginde aktarimi durdurur.
 Iki yonlu WorkSpaces metin panosu acik olmalidir.
 
 Ayrintili kurulum ve sorun giderme: README.md
+
+0.2.1 DUZELTMELERI:
+Bos yerel kutuda Win+H veya Baslat dikteyi baslatir.
+Kopru gecikmesi yerel dikteyi durdurmaz.
+Paneli sol ustteki Taşı tutamacindan surukleyebilirsin.
+Konum yeniden acilista hatirlanir. Sag alttaki simge: Konumu sifirla.

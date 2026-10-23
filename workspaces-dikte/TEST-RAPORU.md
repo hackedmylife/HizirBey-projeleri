@@ -1,18 +1,24 @@
-# Doğrulama — 0.2.0
+# Doğrulama — 0.2.1
 
-23 Ekim 2026. Akış: **yerel metin kutusu → kullanıcı bitirir → LiveChat yazı alanına otomatik aktarım**.
+23 Ekim 2026. Boş yerel kutudan Win+H başlangıcı düzeltildi; açık Taşı tutamacı ve kalıcı konum eklendi.
 
-- **58 Windows kontrolü:** yerel panel açılışı; 100 fiziksel piksel yükseklik; görseldeki alan için 930 piksel genişlik; kontrol sınırları/çakışmama; Türkçe Unicode pano; gerçek yerel alana tek yapıştırma; yapay Enter olmaması; taslak korunması; odak yarışı; kapalı hedef; köprü oturum kimliği, hazır/aktarılabilir durumu ve onay zaman aşımı.
-- **31 gerçek Chromium kontrolü:** yerel dikte sürerken LiveChat alanının değişmemesi; hazırlama ile metin eklemenin ayrılması; tamamlanan metnin yazı alanına eklenmesi; önceki metnin korunması; arama alanına odak kaymışken doğru mesaj alanına yönlendirme; sohbet kimliği değişimi; elle düzenlenmiş taslak; iç not ayrımı; sahte paste olayının reddi; textarea desteği; HTML'nin düz metin kalması; mesaj gönderim sayısının sıfır kalması.
-- Ana AHK başlangıç dosyası ayrıca açılıp hatasız kapandı.
-- JavaScript dosyaları sözdizimi kontrolünden geçti.
-- Resmi AutoHotkey 2.0.30 arşivi ve paketteki x64 çalışma dosyası SHA-256 ile doğrulandı. Çalışma dosyası değiştirilmedi.
-- Paket sabit dosya listesiyle hazırlanır; API anahtarı, token, kullanıcı taslağı, ses kaydı veya kişisel ayar içermez.
+**75 Windows kontrolü ve 31 Chromium kontrolü geçti.**
 
-Kaynak commit: `c95ce10e66f9dbd77ccb9c8f2c140e5795da0b3f`.
+Yeni regresyon denemeleri:
 
-[Windows ve Chromium doğrulama çıktısı](https://github.com/hackedmylife/HizirBey-projeleri/actions/runs/39924734695).
+- Boş yerel panelde ilk kısayol dikte başlangıcına yönlenir; ikinci kısayol bitirme işlemine yönlenir.
+- Tamamlanmış yerel panelden yeni dikte başlatılır; önceki metin kurtarılabilir kalır.
+- Hedef pencere bulunamaması veya köprü yanıtının gelmemesi yerel dikte başlangıç isteğini engellemez.
+- Ayrı bir test süreci gerçek fare basma / hareket / bırakma olaylarıyla Taşı tutamacını sürükledi. Pencere 60 × 35 piksel hareket etti.
+- Hareket bitince gerçek pencere koordinatları geçici INI dosyasına kaydedildi. Yeni uygulama örneği aynı konumu geri yükledi.
+- Konum sıfırlama taslak metni korudu. Panel ve bütün düğmeler 100 piksel yüksekliğindeki şerit içinde kaldı.
+- Mevcut Unicode pano, odak yarışı, kapalı hedef, taslak korunması ve köprü oturum kimliği kontrolleri geçti.
+- Chromium'da tamamlanmış metnin LiveChat alanına eklenmesi, mevcut metnin korunması, değişmiş görüşme / taslak kontrolü ve mesaj gönderim sayısının sıfır kalması doğrulandı.
 
-Windows test ortamı Windows Server 2025 / 10.0.26100; tarayıcı ortamı bu runner'da yüklü Google Chrome'dur. Tarayıcı denemeleri gerçek müşteri görüşmeleri üzerinde değil, LiveChat'in bilinen yazı alanı seçicilerini kullanan denetimli bir sayfada yapıldı.
+[Başarılı Windows ve Chromium çalışması](https://github.com/hackedmylife/HizirBey-projeleri/actions/runs/39928863276).
 
-Gerçek Windows 11 Win+H mikrofon akışı, kurumun iki yönlü pano ilkesi ve tam ekran Amazon WorkSpaces üzerinden uçtan uca aktarım bu ortamda denenemedi. Son deneme kullanıcı bilgisayarında yapılacaktır. Uzantının yüklenebilirliği ve Ctrl+Shift+Y kısayolunun atanması kurulumda kontrol edilmelidir.
+Doğrulanan kaynak commit: `a42f9cd5dc7c816442f327647b8663795559c4c0`.
+
+Test ortamı Windows Server 2025 / 10.0.26100 ve yüklü Chrome'dur. Başlangıç yönlendirme testlerinde mikrofon yerine başlangıç isteğini sayan test sınıfı kullanıldı; ana başlangıç dosyası ayrıca açılıp hatasız kapandı. Gerçek Windows 11 Win+H mikrofon akışı ve kurumun tam ekran WorkSpaces bağlantısı kullanıcı bilgisayarında tekrar denenmelidir.
+
+LiveChat köprüsü 0.2.0 protokolüyle uyumludur; mevcut köprü bu masaüstü güncellemesiyle kullanılabilir. Yalnız panel koordinatları kullanıcı bilgisayarındaki panel.ini dosyasında tutulur; taslak, ses, token veya API anahtarı pakete eklenmez. Resmi AutoHotkey çalışma dosyası SHA-256 ile doğrulanır.
