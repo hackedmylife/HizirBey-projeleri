@@ -41,43 +41,43 @@ try {
     Assert(WinGetProcessPath("ahk_id " window) = standalone, "Window belongs to the standalone EXE process")
     WinGetClientPos(,,, &height, "ahk_id " window)
     Assert(height = 100, "Compiled panel retains compact height")
-    edit := 0, copy := 0, close := 0, logo := 0
+    editorHwnd := 0, copyHwnd := 0, closeHwnd := 0, logoHwnd := 0
     for control in WinGetControlsHwnd("ahk_id " window) {
         className := WinGetClass("ahk_id " control)
         text := ControlGetText(control)
         if className = "Edit"
-            edit := control
+            editorHwnd := control
         if text = "Kopyala"
-            copy := control
+            copyHwnd := control
         if text = "Kapat"
-            close := control
+            closeHwnd := control
         if className = "Static" && (ControlGetStyle(control) & 0x1F) = 0xE
-            logo := control
+            logoHwnd := control
     }
-    Assert(edit && copy && close, "Compiled app exposes editor, copy and X controls")
-    Assert(logo && SendMessage(0x173, 0, 0, logo), "Embedded logo loads as a native bitmap")
+    Assert(editorHwnd && copyHwnd && closeHwnd, "Compiled app exposes editor, copy and X controls")
+    Assert(logoHwnd && SendMessage(0x173, 0, 0, logoHwnd), "Embedded logo loads as a native bitmap")
     folders := AssetFolders(ChildPid)
     Assert(folders.Length = 1, "Embedded assets extract into a unique process directory")
     Assert(FileExist(folders[1] "\logo.png") && FileExist(folders[1] "\hizirbey.ico"), "Only packaged brand assets are available at runtime")
-    ControlSetText("yardımcı olabilir miyim", edit)
+    ControlSetText("yardımcı olabilir miyim", editorHwnd)
     WinActivate("ahk_id " window)
-    ControlFocus(edit)
+    ControlFocus(editorHwnd)
     A_Clipboard := ""
     Drive("copy")
     Assert(A_Clipboard == "Yardımcı olabilir miyim?", "Compiled Ctrl+C copies full draft with Turkish punctuation")
-    Assert(ControlGetText(edit) == "yardımcı olabilir miyim", "Compiled copy preserves the editor draft")
-    ControlSetText("işleminizi kontrol ediyorum", edit)
+    Assert(ControlGetText(editorHwnd) == "yardımcı olabilir miyim", "Compiled copy preserves the editor draft")
+    ControlSetText("işleminizi kontrol ediyorum", editorHwnd)
     WinGetClientPos(&wx, &wy,,, "ahk_id " window)
-    ControlGetPos(&x, &y, &w, &h, copy)
+    ControlGetPos(&x, &y, &w, &h, copyHwnd)
     Drive("click", wx + x + w / 2, wy + y + h / 2)
     Assert(A_Clipboard == "İşleminizi kontrol ediyorum.", "Compiled copy button uses the same punctuation")
     Run('"' standalone '"', TestDir,, &duplicatePid)
     ProcessWaitClose(duplicatePid, 4)
     Assert(!ProcessExist(duplicatePid) && ProcessExist(ChildPid), "Second launch keeps one instance without replacing the draft")
-    Assert(ControlGetText(edit) == "işleminizi kontrol ediyorum", "Ignored second launch preserves existing text")
+    Assert(ControlGetText(editorHwnd) == "işleminizi kontrol ediyorum", "Ignored second launch preserves existing text")
     WinActivate("ahk_id " window)
     WinGetClientPos(&wx, &wy,,, "ahk_id " window)
-    ControlGetPos(&x, &y, &w, &h, close)
+    ControlGetPos(&x, &y, &w, &h, closeHwnd)
     Drive("click", wx + x + w / 2, wy + y + h / 2)
     ProcessWaitClose(ChildPid, 4)
     Assert(!ProcessExist(ChildPid) && !WinExist("ahk_id " window), "Compiled X exits the entire process and window")
@@ -90,7 +90,7 @@ try {
     WinClose("ahk_id " reopened)
     ProcessWaitClose(ChildPid, 4)
     Assert(!ProcessExist(ChildPid), "Compiled native close exits the whole process")
-    Assert(!DirExist(folders[1]), "Native close also removes temporary assets")
+    Assert(!DirExist(folders[1]), "Native closeHwnd also removes temporary assets")
     Run('"' standalone '" --smoke', TestDir,, &ChildPid)
     ProcessWaitClose(ChildPid, 5)
     Assert(!ProcessExist(ChildPid), "Compiled smoke entry starts and exits normally")
