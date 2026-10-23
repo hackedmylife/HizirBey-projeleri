@@ -5,7 +5,7 @@
 #Include src\Core.ahk
 #Include src\Panel.ahk
 
-; Local speech stays in this app. The remote bridge inserts only completed text.
+; Speech stays in this local edit box. Copy happens only on user request.
 ; No credentials, audio recording, telemetry, registry changes or startup changes.
 ; Native Windows voice typing retains its own Microsoft network requirements.
 global App := DikteApp()
@@ -15,6 +15,6 @@ if A_Args.Length && A_Args[1] = "--smoke"
 #HotIf App.ShouldCapture()
 $#h::App.Toggle()
 $^!h::App.Toggle()
-#HotIf App.PanelHasFocus() && !App.paused
-$^Enter::App.Finish()
+#HotIf App.ShouldCopy()
+$^c::App.CopyOnly()
 #HotIf

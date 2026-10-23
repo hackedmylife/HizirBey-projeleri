@@ -1,54 +1,28 @@
-HIZIR BEY WORKSPACES DIKTE 0.2.3
+HIZIR BEY YEREL DIKTE 0.3.0
 
-AKIS: ONCE YEREL KUTU -> BITIR -> LIVECHAT YAZI ALANI.
-Mesaj gonderilmez. Gonderimi sen yaparsin.
+IKI BUYUK DUGME: BASLAT / DURDUR ve KOPYALA.
 
-0.2.2'DEN GUNCELLEME:
-Yerel program VE WorkSpaces Chrome koprusu guncellenmelidir.
-WorkSpaces'te yuklu livechat-kopru klasorunun dosyalarini yenileriyle degistir.
-Chrome chrome://extensions -> kopru kartinda Yenile. Surum 0.2.3 olmali.
-LiveChat sekmesini de yenile. Eski HB-DIKTE hata yazisini yazim alanindan sil.
-Sonra yerel bilgisayarinda yeni BASLAT.cmd dosyasini calistir.
+1. Eski yerel programi sag alttaki simgesinden Cikis ile kapat.
+2. ZIP'in tamamini kendi bilgisayarina cikar. BASLAT.cmd calistir.
+3. Eski LiveChat Aktarim Koprusu eklentisini WorkSpaces Chrome'dan
+   kaldir veya kapat; LiveChat sekmesini bir kez yenile.
 
-BIR KEZ KUR:
-1. Eski surumu sag alttaki simgeden Cikis ile kapat.
-2. ZIP'in tamamini kendi bilgisayarina cikart. BASLAT.cmd burada calisacak.
-3. livechat-kopru klasorunu WorkSpaces'e de kopyala.
-4. WorkSpaces Chrome: chrome://extensions -> Gelistirici modu ->
-   Paketlenmemis oge yukle -> livechat-kopru klasorunu sec.
-5. chrome://extensions/shortcuts -> kopru kisayolu Ctrl+Shift+Y olmali.
-6. LiveChat sayfasini yenile.
+Baslat veya Win+H -> Windows'ta Dinleniyor yazisini bekle -> konus.
+Durdur veya ikinci Win+H -> metin kutuda bekler.
+Kopyala veya yerel panelde Ctrl+C -> kutudaki metnin TAMAMI panoya alinir.
+Ctrl+C yazim sirasinda da calisir; dinlemeyi durdurmaz.
+Metin kismen secili olsa da tum kutu kopyalanir.
+Kopyadan sonra yeni kelimeler geldiyse yeniden kopyala.
+LiveChat'e kendin tiklayip Ctrl+V ile yapistir; gonderimi sen yap.
+Yeni metin icin kutuda Ctrl+A -> Delete kullan.
 
-KULLAN:
-LiveChat gorusmesini sec -> Win+H -> Dinleniyor yazisini bekle -> konus.
-Konusma once uygulamanin kendi kutusunda yazilir.
-Bitir: ikinci Win+H / Ctrl+Enter / Bitir ve aktar.
-Tamamlanan metin otomatik LiveChat yazim alanina eklenir.
-Mesaji kontrol et; gondermek icin Enter'a sen bas.
+Baslatma, durdurma ve kopyalama metni kendiliginden silmez.
+Paneli HIZIR BEY basligindan surukleyebilirsin; konum hatirlanir.
+Pencere 100 piksel yuksekligindedir; sagda iki adet 160 x 40 dugme vardir.
+Programi kapatmak icin sag alttaki simge -> Cikis.
+Taslak diske kaydedilmez. Metni kapatmadan once kopyala.
 
-Panel 100 piksel yuksekligindedir. HIZIR BEY basligindan suruklenebilir.
-Onay gelmediyse LiveChat'i kontrol et. Metin yerel kutuda durur.
-Kopyala: duz metni panoya alir. Son metin: onceki dikteyi getirir.
-Kopru LiveChat'te farkli gorusmeye gecildiginde aktarimi durdurur.
-Iki yonlu WorkSpaces metin panosu acik olmalidir.
+Yedek dikte kisayolu: Ctrl+Alt+H.
+Iletisim koprusu, Chrome eklentisi veya otomatik aktarim bulunmaz.
 
-Ayrintili kurulum ve sorun giderme: README.md
-
-0.2.3 DUZELTMELERI:
-Kopru onayi, uygulamanin gonderdigi gercek Ctrl+C ile alinir.
-Programatik pano yaziminin kendiliginden yerel bilgisayara gelmesi beklenmez.
-HAZ rozeti yalniz LiveChat alaninin hazir oldugunu gosterir.
-Pano donusu gelmiyorsa WorkSpaces'ten kendi bilgisayarina normal
-Ctrl+C / Ctrl+V calisip calismadigini kontrol et. Iki yon de gereklidir.
-Yerel program VE Chrome koprusu bu surumle birlikte guncellenmelidir.
-
-0.2.2'DE EKLENENLER:
-LiveChat gorusmesi, sayfada kimlik nitelikleri yoksa gorusme adresiyle taninir.
-HB-DIKTE kontrol kodlari, kopru baglanamasa bile yazim alanina yapistirilmaz.
-Aktarim hatasinda panoda konusma metnin kalir. Mesaj otomatik gonderilmez.
-
-0.2.1'DE EKLENENLER:
-Bos yerel kutuda Win+H veya Baslat dikteyi baslatir.
-Kopru gecikmesi yerel dikteyi durdurmaz.
-Paneli sol ustteki Taşı tutamacindan surukleyebilirsin.
-Konum yeniden acilista hatirlanir. Sag alttaki simge: Konumu sifirla.
+Ayrintilar: README.md ve TEST-RAPORU.md.
