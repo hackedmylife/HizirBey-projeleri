@@ -1,134 +1,87 @@
-HIZIR BEY SESLİ YAZMA — 0.1.10
-
-1) ZIP'i bilgisayarında sabit bir klasöre çıkar. Örnek: Belgeler\HizirBey-Sesli-Yazma
-2) Chrome adres çubuğuna chrome://extensions yaz.
-3) Sağ üstten Geliştirici modu'nu aç.
-4) Paketlenmemiş öğe yükle'ye bas; çıkardığın paketteki extension klasörünü seç.
-5) Açılan logolu ayar ekranında Groq Free hesabının API anahtarını kaydet.
-   Ücretsiz anahtar: https://console.groq.com/keys
-   Hesabın FREE olmalı. Kart ekleme veya Developer plana yükseltme.
-6) Free hesap ve ses işleme kutularını işaretle, Ayarları kaydet.
-7) Mikrofonu dene'ye bas, Chrome mikrofon izni sorarsa izin ver.
-   Bu test yereldir; ses kaydı tutulmaz ve gönderilmez. 15 saniyede kapanır.
-8) Bağlantıyı kontrol et ile model erişimini denetleyebilirsin.
-9) LiveChat sekmesini bir kez yenile ve bir müşteri görüşmesi aç.
-10) ALT + H ile konuşmaya başla. Metin hızlıca tek taslakta birikir.
-    Kısa duraklardaki kısmi tanımalar aynı bölümün metnini günceller;
-    her önizleme baştan sona eklenmez.
-    Noktalama, en az 1 saniyelik durakta veya dinlemeyi bitirince bütün
-    taslak üzerinden kontrol edilir. Ses parçası sonuna zorla nokta konmaz.
-11) LiveChat sayfasında SPACE (boşluk) ile dinlemeyi bitir. Son kelimeler
-    ve noktalama tamamlanınca metni oku; ENTER ile kendin gönder.
-    Sessizlik veya toplam oturum süresi dinlemeyi bitirmez.
-
-WIN + H
-Win + H için paketteki windows/Windows-Kisayol.txt adımlarını uygula.
-Mevcut FastKeys ile Win + H → Alt + H eşleştirmesi kullanabilirsin.
-Alternatif: AutoHotkey v2 ile Hizir-Bey-Win-H.ahk dosyasını çalıştır.
-Chrome, Win tuşunu doğrudan uzantı kısayolu olarak kabul etmez.
-
-GÖRÜNÜM
-Sayfada geniş çubuk görünmez. Eklenti simgesine tıklayınca logolu küçük
-kontrol paneli açılır. Dinleme ve yazım sırasında ekranın tam ortasında tek bir
-20 piksel kırmızı nokta görünür. Paneli kapatmak tek başına mikrofonu durdurmaz.
-
-MÜZİK AÇIKKEN
-Arka plan koruması varsayılan açıktır; ek ücretli servis kullanmaz.
-Ayarlar > Mikrofon ve dikte bölümünde gerçek mikrofonunu seç.
-Müziği açık bırak, Arka planı ölç · 2 sn düğmesine bas ve 2 saniye
-konuşma. Ölçüm kaydedilince LiveChat'e geçip normal sesinle dikte et.
-Ölçüm yereldir; ses gönderilmez veya saklanmaz. Her dikte başlangıcında
-tekrarlanmaz. Müzik / sistem mikrofon seviyesi değişirse yeniden ölç.
-Mikrofon seçimi değişince eski ölçüm sıfırlanır. Aynı sistem varsayılanı
-başka gerçek mikrofona geçerse eski seviye otomatik uygulanmaz.
-Kulaklık mikrofonunu ağzına yaklaştır. Yüksek arka planda güçlendirmeyi
-%100 ile deneyebilirsin. Varsayılan %135 tercihin güncellemede korunur.
-Koruma konuşma ve şarkı vokalini kesin ayırmaz; yüksek / yakın müzik veya
-çok kısık konuşmada hata kalabilir. Bu sürüm sıfır tanıma hatası vadetmez.
-
-KULLANIM
-- Panelde Yeniden yazdır: son dikteyi aynı görüşmenin yazı alanına
-  geri koyar. Dinleme kapanır; ek API isteği yapılmaz. Metin zaten
-  alandaysa ikinci kez eklenmez. Alanı boşalttıysan veya dikteyi geri
-  aldıysan yeniden doldurabilirsin. Elle yazılmış farklı dolu metin
-  korunur. Göndermek için metni okuyup ENTER kullan. Görüşme / sekme
-  değişince veya mesaj gönderilince bu düğme devre dışı kalır.
-- SPACE dinlemeyi bitirir; son cümle tamamlanır. Gönderim yapmaz.
-  Basılı tutmak veya hazırlıkta tekrar basmak ek boşluk oluşturmaz.
-  İşlem bitince boşluk tuşu normal yazım işlevine döner.
-- ALT + H'ye yeniden basmak da dinlemeyi bitirir; son cümle hazırlanır.
-- Dikte yazıldıktan sonra ENTER, görüşmenin Gönder düğmesini bir kez
-  çalıştırır. LiveChat Enter ayarın satır açmak olsa da taslak gönderilir.
-  Mikrofon ve bekleyen dikte kapanır; geç sonuçlar eklenmez. Gönderilen,
-  yazı alanında gördüğün metindir. SHIFT + ENTER satır açmaya devam eder.
-- İlk metin henüz yazılmadıysa veya ekleme sürüyorsa Enter engellenir.
-  Tuş sonradan otomatik gönderime dönüşmez; hazır metni okuyup tekrar bas.
-- Space veya Alt + H ile dinlemeyi normal bitirince de hazır taslak Enter ile
-  gönderilebilir. Düğme kullanılamıyorsa taslak korunur, panelde uyarı olur.
-- Enter ile gönderdiğinde mikrofon oturumu biter. Yeni mesaj için ALT + H.
-- İç not modundan müşteriye mesaj moduna geç; iç nota dikte aktarılmaz.
-- Sessizlik / 15 dakika zamanlayıcısı yoktur. Normal dikte Space
-  ile bitene kadar sürer. Görüşme veya sekme değişiminde kayıt kapanır.
-  Kota, bağlantı, bekleyen ses belleği ve 8.000 karakter koruması sürer.
-- Alanı elle değiştirirsen geç gelen sonuç mevcut yazını ezmez.
-  Gerekirse eklenti simgesinden Son dikte metnini kopyala.
-- Son kontrolde modelin kelime eklemesi, silmesi veya değiştirmesi
-  engellenir. Geri al bütün dikte taslağını kaldırır ve mikrofonu kapatır.
-- Ses tanıma ve noktalama doğruluğu artırmayı hedefler; tutarları,
-  özel isimleri ve işlemin durumunu göndermeden önce kontrol et.
-
-ŞÜPHELİ DİKTE KORUMASI
-Altyazı/kapanış kalıbı, tek başına MK/M.K. veya düşük güvenli sonuç
-algılanırsa o parça yazılmaz. Panelden uyarıyı oku ve o bölümü tekrar
-söyle. Art arda reddetmeler mikrofonu kapatmaz. Panelde kaç bölümün
-yazılamadığı ve nedeni görünür. Aynı ses bölümü sonraki bağlamla temiz
-tanınırsa uyarısı kalkar. Son aktarım koruması uygunsuz sonuç görürse
-mikrofon kapanır; mevcut metni kontrol edip yeniden dikte başlat.
-Denetim, anlaşılamayan metni tahmin ederek tamamlamaz. Yanlış özel adları
-ve her kelime hatasını yakalaması garanti değildir; göndermeden önce oku.
-
-KISAYOL ÇALIŞMIYORSA
-chrome://extensions/shortcuts adresini aç. Hızır Bey Sesli Yazma altında
-Türkçe dikteyi başlat/durdur alanını ALT + H olarak ayarla. Başka bir
-eklenti aynı kısayolu kullanıyorsa onun atamasını değiştir.
-
-GECİKME VE MİKROFON
-- Taslağı aktarma beklemesi 0,5 saniye. İstekler arasındaki sabit 3,5
-  saniyelik ara kaldırıldı. Dakikalık uygulama sınırında sıra beklenir.
-- Hızlı aktarım varsayılan açık: son noktalama kontrolü 2,5 saniyede
-  yetişmezse denetlenmiş taslak uyarıyla korunur; zorla nokta eklenmez.
-  Daha uzun noktalama kontrolü beklemek istersen bu ayarı kapat; bütçe 10 saniyeye çıkar. Bu süreler ses tanıma
-  ve ağ gecikmesini içermez. Son aktarım süresi küçük panelde görünür.
-- Yavaş bağlantıda ses sıraya alınır. Ses tanımada 45 saniyelik yanıt
-  süresiyle en fazla 3 deneme yapılır; yeniden denemeler kotaya dahildir.
-- “Bağlantı bekleniyor” sırasında metni tekrar dikte etmene gerek yoktur.
-  İşlem tamamlanınca oku ve Enter'a bas. Beklerken basılan Enter sonradan
-  otomatik gönderime dönüşmez.
-- İşlenen ve sıradaki ses pencereleri yaklaşık 2 dakikaya yaklaşırsa
-  mikrofon kapanır; alınmış ses sırayla işlenir. Tekrar tanınan bağlam
-  da bu süreye ve her isteğin ses kotasına dahildir. Yeni konuşmadan önce tamamlanmasını bekle ve Alt + H
-  ile yeniden başlat. Beklemeyi iptal etmek için Alt + H kullanabilirsin.
-- Kalıcı bağlantı kesintisinde denemeler tükenince hata gösterilir.
-  Yazı alanındaki metin korunur; tamamlanmayan ses kalıcı kaydedilmez.
-- Ayarlar > Mikrofon ve dikte: güçlendirme varsayılan %135; %100–200
-  arasında değiştirilebilir. Algı eşiği 0,005 ile başlar. Ortam gürültüsü
-  algılanıyorsa eşiği biraz yükselt. “Mikrofonu dene” ile yerel kontrol yap.
-- Yazılımsal güçlendirme, bilgisayarının sistem mikrofon sesini değiştirmez.
-
-ÜCRETSİZ KOTA
-Groq Free planındaki ses ve metin sınırları geçerlidir. Dakikalık yerel
-sınırda bekler; günlük veya sağlayıcı kotası dolunca uyarır ve durur; ücretli sağlayıcıya geçmez veya hesap yükseltmez.
-Bu uygulama hesabın Free planını anahtardan otomatik doğrulayamaz.
+HIZIR BEY SESLİ YAZMA — 0.2.0
 
 GÜNCELLEME
-Yeni extension dosyalarını aynı klasörde eskilerinin üzerine kopyala;
-chrome://extensions sayfasındaki bu uzantının Yenile düğmesine bas.
-Ardından açık LiveChat sekmesini de bir kez yenile.
-Uzantıyı kaldırma ve klasörü taşıma; mevcut API anahtarını korumak için
-aynı uzantı kimliği kullanılmalıdır. ZIP'te token/key dosyası bulunmaz.
-Sözlük/düzeltme yedeğini ayarlardan JSON olarak indirebilirsin; anahtar
-bu yedeğe dahil edilmez.
+ZIP'teki extension dosyalarını mevcut sabit uzantı klasörünün üzerine
+kopyala. chrome://extensions üzerinden aynı uzantıya Yenile uygula;
+LiveChat sayfasını da yenile. Aynı uzantı kimliği / profil korunursa
+anahtar ve sözlük sıfırlanmaz. Paket anahtar / kullanıcı hafızası içermez.
 
-İLK DENEME
-Önce test görüşmesinde kısa bir cümleyle dene. Test raporunda canlı
-LiveChat ve kişisel mikrofon doğrulamasının durumu açıkça belirtilir.
+İLK KURULUM
+1) ZIP'i sabit klasöre çıkar. chrome://extensions → Geliştirici modu →
+   Paketlenmemiş öğe yükle ile extension klasörünü seç.
+2) Ayarlar → Ses tanıma → Google / Chrome · Deneme seçili olsun.
+   Google / Chrome ses işleme onayını işaretle. Google ses yöntemi için
+   Google Cloud hesabı, API anahtarı veya ödeme yöntemi gerekmez.
+   Güncel Google Chrome 135+ gerekir. Workspace politikası hizmeti engelleyebilir.
+3) Mevcut Groq Free anahtarın son noktalama için korunur. Groq Free ve
+   metin işleme onaylarını koru. Google modunda Groq'a ses gönderilmez.
+   Anahtar yoksa ses yine yazılır; son noktalama yapılmadığı uyarıyla belirtilir.
+   Ayarları kaydet. Önceki yöntem: Ses tanıma → Groq / Whisper.
+4) Mikrofonu dene ile izin ver. Test yereldir; ses saklamaz / göndermez,
+   15 saniyede kapanır. Bu test süresi normal diktenin süresi değildir.
+5) LiveChat'i yenile, açık müşteri görüşmesinde ALT + H ile başlat.
+   WIN + H yönlendirmesi kuruluysa aynı kısayolu kullanabilirsin.
+6) Konuş → SPACE ile bitir → son kelimeler ve noktalama tamamlanınca
+   metni oku → ENTER ile kendin gönder. SHIFT + ENTER satır açar.
+
+NOKTALAMA VE DİNLEME
+Kısa / uzun sessizlik ve toplam oturum süresi dinlemeyi bitirmez.
+Konuşurken cümle noktalaması eklenmez; tutar / saat ayırıcıları ve
+adresler korunur. Noktalama yalnızca Space / açık Durdur sonrasında
+bütün taslak için bir kez Groq Free ile yapılır. Kelimeler, sayılar ve
+anlam değiştirilmez; güvenli olmayan düzeltme yerine taslak korunur.
+Chrome destekliyorsa kendi otomatik noktalaması da kapatılır.
+
+Space fiziksel mikrofonu kapatır; son AudioWorklet parçası, işlenmiş ses
+ve son Google sonucu tamamlanır. Son tarayıcı sonucu en fazla 5 saniye
+beklenir; yetişmezse görünen taslak uyarıyla korunur. Noktalama hızlı
+modda 2,5 saniye, kapalıysa 10 saniye bütçeyle çalışır. Ağ / ses tanıma
+bu bütçeden ayrıdır; sabit toplam gecikme garantisi yoktur.
+
+Chrome bir tanıma turunu bitirirse kullanıcı oturumu aynı işlenmiş mikrofon
+izinde yeniden açılır. Tekrar açılma veya ağ kesintisinde eksik kelime olabilir.
+İzin / hizmet / mikrofon hatası ve süren bağlantı sorunu açıkça gösterilir.
+Google ile Groq arasında otomatik geçiş yapılmaz; ayarlardan seçebilirsin.
+
+GÖRÜNÜM VE KONTROL
+Dinleme / hazırlık boyunca merkezde 20 px kırmızı nokta görünür.
+İşlem bitince gizlenir. Logolu kontrol paneli eklenti simgesinden açılır.
+Space'i basılı tutmak veya hazırlıkta tekrar basmak ek boşluk oluşturmaz.
+İşlem bitince normal boşluk yazımı geri gelir. Alt + H veya panelde Durdur
+ile de açıkça bitirebilirsin. Enter gördüğün taslağı bir kez gönderir;
+mikrofon / bekleyen ses kapanır, geç sonuç yazılmaz. İlk metin hazır
+olmadan basılan Enter sonradan otomatik gönderime dönüşmez.
+
+Yeniden yazdır, son dikteyi aynı görüşmeye geri koyar; ikinci kez eklemez.
+Farklı dolu manuel yazıyı ezmez. Ek ses tanıma / gönderim yapmaz.
+Görüşme, sekme, sayfa değişince kayıt / eski hedef bağı kapanır.
+İç nota yazılmaz. Elle düzenleme geç sonuçla ezilmez; son dikte panelden
+kopyalanabilir. Sözlük / düzeltmeler ayarlardan anahtarsız JSON yedeklenebilir.
+
+MÜZİK VE MİKROFON
+Arka plan koruması varsayılan açık. Müzik açıkken Arka planı ölç · 2 sn
+ile konuşmadan ölç; yalnızca seviye / cihaz kimliği saklanır. Ortam veya
+mikrofon değişince yeniden ölç. Güçlendirme %135; %100–200 seçilebilir.
+Google'a seçilmiş, yerel konuşma filtresi ve güçlendirmeden geçmiş ses
+izi verilir; ikinci bir varsayılan mikrofon açılmaz. Kulaklık mikrofonunu
+yaklaştır. Şarkı vokali / başka konuşmacı kesin ayrılmaz; çok kısık
+konuşma filtreye takılabilir. Sıfır tanıma hatası garantisi verilmez.
+
+KORUMALAR
+Kota / gerçek ağ / mikrofon hatası, görüşme değişimi ve 8.000 karakter
+taslak koruması sürer. Whisper bekleyen ses belleği yaklaşık 106 saniye,
+Google işlenmiş ses kuyruğu yaklaşık 2 saniye sınırıyla korunur.
+Groq Free hesabını kullan; kart / Developer planı açma. Ücretli geçiş yoktur.
+API anahtarı ses / sözlük yedeğiyle dağıtılmaz; aynı uzantıyı güncelle.
+
+WIN + H
+windows/Windows-Kisayol.txt adımlarını uygula. Mevcut FastKeys
+Win + H → Alt + H yönlendirmesi veya AutoHotkey v2 yardımcısı kullanılabilir.
+Chrome doğrudan Win tuşunu uzantı komutu olarak kabul etmez.
+
+GOOGLE DENEMESİNİN SINIRI
+Bu paket Google servisinin gerçek Türkçe doğruluğunu ölçmüş sayılmaz.
+İlk önce test görüşmesinde aynı cümleyle Google / Chrome ve Groq'u
+karşılaştır. Otomatik testte Google tanıma olayları ve Groq yanıtları
+kontrollü taklit edilir; gerçek müşteri görüşmesi / kişisel ses kullanılmaz.
+Ayrıntılar README.md ve TEST-RAPORU.md dosyalarındadır.

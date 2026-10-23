@@ -3,6 +3,7 @@ import {transcribe, correct, abortableDelay, RejectedTranscriptionError} from '.
 import {draftText} from './lib/core.js';
 import {withTimeBudget} from './lib/timing.js';
 import {openMicrophone, createSpeechFilter} from './lib/voice.js';
+import {BrowserSpeech, SpeechPlayout} from './lib/browser-speech.js';
 
 let active = null;
 // Includes the in-flight request and cumulative window snapshots, including
@@ -16,6 +17,8 @@ async function ask(session, type, data = {}) {
 async function cleanup(s) {
   s.recording = false;
   if (s.worklet) {s.worklet.port.onmessage = null; s.worklet.disconnect();}
+  s.workletFlushed?.(); s.browser?.cancel(); s.playout?.destroy();
+  for (const track of s.browserDestination?.stream.getTracks() || []) track.stop();
   s.filter?.destroy();
   s.source?.disconnect(); s.sink?.disconnect();
   for (const track of s.stream?.getTracks() || []) track.stop();
@@ -41,21 +44,21 @@ function queueSpeech(s, samples, spokenAt) {
   s.pendingSeconds += job.samples.length / s.sampleRate;
   void drain(s);
 }
-function queueFinal(s, force = false) {
-  if (active !== s) return;
-  s.queue.push({kind: 'final', utterance: s.utterance, force}); void drain(s);
+function queueFinal(s) {
+  if (active !== s || s.recording || !s.finishRequested) return;
+  s.queue.push({kind: 'final'}); void drain(s);
 }
 async function deliver(s, text, warning = '', final = false) {
   if (active !== s || !text) return;
   const inserted = await ask(s, 'audio:result', {segmentId: s.nextResult++, spokenAt: s.lastSpokenAt, raw: s.raw, text, replace: true, final, warning: [s.warning, warning].filter(Boolean).join(' ')});
   if (!inserted && active === s) throw new Error('Taslak yazı alanına aktarılamadı. Mevcut metni kontrol et.');
 }
-async function finalize(s, job) {
-  if (!s.raw || s.finalizedVersion === s.rawVersion || (!job.force && job.utterance !== s.utterance)) return;
+async function finalize(s) {
+  if (s.recording || !s.finishRequested || !s.raw || s.finalizedVersion === s.rawVersion) return;
   const revision = s.rawVersion;
   const controller = new AbortController(), abort = () => controller.abort();
   s.correction = controller; s.controller.signal.addEventListener('abort', abort, {once: true});
-  let result = {text: draftText(s.raw, s.config.terms), warning: ''}, stopForQuota = false;
+  let result = {text: draftText(s.raw, s.config.terms), warning: s.config.punctuationUnavailable ? 'Son noktalama için kayıtlı Groq Free anahtarı ve onayı gerekli. Ses taslağı korundu; metni kontrol et.' : ''}, stopForQuota = false;
   try {
     if (s.config.correction) {
       result = await withTimeBudget(async signal => {
@@ -71,7 +74,7 @@ async function finalize(s, job) {
     s.controller.signal.removeEventListener('abort', abort);
     if (s.correction === controller) s.correction = null;
   }
-  if (active !== s || controller.signal.aborted || revision !== s.rawVersion || job.utterance !== s.utterance) return;
+  if (active !== s || controller.signal.aborted || revision !== s.rawVersion) return;
   await deliver(s, result.text, result.warning, true);
   s.finalizedVersion = revision;
   if (stopForQuota) await fail(s, new Error('Ücretsiz noktalama kotası doldu. Taslak korundu; dikte durduruldu.'));
@@ -79,7 +82,7 @@ async function finalize(s, job) {
 function meter(s, force = false) {
   if (active !== s || (!force && Date.now() - s.lastMeter < 350)) return;
   s.lastMeter = Date.now();
-  ask(s, 'audio:meter', {level: Math.min(1, (s.rms || 0) * (s.config.micGain || 1.35) * 12), seconds: Math.floor((Date.now() - s.startedAt) / 1000), buffered: Boolean(s.segmenter?.length), processing: s.processing || s.queue.length > 0, recording: s.recording, waiting: Boolean(s.requestState?.waiting), waitingForQuota: s.requestState?.quota === true, attempt: s.requestState?.attempt || 1, pendingSeconds: Math.ceil(s.pendingSeconds), pausedForBacklog: s.pausedForBacklog}).catch(error => fail(s, error));
+  ask(s, 'audio:meter', {level: Math.min(1, (s.rms || 0) * (s.config.micGain || 1.35) * 12), seconds: Math.floor((Date.now() - s.startedAt) / 1000), buffered: Boolean(s.segmenter?.length), processing: s.processing || s.queue.length > 0 || Boolean(s.browserDelivery) || Boolean(s.browser && !s.browser.ready && s.recording), recording: s.recording, waiting: Boolean(s.requestState?.waiting), waitingForQuota: s.requestState?.quota === true, attempt: s.requestState?.attempt || 1, pendingSeconds: Math.ceil(s.pendingSeconds), pausedForBacklog: s.pausedForBacklog}).catch(error => fail(s, error));
 }
 function connection(s, kind, seconds = 0, signal = s.controller.signal) {
   return {
@@ -104,7 +107,7 @@ async function drain(s) {
   try {
     while (s.queue.length && active === s) {
       const job = s.queue.shift();
-      if (job.kind === 'final') {await finalize(s, job); s.requestState = null; continue;}
+      if (job.kind === 'final') {await finalize(s); s.requestState = null; continue;}
       const {samples, spokenAt, windowId} = job;
       const duration = samples.length / s.sampleRate;
       let raw;
@@ -137,13 +140,13 @@ async function drain(s) {
     s.processing = false;
     if (active === s) {
       meter(s, true);
-      if (!s.recording && !s.queue.length) {active = null; await ask(s, 'audio:done', {reason: s.pausedForBacklog ? 'Bekleyen metin tamamlandı. Oku, Enter ile gönder; yeni dikte için Alt + H.' : undefined}).catch(() => {});}
+      if (!s.recording && !s.finishingAudio && !s.queue.length) {active = null; await ask(s, 'audio:done', {reason: s.pausedForBacklog ? 'Bekleyen metin tamamlandı. Oku, Enter ile gönder; yeni dikte için Alt + H.' : undefined}).catch(() => {});}
     }
   }
 }
 async function start(id, config) {
   if (active) {const old = active; active = null; old.controller.abort(); await cleanup(old);}
-  const s = {id, config, queue: [], pieces: new Map(), gaps: new Map(), raw: '', rawVersion: 0, finalizedVersion: -1, utterance: 0, rejected: 0, warning: '', pendingSeconds: 0, nextResult: 1, pausedForBacklog: false, controller: new AbortController(), recording: true, processing: false, startedAt: Date.now(), lastMeter: 0};
+  const s = {id, config, queue: [], pieces: new Map(), gaps: new Map(), raw: '', rawVersion: 0, finalizedVersion: -1, rejected: 0, warning: '', pendingSeconds: 0, nextResult: 1, pausedForBacklog: false, controller: new AbortController(), recording: true, processing: false, startedAt: Date.now(), lastMeter: 0};
   active = s;
   try {
     s.stream = await openMicrophone(config);
@@ -159,32 +162,41 @@ async function start(id, config) {
     if (active !== s) {await cleanup(s); throw new Error('Kayıt iptal edildi.');}
     s.windows = new SpeechWindows(s.sampleRate);
     s.segmenter = new Segmenter({sampleRate: s.sampleRate, threshold: config.sensitivity, pauseMs: config.pauseMs,
-      onSpeechStart() {s.utterance++; s.correction?.abort();},
-      onBoundary() {s.windows.boundary(); queueFinal(s);},
+      onBoundary() {s.windows.boundary();},
       onSegment(samples, {silenceMs} = {}) {
       if (active !== s) return;
       queueSpeech(s, samples, Date.now() - (silenceMs || 0));
       if (s.pendingSeconds >= PAUSE_PENDING_SECONDS && s.recording) {
         s.pausedForBacklog = true;
-        queueMicrotask(() => {if (active === s) void finish(id);});
+        queueMicrotask(() => {if (active === s) void finish(id, false);});
       }
     }});
     s.source = s.context.createMediaStreamSource(s.stream);
     s.worklet = new AudioWorkletNode(s.context, 'hizir-pcm');
     s.sink = s.context.createGain(); s.sink.gain.value = 0;
     s.source.connect(s.worklet); s.worklet.connect(s.sink); s.sink.connect(s.context.destination);
+    if (config.provider === 'browser') {
+      s.browserDestination = s.context.createMediaStreamDestination();
+      s.playout = new SpeechPlayout(s.context, config, s.browserDestination);
+      s.browser = new BrowserSpeech({track: s.browserDestination.stream.getAudioTracks()[0],
+        onText: text => updateBrowser(s, text),
+        onWarning: warning => {if (active === s) {s.warning = warning; ask(s, 'audio:warning', {warning}).catch(error => fail(s, error));}},
+        onError: error => void fail(s, error), onState: () => meter(s, true)});
+    }
     s.consume = ({frame, speech}) => {
-      const v = s.segmenter.push(frame, {speech}); s.rms = v.rms;
+      if (s.playout) {s.playout.push({frame, speech}); s.rms = Math.sqrt(frame.reduce((sum, value) => sum + value * value, 0) / Math.max(1, frame.length));}
+      else {const v = s.segmenter.push(frame, {speech}); s.rms = v.rms;}
     };
     s.accept = input => {
-      if (active !== s || !s.recording) return;
+      if (active !== s || (!s.recording && !s.finishingAudio)) return;
       try {if (s.filter) {for (const frame of s.filter.push(input)) s.consume(frame);} else s.consume({frame: input});}
       catch (error) {void fail(s, error); return;}
       meter(s);
     };
-    s.worklet.port.onmessage = event => s.accept(event.data);
+    s.worklet.port.onmessage = event => {if (event.data?.type === 'flushed') s.workletFlushed?.(); else s.accept(event.data);};
     for (const track of s.stream.getTracks()) track.onended = () => {if (s.recording && active === s) void fail(s, new Error('Mikrofon bağlantısı kesildi.'));};
     await s.context.resume();
+    s.browser?.start();
     meter(s, true); return true;
   } catch (error) {
     if (active === s) active = null;
@@ -194,12 +206,45 @@ async function start(id, config) {
     throw new Error(error.message || 'Mikrofon başlatılamadı.');
   }
 }
-async function finish(id) {
+function updateBrowser(s, raw) {
+  if (active !== s) return;
+  s.pendingBrowserText = raw;
+  if (s.browserDelivery) return;
+  s.browserDelivery = (async () => {
+    while (active === s && s.pendingBrowserText !== undefined) {
+      const text = draftText(s.pendingBrowserText, s.config.terms); s.pendingBrowserText = undefined;
+      if (!text || text === s.raw) continue;
+      s.raw = text; s.rawVersion++; s.lastSpokenAt = Date.now(); await deliver(s, text);
+    }
+  })().catch(error => fail(s, error)).finally(() => {s.browserDelivery = null; meter(s, true); if (active === s && s.pendingBrowserText !== undefined) updateBrowser(s, s.pendingBrowserText);});
+}
+async function flushWorklet(s) {
+  if (!s.worklet?.port.postMessage) return;
+  await new Promise(resolve => {
+    const timer = setTimeout(() => {s.warning = 'Son mikrofon parçası zamanında boşaltılamadı. Son kelimeleri kontrol et.'; done();}, 1000);
+    const done = () => {clearTimeout(timer); s.workletFlushed = null; resolve();};
+    s.workletFlushed = done; s.worklet.port.postMessage({type: 'flush'});
+  });
+}
+async function finish(id, punctuate = true) {
   const s = active; if (!s || s.id !== id || !s.recording) return;
-  s.recording = false;
-  for (const frame of s.filter?.flush() || []) s.consume(frame);
-  s.segmenter.flush(); queueFinal(s, true); await cleanup(s);
-  meter(s, true);
+  s.recording = false; s.finishingAudio = true; s.finishRequested = punctuate;
+  try {
+    s.source?.disconnect(); for (const track of s.stream?.getTracks() || []) track.stop();
+    await flushWorklet(s);
+    if (active !== s) return;
+    for (const frame of s.filter?.flush() || []) s.consume(frame);
+    if (s.browser) {
+      s.playout.flush(); await s.playout.drain();
+      if (active !== s) return;
+      await s.browser.finish();
+      while (active === s && s.browserDelivery) await s.browserDelivery;
+    } else s.segmenter.flush();
+    if (active !== s) return;
+    await cleanup(s); s.finishingAudio = false;
+    if (punctuate) queueFinal(s); else void drain(s);
+    meter(s, true);
+  } catch (error) {await fail(s, error);}
 }
 chrome.runtime.onMessage.addListener((message, sender, respond) => {
   if (message?.target !== 'offscreen' || sender.id !== chrome.runtime.id || sender.tab || (sender.url && sender.url !== chrome.runtime.getURL('background.js'))) return false;

@@ -1,4 +1,4 @@
-import {VERSION} from './lib/core.js';
+import {VERSION, dictationReady} from './lib/core.js';
 const $ = id => document.getElementById(id);
 let rewriting = false;
 const ask = async message => {const r = await chrome.runtime.sendMessage(message); if (!r?.ok) throw new Error(r?.error || 'Eklenti bağlantısı kurulamadı.'); return r.data;};
@@ -15,7 +15,7 @@ function render(state) {
   $('latency').hidden = !Number.isFinite(state.lastLatencyMs);
   $('latency').textContent = Number.isFinite(state.lastLatencyMs) ? `Son aktarım: ${(state.lastLatencyMs / 1000).toLocaleString('tr-TR', {minimumFractionDigits: 1, maximumFractionDigits: 1})} sn` : '';
 }
-async function load() {const data = await ask({type: 'ui:get'}); render(data.status); $('shortcut').textContent = data.shortcut || 'Kısayol atanmalı'; $('setup').textContent = data.hasKey && data.settings.microphoneReady && data.settings.freeConfirmed && data.settings.cloudConsent ? 'Kurulum tamam' : 'Ayarları tamamla';}
+async function load() {const data = await ask({type: 'ui:get'}); render(data.status); $('shortcut').textContent = data.shortcut || 'Kısayol atanmalı'; $('setup').textContent = dictationReady(data.settings, data.hasKey) ? `${data.settings.provider === 'browser' ? 'Google / Chrome' : 'Groq'} · Hazır` : 'Ayarları tamamla';}
 $('version').textContent = VERSION;
 $('toggle').onclick = async () => {$('toggle').disabled = true; $('error').hidden = true; try {await ask({type: 'ui:toggle'}); await load();} catch (error) {showError(error);} finally {$('toggle').disabled = false;}};
 $('options').onclick = () => ask({type: 'ui:options'}).catch(showError);

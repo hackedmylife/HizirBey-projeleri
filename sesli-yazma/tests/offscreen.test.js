@@ -10,13 +10,25 @@ globalThis.chrome = {runtime: {id, getURL: path => origin + path, onMessage: {ad
 }}};
 Object.defineProperty(globalThis, 'navigator', {configurable: true, value: {mediaDevices: {async getUserMedia() {const track = {stopped: false, stop() {this.stopped = true;}}; tracks.push(track); return {getTracks: () => [track]};}}}});
 globalThis.AudioContext = class {
-  constructor() {this.state = 'running'; this.sampleRate = 16000; this.audioWorklet = {async addModule() {}}; this.destination = {}; contexts.push(this);}
+  constructor() {this.state = 'running'; this.sampleRate = 16000; this.began = performance.now(); this.audioWorklet = {async addModule() {}}; this.destination = {}; contexts.push(this);}
+  get currentTime() {return (performance.now() - this.began) / 1000;}
   createMediaStreamSource() {return {connect() {}, disconnect() {}};}
   createGain() {return {gain: {}, connect() {}, disconnect() {}};}
+  createMediaStreamDestination() {this.outputTrack = {kind: 'audio', readyState: 'live', stop() {this.stopped = true;}}; return {stream: {getTracks: () => [this.outputTrack], getAudioTracks: () => [this.outputTrack]}};}
+  createBuffer(_channels, size) {return {copyToChannel(samples) {assert.equal(samples.length, size);}};}
+  createBufferSource() {return {connect() {}, disconnect() {}, start() {queueMicrotask(() => this.onended?.());}, stop() {}};}
   async close() {this.state = 'closed';}
   async resume() {}
 };
 globalThis.AudioWorkletNode = class {constructor() {this.port = {}; worklets.push(this);} connect() {} disconnect() {}};
+const browserTurns = [];
+globalThis.webkitSpeechRecognition = class {
+  constructor() {this.unspokenPunctuation = true; browserTurns.push(this);}
+  start(track) {this.track = track; this.onstart?.();}
+  emit(text) {this.lastText = text; this.onresult?.({results: [Object.assign([{transcript: text}], {isFinal: true})]});}
+  stop() {this.emit((this.lastText || '') + ' son kelimeler'); this.onend?.();}
+  abort() {this.aborted = true;}
+};
 globalThis.fetch = async (url, init) => {
   fetchEvents.push(url);
   if (url.endsWith('/audio/transcriptions')) speechBytes.push(init.body.get('file').size);
@@ -35,12 +47,15 @@ afterEach(async () => {
   waiting = null; correctionWait = null; quotaWait = null; unsafeSpeech = false; speechTexts = []; correctionOutput = null; correctionInputs.length = 0;
   releaseSpeech?.(); releaseCorrection?.();
 });
-const config = {key: 'test-only-placeholder', model: 'whisper-large-v3', terms: [], correction: true, sensitivity: 0.008, pauseMs: 750, backgroundGuard: false};
+const config = {provider: 'groq', key: 'test-only-placeholder', model: 'whisper-large-v3', terms: [], correction: true, sensitivity: 0.008, pauseMs: 750, backgroundGuard: false};
 const push = (count, level) => {for (let i = 0; i < count; i++) worklets.at(-1).port.onmessage?.({data: new Float32Array(2048).fill(level)});};
 async function until(fn, timeout = 1000) {const deadline = Date.now() + timeout; while (!fn() && Date.now() < deadline) await new Promise(resolve => setTimeout(resolve, 5)); assert.ok(fn());}
-test('offscreen writes an immediate draft then punctuates the complete text', async () => {
+test('offscreen writes an unpunctuated live draft and punctuates only on explicit finish', async () => {
   assert.equal((await send('capture:start', 'one', config)).ok, true);
   push(4, 0.04); push(9, 0);
+  await until(() => events.some(x => x.type === 'audio:result' && x.sessionId === 'one'));
+  assert.equal(correctionInputs.length, 0); assert.equal(tracks.at(-1).stopped, false);
+  await send('capture:finish', 'one');
   await until(() => events.some(x => x.type === 'audio:result' && x.sessionId === 'one' && x.final));
   const results = events.filter(x => x.type === 'audio:result' && x.sessionId === 'one');
   assert.equal(results[0].text, 'Merhaba çekim henüz onaylanmadı'); assert.equal(results[0].final, false);
@@ -141,6 +156,7 @@ test('canceling a quota wait sends no provider request or stale text', async () 
 test('fast mode bounds stalled correction and ignores its late response', async () => {
   correctionWait = {};
   await send('capture:start', 'slow-correction', {...config, fastMode: true}); push(4, 0.04); push(9, 0);
+  await send('capture:finish', 'slow-correction');
   await until(() => Boolean(correctionWait.resolve)); const started = Date.now();
   await until(() => events.some(x => x.type === 'audio:result' && x.sessionId === 'slow-correction' && x.final), 4500);
   const results = events.filter(x => x.type === 'audio:result' && x.sessionId === 'slow-correction');
@@ -160,23 +176,29 @@ test('five chunks of a long sentence stay continuous and receive one whole-text 
   assert.equal(correctionInputs.length, 0, 'Audio chunk boundaries must not trigger punctuation');
   assert.equal(tracks.at(-1).stopped, false);
   push(9, 0);
+  await until(() => events.filter(x => x.type === 'audio:result' && x.sessionId === 'long-sentence').length === 5);
+  assert.equal(correctionInputs.length, 0); assert.equal(tracks.at(-1).stopped, false);
+  await send('capture:finish', 'long-sentence');
   await until(() => events.some(x => x.type === 'audio:result' && x.sessionId === 'long-sentence' && x.final));
   const results = events.filter(x => x.type === 'audio:result' && x.sessionId === 'long-sentence');
   assert.equal(results.length, 6); assert.equal(results.at(-1).text, expected + '.');
   assert.ok(results.slice(0, -1).every(x => !/[.!?]$/.test(x.text)));
   assert.deepEqual(correctionInputs, [expected]); assert.ok(results.every(x => x.replace));
-  assert.equal(tracks.at(-1).stopped, false, 'A final period never stops capture');
+  assert.equal(tracks.at(-1).stopped, true, 'Only the explicit finish stops capture');
 });
-test('new speech invalidates delayed punctuation without replacing the continuing draft', async () => {
-  speechTexts = ['ilk bölüm', 'devam eden cümle']; correctionOutput = raw => raw + '.'; correctionWait = {};
-  await send('capture:start', 'resume', config); push(4, 0.04); push(9, 0);
-  await until(() => Boolean(correctionWait.resolve)); const release = correctionWait.resolve;
-  push(4, 0.04); correctionWait = null; push(9, 0);
-  await until(() => events.some(x => x.type === 'audio:result' && x.sessionId === 'resume' && x.final));
-  release(); await new Promise(resolve => setTimeout(resolve, 20));
-  const results = events.filter(x => x.type === 'audio:result' && x.sessionId === 'resume');
-  assert.equal(results.at(-1).text, 'İlk bölüm devam eden cümle.');
-  assert.equal(results.filter(x => x.final).length, 1);
+test('several short and long pauses keep recording with no punctuation request until the user finishes', async () => {
+  speechTexts = ['ilk bölüm', 'devam eden cümle', 'son bölüm']; correctionOutput = raw => raw + '.';
+  await send('capture:start', 'pause-resume', config);
+  for (let i = 0; i < 3; i++) {
+    push(4, 0.04); push(i === 1 ? 80 : 9, 0);
+    await until(() => events.filter(x => x.sessionId === 'pause-resume' && x.type === 'audio:result').length === i + 1);
+    assert.equal(correctionInputs.length, 0); assert.equal(tracks.at(-1).stopped, false);
+  }
+  assert.ok(events.filter(x => x.sessionId === 'pause-resume' && x.type === 'audio:result').every(x => !x.final && !/[.,!?]$/.test(x.text)));
+  await send('capture:finish', 'pause-resume');
+  await until(() => events.some(x => x.sessionId === 'pause-resume' && x.type === 'audio:done'));
+  assert.deepEqual(correctionInputs, ['İlk bölüm devam eden cümle son bölüm']);
+  assert.equal(events.filter(x => x.sessionId === 'pause-resume' && x.type === 'audio:result').at(-1).text, 'İlk bölüm devam eden cümle son bölüm.');
 });
 test('repeated rejected chunks stay blocked without closing the microphone; clean speech still works', async () => {
   unsafeSpeech = true; await send('capture:start', 'repeated-unsafe', config);
@@ -204,7 +226,8 @@ test('cumulative recognition replaces its own partial text instead of adding it 
   const results = events.filter(x => x.sessionId === 'partial-window' && x.type === 'audio:result');
   assert.deepEqual(results.map(x => x.text), ['Örnek', 'Örnek com', 'Örnek com tr']);
   const bytes = speechBytes.slice(-3); assert.ok(bytes[0] < bytes[1] && bytes[1] < bytes[2], 'The model receives growing audio, not instructions to delete repeated words');
-  push(4, 0); await until(() => events.some(x => x.sessionId === 'partial-window' && x.final));
+  push(4, 0); assert.equal(correctionInputs.length, 0); await send('capture:finish', 'partial-window');
+  await until(() => events.some(x => x.sessionId === 'partial-window' && x.final));
   assert.deepEqual(correctionInputs, ['Örnek com tr']);
 });
 test('actual spoken repetitions survive and a rejected preview can recover with more audio', async () => {
@@ -237,8 +260,31 @@ test('an unchanged ASR result does not rewrite a reviewed or already punctuated 
   await until(() => events.some(x => x.sessionId === 'unchanged-preview' && x.type === 'audio:result'));
   speechTexts = ['evet']; push(4, 0.04); push(4, 0);
   await until(() => events.filter(x => x.sessionId === 'unchanged-preview' && x.type === 'audio:reserve').length === 2);
-  push(4, 0);
+  push(4, 0); assert.equal(correctionInputs.length, 0);
+  await send('capture:finish', 'unchanged-preview');
   await until(() => events.some(x => x.sessionId === 'unchanged-preview' && x.final));
   const results = events.filter(x => x.sessionId === 'unchanged-preview' && x.type === 'audio:result');
   assert.deepEqual(results.map(x => x.text), ['Evet', 'Evet.']);
+});
+test('Google live results remain unpunctuated through browser turn endings; stop drains the tail before one text request', async () => {
+  correctionOutput = raw => raw + '.';
+  const before = fetchEvents.length;
+  await send('capture:start', 'google-live', {...config, provider: 'browser'});
+  const first = browserTurns.at(-1);
+  assert.equal(first.track, contexts.at(-1).outputTrack); assert.equal(first.continuous, true); assert.equal(first.unspokenPunctuation, false);
+  first.emit('merhaba. talebiniz, henüz bitmedi!');
+  await until(() => events.some(x => x.sessionId === 'google-live' && x.type === 'audio:result'));
+  first.onend();
+  await until(() => browserTurns.at(-1) !== first);
+  browserTurns.at(-1).emit('devam ediyoruz!');
+  await until(() => events.filter(x => x.sessionId === 'google-live' && x.type === 'audio:result').length === 2);
+  assert.deepEqual(correctionInputs, []); assert.equal(fetchEvents.length, before); assert.equal(tracks.at(-1).stopped, false);
+  assert.ok(events.filter(x => x.sessionId === 'google-live' && x.type === 'audio:result').every(x => !x.final && !/[.,!?]/.test(x.text)));
+  push(4, 0.04); const stopped = send('capture:finish', 'google-live');
+  assert.equal(tracks.at(-1).stopped, true, 'Physical capture stops immediately on the explicit gesture');
+  await stopped; await until(() => events.some(x => x.sessionId === 'google-live' && x.type === 'audio:done'));
+  assert.deepEqual(fetchEvents.slice(before).map(x => x.split('/').at(-1)), ['completions']);
+  assert.deepEqual(correctionInputs, ['Merhaba talebiniz henüz bitmedi devam ediyoruz son kelimeler']);
+  assert.equal(events.filter(x => x.sessionId === 'google-live' && x.type === 'audio:result').at(-1).text, 'Merhaba talebiniz henüz bitmedi devam ediyoruz son kelimeler.');
+  assert.equal(contexts.at(-1).outputTrack.stopped, true); assert.equal(contexts.at(-1).state, 'closed');
 });

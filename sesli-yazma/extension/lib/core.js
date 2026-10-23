@@ -1,15 +1,17 @@
-export const VERSION = '0.1.10';
+export const VERSION = '0.2.0';
 export const MEMORY_LIMIT = 10_000_000;
 export const SPEECH_MODELS = ['whisper-large-v3', 'whisper-large-v3-turbo'];
 export const TEXT_MODEL = 'openai/gpt-oss-20b';
 export const STORE = Object.freeze({settings: 'hbVoice.settings.v1', credentials: 'hbVoice.credentials.v1', memory: 'hbVoice.memory.v1', usage: 'hbVoice.usage.v1', runtime: 'hbVoice.runtime.v1'});
-export const DEFAULTS = Object.freeze({model: SPEECH_MODELS[0], correction: true, fastMode: true, freeConfirmed: false, cloudConsent: false, microphoneReady: false, deviceId: '', sensitivity: 0.005, micGain: 1.35, backgroundGuard: true, noiseLevel: 0, audioRevision: 2, latencyRevision: 1, pauseMs: 500, learn: false});
+export const DEFAULTS = Object.freeze({provider: 'browser', browserConsent: false, model: SPEECH_MODELS[0], correction: true, fastMode: true, freeConfirmed: false, cloudConsent: false, microphoneReady: false, deviceId: '', sensitivity: 0.005, micGain: 1.35, backgroundGuard: true, noiseLevel: 0, audioRevision: 2, latencyRevision: 1, pauseMs: 500, learn: false});
 export const DEFAULT_TERMS = ['Hızır Bey', 'LiveChat', 'EveryMatrix', 'FastKeys'];
 
 export function cleanSettings(value = {}) {
   const sensitivity = !value.audioRevision && Number(value.sensitivity) === 0.008 ? DEFAULTS.sensitivity : Number(value.sensitivity);
   const pauseMs = !value.latencyRevision && Number(value.pauseMs) === 1000 ? DEFAULTS.pauseMs : Number(value.pauseMs);
   return {
+    provider: value.provider === 'groq' ? 'groq' : 'browser',
+    browserConsent: value.browserConsent === true,
     model: SPEECH_MODELS.includes(value.model) ? value.model : DEFAULTS.model,
     correction: value.correction !== false,
     fastMode: value.fastMode !== false,
@@ -28,6 +30,8 @@ export function cleanSettings(value = {}) {
     learn: value.learn === true
   };
 }
+export function groqReady(settings, hasKey) {return Boolean(hasKey && settings.freeConfirmed && settings.cloudConsent);}
+export function dictationReady(settings, hasKey) {return Boolean(settings.microphoneReady && (settings.provider === 'browser' ? settings.browserConsent : groqReady(settings, hasKey)));}
 export function normalize(text) {return String(text).toLocaleLowerCase('tr-TR').normalize('NFD').replace(/\p{M}/gu, '').replace(/ı/g, 'i');}
 export function words(text) {return normalize(text).match(/[\p{L}\p{N}]+/gu) || [];}
 export function textBytes(value) {return new TextEncoder().encode(JSON.stringify(value)).byteLength;}
@@ -42,7 +46,7 @@ export function basicText(value, terms = [], {terminal = true} = {}) {
   return text;
 }
 // ASR punctuation is provisional. Keep number separators, URLs and addresses;
-// sentence punctuation is decided from the complete draft after speech settles.
+// sentence punctuation is decided only after the user finishes dictation.
 export function draftText(value, terms = []) {
   const source = String(value || '');
   const protectedRanges = [...source.matchAll(/(?:https?:\/\/|www\.)[^\s]+|[\p{L}\p{N}._%+-]+@[\p{L}\p{N}.-]+\.[\p{L}]{2,}/gu)].map(x => [x.index, x.index + x[0].replace(/[,.!?;:]+$/, '').length]);

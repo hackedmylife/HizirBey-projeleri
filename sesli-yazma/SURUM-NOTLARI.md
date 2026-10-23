@@ -1,3 +1,14 @@
+# 0.2.0 — Google / Chrome denemesi ve yalnızca bitirmede noktalama
+
+23 Ekim 2026
+
+- Ses tanımaya Google / Chrome Web Speech seçeneği eklendi; deneme varsayılanıdır. Ayrı Google ses işleme onayı gerekir. Eski Groq / Whisper seçimi ve kayıtlı anahtar / sözlük korunur; sağlayıcılar arasında otomatik geçilmez.
+- Kısa sessizlikte noktalama çağıran yol kaldırıldı. Google ve Whisper canlı taslakları cümle işaretlerinden temizlenir. Tutar / saat ayırıcıları, bağlantılar ve e-posta korunur. Space / açık Durdur sonrasında son ses de alınıp bütün taslak için tek Groq Free noktalama çağrısı yapılır. Ses Google seçiliyken Groq'a gitmez.
+- Google Chrome'a Türkçe, sürekli tanıma ve ara sonuçlarla seçilmiş / yerel filtreden geçmiş MediaStreamTrack verilir. Tarayıcının doğal tanıma turu sonu oturumu kapatmaz; yeniden açılır. No-speech durumu durdurma değildir. Süren ağ, izin veya hizmet hataları açıkça bildirilir.
+- Space fiziksel mikrofonu hemen durdurur; son AudioWorklet kısmı, yerel filtre / ses kuyruğu ve son tanıma sonucu tamamlanır. Son tarayıcı sonucu için 5 saniyelik bütçe vardır. Geç / geçersiz cevaplar ve elle değişen metin korunur.
+- Chrome 135+ gerekir. Google sesi için Google Cloud API / anahtarı veya ödeme entegrasyonu kullanılmaz. Son noktalama isteğe bağlıdır; mevcut Groq Free anahtarı ve onayı yoksa noktalamasız taslak uyarıyla kalır.
+- Google servisi ve kullanıcının gerçek Türkçe doğruluk karşılaştırması bu ortamda test edilmiş sayılmaz. Tarayıcı tanıma olayları otomatik testte taklit edilir; gerçek cihazda deneme gerekir.
+
 # 0.1.10 — Space ile kullanıcı kontrollü dinleme
 
 23 Ekim 2026

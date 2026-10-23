@@ -1,10 +1,19 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {cleanSettings, basicText, draftText, guardCorrection, guardPunctuation, emptyMemory, validateMemory, addCorrection, serializeBackup, relevantExamples, quotaReservation, QuotaWaitError, liveChatUrl, MEMORY_LIMIT, textBytes} from '../extension/lib/core.js';
+import {cleanSettings, dictationReady, basicText, draftText, guardCorrection, guardPunctuation, emptyMemory, validateMemory, addCorrection, serializeBackup, relevantExamples, quotaReservation, QuotaWaitError, liveChatUrl, MEMORY_LIMIT, textBytes} from '../extension/lib/core.js';
 
 test('only supported models and explicit free consent survive configuration', () => {
   const settings = cleanSettings({model: 'paid-unlisted-model', freeConfirmed: 'true', cloudConsent: true, sensitivity: 100, pauseMs: 0});
   assert.equal(settings.model, 'whisper-large-v3'); assert.equal(settings.freeConfirmed, false); assert.equal(settings.cloudConsent, true); assert.equal(settings.sensitivity, 0.04);
+});
+test('Google is an explicit-consent trial without a speech API key; saved Groq selection stays selectable', () => {
+  const settings = cleanSettings({microphoneReady: true});
+  assert.equal(settings.provider, 'browser'); assert.equal(dictationReady(settings, false), false);
+  assert.equal(dictationReady({...settings, browserConsent: true}, false), true);
+  assert.equal(cleanSettings({provider: 'groq'}).provider, 'groq');
+  assert.equal(dictationReady({...settings, provider: 'groq', browserConsent: true}, false), false);
+  assert.equal(dictationReady({...settings, provider: 'groq', freeConfirmed: true, cloudConsent: true}, true), true);
+  assert.equal(cleanSettings({browserConsent: 'true'}).browserConsent, false);
 });
 test('audio defaults migrate while custom choices and Free consent are preserved', () => {
   const migrated = cleanSettings({sensitivity: 0.008, microphoneReady: true, freeConfirmed: true, cloudConsent: true});

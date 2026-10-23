@@ -1,4 +1,4 @@
-import {STORE, cleanSettings, emptyMemory, validateMemory, addCorrection, relevantExamples, serializeBackup, textBytes, MEMORY_LIMIT, liveChatUrl, quotaReservation, QuotaWaitError, TEXT_MODEL} from './lib/core.js';
+import {STORE, cleanSettings, dictationReady, groqReady, emptyMemory, validateMemory, addCorrection, relevantExamples, serializeBackup, textBytes, MEMORY_LIMIT, liveChatUrl, quotaReservation, QuotaWaitError, TEXT_MODEL} from './lib/core.js';
 import {request} from './lib/groq.js';
 import {dictationTextRisk, REJECTED_DICTATION} from './lib/safety.js';
 
@@ -76,9 +76,9 @@ async function finish() {
 }
 async function start(tabId) {
   const settings = await getSettings(), key = await getKey();
-  if (!key || !settings.freeConfirmed || !settings.cloudConsent || !settings.microphoneReady) {
+  if (!dictationReady(settings, Boolean(key))) {
     await chrome.runtime.openOptionsPage();
-    throw new Error('Önce Free hesap anahtarını ve mikrofon iznini ayarlardan tamamla.');
+    throw new Error(settings.provider === 'browser' ? 'Ayarlardan Google / Chrome ses işleme onayını ve mikrofon iznini tamamla.' : 'Önce Free hesap anahtarını ve mikrofon iznini ayarlardan tamamla.');
   }
   const tab = await chrome.tabs.get(tabId);
   if (!liveChatUrl(tab.url)) throw new Error('Önce açık LiveChat görüşmesine geç, sonra Alt + H kullan.');
@@ -94,7 +94,8 @@ async function start(tabId) {
   try {
     await ensureOffscreen();
     if (session?.id !== id) return view();
-    const result = await offscreen('capture:start', {sessionId: id, config: {...settings, key, terms: memoryCache.terms}});
+    const canCorrect = groqReady(settings, Boolean(key));
+    const result = await offscreen('capture:start', {sessionId: id, config: {...settings, key: canCorrect ? key : '', correction: settings.correction && canCorrect, punctuationUnavailable: settings.correction && !canCorrect, terms: memoryCache.terms}});
     if (session?.id !== id) {await offscreen('capture:cancel', {sessionId: id}).catch(() => {}); return view();}
     if (!result?.ok) throw new Error(result?.error || 'Mikrofon başlatılamadı.');
   } catch (error) {if (session?.id === id) await cancel(error.message, 'error'); throw error;}
@@ -172,6 +173,7 @@ async function handle(message, sender) {
     if (message.type === 'ui:removeKey') {await cancel('Anahtar kaldırıldı.'); await chrome.storage.local.remove(STORE.credentials); return true;}
     if (message.type === 'ui:check') {
       const settings = await getSettings();
+      if (settings.provider === 'browser') return {browser: true, message: 'Chrome ses tanıma seçili. Ses için API anahtarı kullanılmaz; gerçek hizmet erişimi ilk dikteyle denenir.', correctionAvailable: groqReady(settings, Boolean(await getKey()))};
       if (!settings.freeConfirmed || !settings.cloudConsent) throw new Error('Önce Free hesap ve ses işleme onayını kaydet.');
       const key = await getKey(); if (!key) throw new Error('Önce API anahtarını kaydet.');
       // The service worker has a 30-second fetch-response limit. Dictation's

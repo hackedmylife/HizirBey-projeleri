@@ -2,19 +2,69 @@
   "manifest_version": 3,
   "name": "Hızır Bey Sesli Yazma",
   "short_name": "Hızır Bey Dikte",
-  "version": "0.1.10",
-  "minimum_chrome_version": "116",
+  "version": "0.2.0",
+  "minimum_chrome_version": "135",
   "description": "Alt+H ile Türkçe dikteyi başlat, Space ile bitir. Metin LiveChat yazı alanına aktarılır; okuyup Enter ile sen gönderirsin.",
-  "permissions": ["storage", "unlimitedStorage", "offscreen", "activeTab", "clipboardWrite"],
-  "host_permissions": ["https://api.groq.com/*", "https://my.livechatinc.com/*", "https://my.livechat.com/*"],
-  "background": {"service_worker": "background.js", "type": "module"},
-  "action": {"default_title": "Hızır Bey Sesli Yazma · Kontrol paneli", "default_popup": "popup.html"},
+  "permissions": [
+    "storage",
+    "unlimitedStorage",
+    "offscreen",
+    "activeTab",
+    "clipboardWrite"
+  ],
+  "host_permissions": [
+    "https://api.groq.com/*",
+    "https://my.livechatinc.com/*",
+    "https://my.livechat.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_title": "Hızır Bey Sesli Yazma · Kontrol paneli",
+    "default_popup": "popup.html"
+  },
   "options_page": "options.html",
   "commands": {
-    "toggle-dictation": {"suggested_key": {"default": "Alt+H"}, "description": "Türkçe dikteyi başlat / durdur"}
+    "toggle-dictation": {
+      "suggested_key": {
+        "default": "Alt+H"
+      },
+      "description": "Türkçe dikteyi başlat / durdur"
+    }
   },
-  "icons": {"16": "icons/icon-16.png", "32": "icons/icon-32.png", "48": "icons/icon-48.png", "128": "icons/icon-128.png"},
-  "content_scripts": [{"matches": ["https://my.livechatinc.com/*", "https://my.livechat.com/*"], "js": ["editor.js", "content.js"], "run_at": "document_idle"}],
-  "web_accessible_resources": [{"resources": ["logo.png"], "matches": ["https://my.livechatinc.com/*", "https://my.livechat.com/*"]}],
-  "content_security_policy": {"extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'none'; connect-src 'self' https://api.groq.com; img-src 'self' data:; style-src 'self';"}
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://my.livechatinc.com/*",
+        "https://my.livechat.com/*"
+      ],
+      "js": [
+        "editor.js",
+        "content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "logo.png"
+      ],
+      "matches": [
+        "https://my.livechatinc.com/*",
+        "https://my.livechat.com/*"
+      ]
+    }
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'none'; connect-src 'self' https://api.groq.com; img-src 'self' data:; style-src 'self';"
+  }
 }

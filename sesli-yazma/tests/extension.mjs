@@ -13,6 +13,15 @@ await cp(path.join(root, 'extension'), extension, {recursive: true});
 // Isolated test copy: the shipped extension contains no mock, test hook or override.
 await appendFile(path.join(extension, 'offscreen.js'), `
 const qa = {hold: true, quota: false, unsafe: false, transientFailures: 1, requests: [], release: null, fragments: [], long: false};
+function qaMuteWorklet() {active.qaPortHandler ||= active.worklet.port.onmessage;active.worklet.port.onmessage=event=>{if(event.data?.type==='flushed')active.qaPortHandler(event);};}
+qa.browserTurns=[];
+Object.defineProperty(globalThis,'SpeechRecognition',{configurable:true,value:class {
+  constructor(){this.unspokenPunctuation=true;qa.browserTurns.push(this);}
+  start(track){this.track=track;queueMicrotask(()=>this.onstart?.());}
+  emit(text){this.lastText=text;this.onresult?.({results:[Object.assign([{transcript:text}],{isFinal:true})]});}
+  stop(){this.emit((this.lastText||'')+' son kelimeler');this.onend?.();}
+  abort(){this.aborted=true;}
+}});
 const qaNativeFetch = globalThis.fetch;
 globalThis.fetch = async (url, init) => {
   if (!String(url).startsWith('https://api.groq.com/openai/v1/')) return qaNativeFetch(url, init);
@@ -24,12 +33,16 @@ globalThis.fetch = async (url, init) => {
   const data = String(url).endsWith('/audio/transcriptions') ? {text:qa.fragments.shift()||'merhaba çekiminiz henüz onaylanmadı',segments:[{avg_logprob:-0.1,no_speech_prob:0.01,compression_ratio:1.1}]} : {choices:[{message:{content:JSON.stringify({text:qa.long?JSON.parse(JSON.parse(init.body).messages[1].content).text+'.':'Merhaba. Çekiminiz henüz onaylanmadı.'})}}]};
   return new Response(JSON.stringify(data),{status:200,headers:{'Content-Type':'application/json'}});
 };
-chrome.runtime.onMessage.addListener((m,s,r)=>{if(m?.target!=='qa'||s.id!==chrome.runtime.id)return false;if(m.type==='qa:get')r({requests:qa.requests,waiting:Boolean(qa.release)});else if(m.type==='qa:release'){qa.hold=false;qa.release?.();qa.release=null;r(true);}else if(m.type==='qa:unsafe'){qa.unsafe=true;qa.hold=false;qa.transientFailures=0;r(true);}else if(m.type==='qa:long'){qa.requests=[];qa.long=true;qa.hold=false;qa.transientFailures=0;qa.fragments=['çekim talebiniz ile ilgili','kontrollerimiz sürüyor henüz','onaylanmadı bu nedenle','bir süre daha beklemenizi','rica ediyoruz bilgi vereceğiz'];active.worklet.port.onmessage=null;for(let i=0;i<282;i++)active.segmenter.push(new Float32Array(Math.round(active.sampleRate*.128)).fill(.04));for(let i=0;i<9;i++)active.segmenter.push(new Float32Array(Math.round(active.sampleRate*.128)));r(true);}else if(m.type==='qa:window'){qa.requests=[];qa.long=true;qa.hold=false;qa.transientFailures=0;active.worklet.port.onmessage=null;r(true);}else if(m.type==='qa:preview'||m.type==='qa:reject'){active.worklet.port.onmessage=null;if(m.type==='qa:preview')qa.fragments=[m.text];for(let i=0;i<4;i++)active.segmenter.push(new Float32Array(Math.round(active.sampleRate*.128)).fill(.04));for(let i=0;i<(m.type==='qa:reject'?9:4);i++)active.segmenter.push(new Float32Array(Math.round(active.sampleRate*.128)));r(true);}else if(m.type==='qa:settle'){for(let i=0;i<4;i++)active.segmenter.push(new Float32Array(Math.round(active.sampleRate*.128)));r(true);}else if(m.type==='qa:quota'){qa.quota=true;qa.hold=false;r(true);} return false;});
+chrome.runtime.onMessage.addListener((m,s,r)=>{if(m?.target!=='qa'||s.id!==chrome.runtime.id)return false;if(m.type==='qa:get')r({requests:qa.requests,waiting:Boolean(qa.release)});else if(m.type==='qa:release'){qa.hold=false;qa.release?.();qa.release=null;r(true);}else if(m.type==='qa:unsafe'){qa.unsafe=true;qa.hold=false;qa.transientFailures=0;r(true);}else if(m.type==='qa:long'){qa.requests=[];qa.long=true;qa.hold=false;qa.transientFailures=0;qa.fragments=['çekim talebiniz ile ilgili','kontrollerimiz sürüyor henüz','onaylanmadı bu nedenle','bir süre daha beklemenizi','rica ediyoruz bilgi vereceğiz'];qaMuteWorklet();for(let i=0;i<282;i++)active.segmenter.push(new Float32Array(Math.round(active.sampleRate*.128)).fill(.04));for(let i=0;i<9;i++)active.segmenter.push(new Float32Array(Math.round(active.sampleRate*.128)));r(true);}else if(m.type==='qa:window'){qa.requests=[];qa.long=true;qa.hold=false;qa.transientFailures=0;qaMuteWorklet();r(true);}else if(m.type==='qa:preview'||m.type==='qa:reject'){qaMuteWorklet();if(m.type==='qa:preview')qa.fragments=[m.text];for(let i=0;i<4;i++)active.segmenter.push(new Float32Array(Math.round(active.sampleRate*.128)).fill(.04));for(let i=0;i<(m.type==='qa:reject'?9:4);i++)active.segmenter.push(new Float32Array(Math.round(active.sampleRate*.128)));r(true);}else if(m.type==='qa:settle'){for(let i=0;i<4;i++)active.segmenter.push(new Float32Array(Math.round(active.sampleRate*.128)));r(true);}else if(m.type==='qa:quota'){qa.quota=true;qa.hold=false;r(true);} return false;});
 chrome.runtime.onMessage.addListener((m,s,r)=>{
   if(m?.target!=='qa'||s.id!==chrome.runtime.id)return false;
-  if(m.type==='qa:guard') {qa.requests=[];qa.long=true;qa.hold=false;qa.unsafe=false;qa.transientFailures=0;active.worklet.port.onmessage=null;r({filter:!!active.filter,rate:active.sampleRate});}
-  else if(m.type==='qa:tail') {qa.long=true;qa.fragments=[m.text];active.worklet.port.onmessage=null;active.windows.boundary();for(let i=0;i<4;i++)active.segmenter.push(new Float32Array(2048).fill(.04));r({buffered:active.segmenter.length>0});}
-  else if(m.type==='qa:pcm') {const data=Float32Array.from(m.samples);for(let i=0;i<data.length;i+=2048)active.accept(data.subarray(i,i+2048));for(let i=0;i<12;i++)active.accept(new Float32Array(2048));r(true);}
+  if(m.type==='qa:browser') {qa.requests=[];qa.long=true;qa.quota=false;qaMuteWorklet();active.qaAnalyser=active.context.createAnalyser();active.qaAnalyser.fftSize=2048;active.context.createMediaStreamSource(active.browserDestination.stream).connect(active.qaAnalyser);r({filter:!!active.filter,track:qa.browserTurns.at(-1).track===active.browserDestination.stream.getAudioTracks()[0],punctuation:qa.browserTurns.at(-1).unspokenPunctuation});}
+  else if(m.type==='qa:browserText') {qa.browserTurns.at(-1).emit(m.text);r(true);}
+  else if(m.type==='qa:browserEnd') {qa.browserTurns.at(-1).onend();r(qa.browserTurns.length);}
+  else if(m.type==='qa:browserProbe') {const samples=new Float32Array(2048);active.qaAnalyser.getFloatTimeDomainData(samples);r({turns:qa.browserTurns.length,ready:active.browser.ready,rms:Math.sqrt(samples.reduce((n,v)=>n+v*v,0)/samples.length)});}
+  else if(m.type==='qa:guard') {qa.requests=[];qa.long=true;qa.hold=false;qa.unsafe=false;qa.transientFailures=0;qaMuteWorklet();r({filter:!!active.filter,rate:active.sampleRate});}
+  else if(m.type==='qa:tail') {qa.long=true;qa.fragments=[m.text];qaMuteWorklet();active.windows.boundary();for(let i=0;i<4;i++)active.segmenter.push(new Float32Array(2048).fill(.04));r({buffered:active.segmenter.length>0});}
+  else if(m.type==='qa:pcm') {const data=Float32Array.from(m.samples);for(let i=0;i<data.length;i+=2048)active.accept(data.subarray(i,i+2048));for(let i=0;i<(m.tailFrames??12);i++)active.accept(new Float32Array(2048));r(true);}
   return false;
 });
 `);
@@ -45,6 +58,7 @@ try {
   await options.goto(`chrome-extension://${id}/options.html`); await options.waitForFunction(() => document.getElementById('shortcutState').textContent.includes('Alt'));
   for (const other of context.pages()) if (other !== options && other.url().includes('options.html')) await other.close();
   await options.bringToFront();
+  await options.locator('#provider').selectOption('groq');
   await options.locator('#apiKey').fill('test-credential-placeholder-000000'); await options.locator('#freeConfirmed').check(); await options.locator('#cloudConsent').check(); await options.locator('#save').click();
   await options.waitForFunction(() => document.getElementById('saveState').textContent.includes('kaydedildi'));
   await options.locator('#testMic').click(); await options.waitForFunction(() => document.getElementById('testMic').textContent.includes('Testi bitir')); await options.locator('#testMic').click(); checks++;
@@ -87,10 +101,10 @@ try {
   assert.equal(await page.locator('#hizir-voice-host').locator('#indicator').isVisible(), true); checks++;
   await page.locator('#editor').focus(); await page.keyboard.press('Enter'); assert.equal(await page.evaluate(() => globalThis.sentCount), 0); checks++;
   await qa('qa:release');
-  await page.waitForFunction(() => document.getElementById('editor').innerText.includes('Merhaba. Çekiminiz henüz onaylanmadı.'), undefined, {timeout: 15000});
+  await page.waitForFunction(() => document.getElementById('editor').innerText.includes('Merhaba çekiminiz henüz onaylanmadı'), undefined, {timeout: 15000});
   assert.equal(((await page.locator('#editor').innerText()).match(/henüz onaylanmadı/g) || []).length, 1, 'The retried segment is inserted only once');
   const usage = await worker.evaluate(async () => (await chrome.storage.local.get('hbVoice.usage.v1'))['hbVoice.usage.v1']);
-  assert.equal(usage.speech, 2); assert.equal(usage.text, 1); checks++;
+  assert.equal(usage.speech, 2); assert.equal(usage.text || 0, 0); checks++;
   assert.equal(await page.evaluate(() => globalThis.sentCount), 0); checks++;
   const readyUntil = Date.now() + 5000; while ((await sessionStore()).status.busy && Date.now() < readyUntil) await page.waitForTimeout(100);
   const latency = (await sessionStore()).status.lastLatencyMs;
@@ -139,12 +153,12 @@ try {
   // segmenter; real Worklet capture was exercised above. No hook is shipped.
   await page.locator('#editor').fill('Önceden yazılmış metin.');
   await toggle(); await listening(); await qa('qa:long');
-  const longDraft = 'Çekim talebiniz ile ilgili kontrollerimiz sürüyor henüz onaylanmadı bu nedenle bir süre daha beklemenizi rica ediyoruz bilgi vereceğiz.';
+  const longDraft = 'Çekim talebiniz ile ilgili kontrollerimiz sürüyor henüz onaylanmadı bu nedenle bir süre daha beklemenizi rica ediyoruz bilgi vereceğiz';
   await page.waitForFunction(text => document.getElementById('editor').innerText.trim() === 'Önceden yazılmış metin. ' + text, longDraft, {timeout: 15000});
   assert.equal((await sessionStore()).status.recording, true);
   assert.equal(((await page.locator('#editor').innerText()).match(/çekim talebiniz/gi) || []).length, 1); checks++;
   const longRequests = (await qa('qa:get')).requests;
-  assert.equal(longRequests.filter(x => x.endsWith('/audio/transcriptions')).length, 5); assert.equal(longRequests.filter(x => x.endsWith('/chat/completions')).length, 1); checks++;
+  assert.equal(longRequests.filter(x => x.endsWith('/audio/transcriptions')).length, 5); assert.equal(longRequests.filter(x => x.endsWith('/chat/completions')).length, 0); checks++;
   const longReadyUntil = Date.now() + 5000;
   while ((await sessionStore()).status.busy && Date.now() < longReadyUntil) await page.waitForTimeout(100);
   assert.equal((await sessionStore()).status.busy, false);
@@ -160,10 +174,11 @@ try {
     checks++;
   }
   await qa('qa:settle');
-  await page.waitForFunction(() => document.getElementById('editor').innerText.trim() === 'Korunan başlangıç. Örnek com tr.');
+  await page.waitForTimeout(1200);
+  assert.equal((await page.locator('#editor').innerText()).trim(), 'Korunan başlangıç. Örnek com tr');
   const previewRequests = (await qa('qa:get')).requests;
   assert.equal(previewRequests.filter(x => x.endsWith('/audio/transcriptions')).length, 3);
-  assert.equal(previewRequests.filter(x => x.endsWith('/chat/completions')).length, 1); checks++;
+  assert.equal(previewRequests.filter(x => x.endsWith('/chat/completions')).length, 0); checks++;
   const previewReadyUntil = Date.now() + 5000;
   while ((await sessionStore()).status.busy && Date.now() < previewReadyUntil) await page.waitForTimeout(100);
   assert.equal((await sessionStore()).status.recording, true);
@@ -217,6 +232,37 @@ try {
   const failureUntil = Date.now() + 20000;
   while (Date.now() < failureUntil) {const state = await sessionStore(); if (state.status.phase === 'error') break; await page.waitForTimeout(200);}
   const failed = await sessionStore(); assert.equal(failed.status.phase, 'error'); assert.match(failed.status.message, /kota/); assert.equal(failed.session, null); checks++;
+  // Google route: real MV3 microphone, local WASM and processed audio track;
+  // only SpeechRecognition events and the final Groq text response are mocked.
+  await page.waitForTimeout(600);
+  await worker.evaluate(() => chrome.storage.local.remove('hbVoice.usage.v1'));
+  await options.evaluate(() => chrome.runtime.sendMessage({type: 'ui:save', settings: {provider: 'browser', browserConsent: true, noiseLevel: 0, noiseDeviceId: ''}}));
+  await page.locator('#editor').fill(''); await toggle(); await listening();
+  assert.deepEqual(await qa('qa:browser'), {filter: true, track: true, punctuation: false}); checks++;
+  await qa('qa:pcm', {samples: Array.from(musicSignal(0.8)), tailFrames: 2}); await page.waitForTimeout(450);
+  assert.equal((await qa('qa:browserProbe')).rms, 0); assert.equal((await qa('qa:get')).requests.length, 0); checks++;
+  await page.waitForTimeout(650);
+  const speech = (await speechFixture()).slice(8000, 27200);
+  await qa('qa:pcm', {samples: Array.from(speech), tailFrames: 2});
+  let voiceRms = 0;
+  for (let i = 0; i < 12; i++) {await page.waitForTimeout(100); voiceRms = Math.max(voiceRms, (await qa('qa:browserProbe')).rms);}
+  assert.ok(voiceRms > 0.0001, 'Filtered public speech reaches the actual MediaStream audio track'); checks++;
+  await qa('qa:browserText', {text: 'merhaba. talebiniz, henüz bitmedi!'});
+  await page.waitForFunction(() => document.getElementById('editor').innerText.trim() === 'Merhaba talebiniz henüz bitmedi'); checks++;
+  const turnsBefore = await qa('qa:browserEnd'); await page.waitForTimeout(350);
+  assert.ok((await qa('qa:browserProbe')).turns > turnsBefore); assert.equal((await sessionStore()).status.recording, true); checks++;
+  await qa('qa:browserText', {text: 'devam ediyoruz!'});
+  await page.waitForFunction(() => document.getElementById('editor').innerText.trim() === 'Merhaba talebiniz henüz bitmedi devam ediyoruz');
+  await page.waitForTimeout(1200); assert.equal((await qa('qa:get')).requests.length, 0); assert.equal((await sessionStore()).status.recording, true); checks++;
+  await page.locator('#editor').focus(); await page.keyboard.press('Space');
+  await page.waitForFunction(() => document.getElementById('editor').innerText.trim() === 'Merhaba talebiniz henüz bitmedi devam ediyoruz son kelimeler.');
+  const googleDone = Date.now() + 6000;
+  while ((await sessionStore()).session && Date.now() < googleDone) await page.waitForTimeout(100);
+  assert.equal((await sessionStore()).session, null); assert.equal(await page.locator('#hizir-voice-host').isVisible(), false); checks++;
+  const googleUsage = await worker.evaluate(async () => (await chrome.storage.local.get('hbVoice.usage.v1'))['hbVoice.usage.v1']);
+  assert.equal((await sessionStore()).status.recording, false); assert.equal(googleUsage.speech || 0, 0); assert.equal(googleUsage.text, 1); checks++;
+  await page.keyboard.press('Enter'); assert.equal(await page.evaluate(() => globalThis.sentCount), 5); checks++;
+  assert.equal(await worker.evaluate(async () => (await chrome.storage.local.get('hbVoice.credentials.v1'))['hbVoice.credentials.v1'].key), key); checks++;
   assert.deepEqual(errors, []); checks++;
   console.log(`Real extension + microphone + mocked API checks passed: ${checks}. No real account, key or customer messages used.`);
 } catch (error) {

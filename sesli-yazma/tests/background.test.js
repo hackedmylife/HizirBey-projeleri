@@ -20,7 +20,7 @@ const send = (type, body = {}, sender = ui) => new Promise(resolve => {listener(
 test('trusted-context storage and UI never disclose the saved key to a content script', async () => {
   await send('ui:get'); assert.deepEqual(access, ['TRUSTED_CONTEXTS', 'TRUSTED_CONTEXTS']);
   const key = 'unit-test-credential-placeholder';
-  await send('ui:save', {key, settings: {freeConfirmed: true, cloudConsent: true, microphoneReady: true}});
+  await send('ui:save', {key, settings: {provider: 'groq', freeConfirmed: true, cloudConsent: true, microphoneReady: true}});
   assert.equal(local[STORE.settings].microphoneReady, false, 'UI cannot fake readiness through the settings object');
   assert.equal((await send('ui:get', {}, content)).ok, false);
   const result = await send('ui:get'); assert.equal(result.data.hasKey, true); assert.equal(JSON.stringify(result).includes(key), false);
@@ -167,4 +167,16 @@ test('normal completion and service-worker restart retain recovery; a conversati
   await send('content:cancel', {sessionId, reason: 'Görüşme değişti.'}, content);
   assert.equal((await send('ui:get')).data.status.canRewrite, false);
   assert.equal((await send('ui:get')).data.status.lastText, 'Kurtarılacak dikte.', 'The copyable recovery text survives without an editor target');
+});
+test('Google requires separate consent, preserves the Groq key, and sends no unauthorized text-service credentials', async () => {
+  const key = local[STORE.credentials].key;
+  await send('ui:save', {settings: {provider: 'browser', browserConsent: false}});
+  assert.equal((await send('content:toggle', {}, content)).ok, false);
+  await send('ui:save', {settings: {provider: 'browser', browserConsent: true, cloudConsent: false}});
+  assert.equal((await send('content:toggle', {}, content)).ok, true);
+  const start = messages.filter(x => x.type === 'capture:start').at(-1);
+  assert.equal(start.config.provider, 'browser'); assert.equal(start.config.key, ''); assert.equal(start.config.correction, false); assert.equal(start.config.punctuationUnavailable, true);
+  assert.equal(local[STORE.credentials].key, key);
+  const sessionId = (await send('ui:get')).data.status.sessionId;
+  await send('content:cancel', {sessionId}, content);
 });

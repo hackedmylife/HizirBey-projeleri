@@ -1,16 +1,17 @@
-import {VERSION, STORE, MEMORY_LIMIT} from './lib/core.js';
+import {VERSION, STORE, MEMORY_LIMIT, dictationReady, groqReady} from './lib/core.js';
 import {boostSample} from './lib/audio.js';
 import {openMicrophone, backgroundLevel} from './lib/voice.js';
 const $ = id => document.getElementById(id);
 let micStream = null, audioContext = null, micFrame = null, micTimer = null, toastTimer, noiseLevel = 0, noiseDeviceId = '', measuring = false;
 const ask = async message => {const result = await chrome.runtime.sendMessage(message); if (!result?.ok) throw new Error(result?.error || 'Eklentiyle bağlantı kurulamadı.'); return result.data;};
 function toast(text, error = false) {clearTimeout(toastTimer); $('toast').textContent = text; $('toast').classList.toggle('error', error); $('toast').hidden = false; toastTimer = setTimeout(() => {$('toast').hidden = true;}, error ? 8000 : 4000);}
-function settings() {return {model: $('model').value, correction: $('correction').checked, fastMode: $('fastMode').checked, freeConfirmed: $('freeConfirmed').checked, cloudConsent: $('cloudConsent').checked, deviceId: $('deviceId').value, sensitivity: Number($('sensitivity').value), micGain: Number($('micGain').value), backgroundGuard: $('backgroundGuard').checked, noiseLevel, noiseDeviceId, pauseMs: Number($('pauseMs').value), learn: $('learn').checked};}
+function settings() {return {provider: $('provider').value, browserConsent: $('browserConsent').checked, model: $('model').value, correction: $('correction').checked, fastMode: $('fastMode').checked, freeConfirmed: $('freeConfirmed').checked, cloudConsent: $('cloudConsent').checked, deviceId: $('deviceId').value, sensitivity: Number($('sensitivity').value), micGain: Number($('micGain').value), backgroundGuard: $('backgroundGuard').checked, noiseLevel, noiseDeviceId, pauseMs: Number($('pauseMs').value), learn: $('learn').checked};}
+function renderProvider() {const browser = $('provider').value === 'browser'; $('model').disabled = browser; $('browserChoice').hidden = !browser; $('providerHint').textContent = browser ? 'Ses: Google / Chrome. Ses için API anahtarı yok. Space sonrası isteğe bağlı noktalama: mevcut Groq Free bağlantısı.' : 'Ses: Groq / Whisper. API anahtarı ve Free hesap onayı gerekir. Noktalama yalnızca dinlemeyi bitirince çalışır.';}
 function renderNoise() {const measured = Boolean(noiseLevel || noiseDeviceId); $('noiseState').textContent = measured ? 'Arka plan ölçümü kayıtlı. Müzik veya mikrofon seviyesi değişirse yeniden ölç.' : 'Müziği açık bırak; ölçüm sırasında 2 saniye konuşma. Ses kaydedilmez veya gönderilmez.'; $('clearNoise').disabled = measuring || !measured;}
 function renderMetadata(data) {
-  const ready = data.hasKey && data.settings.freeConfirmed && data.settings.cloudConsent && data.settings.microphoneReady;
+  const ready = dictationReady(data.settings, data.hasKey);
   $('setupChip').textContent = ready ? 'Kurulum tamam · LiveChat’e geçebilirsin' : 'Kurulum bekleniyor'; $('setupChip').classList.toggle('ready', ready);
-  $('stepKey').classList.toggle('done', data.hasKey && data.settings.freeConfirmed && data.settings.cloudConsent);
+  $('stepKey').classList.toggle('done', data.settings.provider === 'browser' ? data.settings.browserConsent : groqReady(data.settings, data.hasKey));
   $('stepMic').classList.toggle('done', data.settings.microphoneReady); $('stepReady').classList.toggle('done', ready);
   $('keyHint').textContent = data.hasKey ? 'Anahtar kayıtlı. Bu alanı boş bırakırsan mevcut anahtarın korunur.' : 'Anahtarın yalnızca bu eklentinin yerel ayarlarında saklanır.';
   $('apiKey').placeholder = data.hasKey ? 'Anahtar kayıtlı · değiştirmek için yenisini yapıştır' : 'Ücretsiz hesabının API anahtarını yapıştır';
@@ -25,12 +26,13 @@ function renderMetadata(data) {
 async function load() {
   const data = await ask({type: 'ui:get'});
   renderMetadata(data);
-  for (const name of ['model', 'deviceId', 'pauseMs', 'sensitivity', 'micGain']) {
+  for (const name of ['provider', 'model', 'deviceId', 'pauseMs', 'sensitivity', 'micGain']) {
     const control = $(name), value = String(data.settings[name]);
     if (name === 'deviceId' && value && ![...control.options].some(x => x.value === value)) control.add(new Option('Kaydedilmiş mikrofon', value));
-    control.value = value;
+    control.value = name === 'provider' && !['browser', 'groq'].includes(value) ? 'browser' : value;
   }
-  for (const name of ['correction', 'fastMode', 'freeConfirmed', 'cloudConsent', 'learn']) $(name).checked = data.settings[name];
+  for (const name of ['browserConsent', 'correction', 'fastMode', 'freeConfirmed', 'cloudConsent', 'learn']) $(name).checked = data.settings[name];
+  renderProvider();
   $('backgroundGuard').checked = data.settings.backgroundGuard !== false; noiseLevel = data.settings.noiseLevel || 0; noiseDeviceId = data.settings.noiseDeviceId || ''; renderNoise();
   $('terms').value = data.terms.join('\n');
   $('sensitivityValue').textContent = Number($('sensitivity').value).toFixed(3);
@@ -48,11 +50,12 @@ $('shortcuts').onclick = () => ask({type: 'ui:shortcuts'}).catch(error => toast(
 $('sensitivity').oninput = () => {$('sensitivityValue').textContent = Number($('sensitivity').value).toFixed(3);};
 $('micGain').oninput = () => {$('micGainValue').textContent = `%${Math.round(Number($('micGain').value) * 100)}`;};
 $('deviceId').onchange = () => {noiseLevel = 0; noiseDeviceId = ''; renderNoise();};
+$('provider').onchange = renderProvider;
 $('settingsForm').oninput = () => {$('saveState').textContent = 'Kaydedilmemiş değişiklikler var.';};
 $('learn').onchange = () => {$('saveState').textContent = 'Öğrenme tercihini kaydet.';};
 $('checkConnection').onclick = async () => {
   $('checkConnection').disabled = true; $('connectionResult').textContent = 'Kontrol ediliyor…';
-  try {await save(); const result = await ask({type: 'ui:check'}); $('connectionResult').textContent = result.message; $('connectionResult').classList.remove('error-text'); toast(result.correctionAvailable ? result.message : 'Konuşma modeli hazır; metin modeli bu hesapta görünmüyor.', !result.correctionAvailable);}
+  try {await save(); if ($('provider').value === 'browser' && !(globalThis.SpeechRecognition || globalThis.webkitSpeechRecognition)) throw new Error('Google / Chrome ses tanıma bu tarayıcıda görünmüyor. Güncel Google Chrome kullan.'); const result = await ask({type: 'ui:check'}); $('connectionResult').textContent = result.message; $('connectionResult').classList.remove('error-text'); toast(result.browser || result.correctionAvailable ? result.message : 'Konuşma modeli hazır; metin modeli bu hesapta görünmüyor.', !result.browser && !result.correctionAvailable);}
   catch (error) {$('connectionResult').textContent = error.message; $('connectionResult').classList.add('error-text');}
   finally {$('checkConnection').disabled = false;}
 };

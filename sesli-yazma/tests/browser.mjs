@@ -190,7 +190,7 @@ await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
 const port = server.address().port;
 await context.addInitScript(() => {
   if (!location.hostname.includes('127.0.0.1')) return;
-  const data = {settings: {model: 'whisper-large-v3', correction: true, fastMode: true, freeConfirmed: false, cloudConsent: false, microphoneReady: false, deviceId: '', sensitivity: 0.005, micGain: 1.35, pauseMs: 500, learn: false}, hasKey: false, terms: ['Hızır Bey', 'LiveChat', 'EveryMatrix', 'FastKeys'], memory: {count: 0, bytes: 120, maxBytes: 10000000}, usage: {}, shortcut: 'Alt+H', status: {phase: 'idle', message: 'LiveChat görüşmesinde Alt + H ile başlat.', busy: false, recording: false}};
+  const data = {settings: {provider: 'browser', browserConsent: false, model: 'whisper-large-v3', correction: true, fastMode: true, freeConfirmed: false, cloudConsent: false, microphoneReady: false, deviceId: '', sensitivity: 0.005, micGain: 1.35, pauseMs: 500, learn: false}, hasKey: false, terms: ['Hızır Bey', 'LiveChat', 'EveryMatrix', 'FastKeys'], memory: {count: 0, bytes: 120, maxBytes: 10000000}, usage: {}, shortcut: 'Alt+H', status: {phase: 'idle', message: 'LiveChat görüşmesinde Alt + H ile başlat.', busy: false, recording: false}};
   globalThis.__uiListeners = []; globalThis.__uiMessages = [];
   globalThis.chrome = {runtime: {sendMessage: async message => {globalThis.__uiMessages.push(message); if (message.type === 'ui:get') return {ok: true, data}; if (message.type === 'ui:save') {data.settings = {...data.settings, ...message.settings}; data.hasKey = Boolean(message.key) || data.hasKey;} return {ok: true, data: true};}, onMessage: {addListener(fn) {globalThis.__uiListeners.push(fn);}}}, storage: {onChanged: {addListener() {}}}};
 });
@@ -200,6 +200,14 @@ assert.equal(await options.locator('img').first().evaluate(x => x.complete && x.
 assert.equal(await options.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true); checks++;
 assert.equal(await options.locator('#micGain').inputValue(), '1.35'); assert.equal(await options.locator('#micGainValue').textContent(), '%135'); assert.equal(await options.locator('#sensitivity').inputValue(), '0.005'); checks++;
 assert.equal(await options.locator('#pauseMs').inputValue(), '500'); assert.equal(await options.locator('#fastMode').isChecked(), true); checks++;
+assert.equal(await options.locator('#provider').inputValue(), 'browser');
+assert.equal(await options.locator('#model').isDisabled(), true); assert.equal(await options.locator('#browserConsent').isChecked(), false); checks++;
+await options.locator('#provider').selectOption('groq');
+assert.equal(await options.locator('#model').isEnabled(), true); assert.equal(await options.locator('#browserChoice').isVisible(), false); checks++;
+await options.locator('#provider').selectOption('browser'); await options.locator('#browserConsent').check();
+assert.match(await options.locator('#providerHint').textContent(), /Space sonrası/); checks++;
+assert.match(await options.locator('label').filter({has: options.locator('#correction')}).textContent(), /Space sonrası noktalama/); checks++;
+
 assert.equal(await options.locator('#backgroundGuard').isChecked(), true); assert.equal(await options.locator('#clearNoise').isDisabled(), true);
 assert.match(await options.locator('#noiseState').textContent(), /2 saniye konuşma/); checks++;
 await options.screenshot({path: path.join(output, 'settings-desktop.png'), fullPage: true});
