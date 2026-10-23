@@ -298,8 +298,8 @@ class DikteApp {
                 this.SetStatus("Odak, pano veya tuş durumu değişti. Metin duruyor; yeniden aktarabilirsin.")
                 return
             }
-            ; Exactly one paste. Remote field delivery cannot be acknowledged locally.
-            ; Keep the clipboard for delayed WorkSpaces sync; never restore it on a timer.
+            ; Exactly one paste. The bridge confirms insertion into the bound composer.
+            ; Keep the clipboard unchanged until confirmation or explicit user recovery.
             SendLevel(0)
             SendEvent("^v")
             if bridge && !this.WaitBridge("DONE", this.bridgeSession) {

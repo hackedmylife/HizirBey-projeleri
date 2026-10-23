@@ -12,7 +12,7 @@
   }
   function isNote(editor) {
     if (editor.closest('[data-mode="note"], [data-mode="internal"], [data-internal-note="true"]')) return true;
-    return [...editor.parentElement.querySelectorAll('p, [data-placeholder], [role="tab"][aria-selected="true"]')]
+    return [...editor.parentElement.querySelectorAll('p, [data-placeholder], [id*="placeholder"], [class*="placeholder"], [role="tab"][aria-selected="true"]')]
       .filter(x => !editor.contains(x))
       .some(x => /internal note|private note|dahili not|iç not|müşteri.*göreme/i.test(x.textContent || x.getAttribute('data-placeholder') || ''));
   }
