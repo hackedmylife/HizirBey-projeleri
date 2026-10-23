@@ -14,10 +14,12 @@ class DikteApp {
         this.finalizeCallback := ObjBindMethod(this, "FinalizeStoppedText")
         this.settingsPath := settingsPath != "" ? settingsPath : (testing ? "" : EnvGet("LOCALAPPDATA") "\HizirBey\WorkSpacesDikte\panel.ini")
         this.LoadPosition()
+        SplitPath(A_LineFile,, &sourceDir)
+        this.assetDir := sourceDir "\..\assets"
 
         this.window := Gui("+AlwaysOnTop -Caption +ToolWindow -Border -DPIScale", "Hızır Bey · Yerel Dikte 0.4.0")
         this.window.BackColor := "101217"
-        this.logo := this.window.AddPicture("x10 y12 w56 h-1 +0x100", A_ScriptDir "\assets\logo.png")
+        this.logo := this.window.AddPicture("x10 y12 w56 h-1 +0x100", this.assetDir "\logo.png")
         this.window.SetFont("s7 w500 c9AA4B5", "Segoe UI")
         this.brandCaption := this.window.AddText("x9 y73 w56 h14 Center +0x100", "SES → YAZI")
         this.window.SetFont("s9 w600 cD7BA76", "Segoe UI")
@@ -44,7 +46,7 @@ class DikteApp {
         OnMessage(0x0201, this.dragCallback)
         OnMessage(0x0232, this.moveCallback)
         if !testing {
-            TraySetIcon(A_ScriptDir "\assets\hizirbey.ico")
+            TraySetIcon(this.assetDir "\hizirbey.ico")
             A_IconTip := "Hızır Bey · Yerel Dikte | Win+H · Ctrl+C"
             A_TrayMenu.Delete()
             A_TrayMenu.Add("Paneli aç", (*) => this.ShowPanel())
