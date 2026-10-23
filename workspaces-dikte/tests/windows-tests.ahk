@@ -223,7 +223,7 @@ RunSuite() {
         ; A separate real app process must terminate, then open normally again.
         launch := Format('"{1}" /ErrorStdOut "{2}"', A_AhkPath, A_ScriptDir "\..\Hizir-Bey-WorkSpaces-Dikte.ahk")
         Run(launch,, "Hide", &childPid)
-        childWindow := WinWait("Hızır Bey · Yerel Dikte 0.4.0 ahk_pid " childPid,, 4)
+        childWindow := WinWait("Hızır Bey · Yerel Dikte 0.4.1 ahk_pid " childPid,, 4)
         Assert(childWindow != 0, "Real app opens for close lifecycle test")
         closeHwnd := 0
         for control in WinGetControlsHwnd("ahk_id " childWindow)
@@ -238,7 +238,7 @@ RunSuite() {
         Assert(!ProcessExist(childPid), "X terminates its own AutoHotkey process")
         Assert(!WinExist("ahk_id " childWindow), "X removes the native window")
         Run(launch,, "Hide", &reopenedPid)
-        reopened := WinWait("Hızır Bey · Yerel Dikte 0.4.0 ahk_pid " reopenedPid,, 4)
+        reopened := WinWait("Hızır Bey · Yerel Dikte 0.4.1 ahk_pid " reopenedPid,, 4)
         Assert(reopened != 0 && ProcessExist(reopenedPid), "Same application can be reopened after X")
         WinClose("ahk_id " reopened)
         ProcessWaitClose(reopenedPid, 3)

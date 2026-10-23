@@ -14,10 +14,9 @@ class DikteApp {
         this.finalizeCallback := ObjBindMethod(this, "FinalizeStoppedText")
         this.settingsPath := settingsPath != "" ? settingsPath : (testing ? "" : EnvGet("LOCALAPPDATA") "\HizirBey\WorkSpacesDikte\panel.ini")
         this.LoadPosition()
-        SplitPath(A_LineFile,, &sourceDir)
-        this.assetDir := sourceDir "\..\assets"
+        this.assetDir := DikteAssets.GetDir()
 
-        this.window := Gui("+AlwaysOnTop -Caption +ToolWindow -Border -DPIScale", "Hızır Bey · Yerel Dikte 0.4.0")
+        this.window := Gui("+AlwaysOnTop -Caption +ToolWindow -Border -DPIScale", "Hızır Bey · Yerel Dikte 0.4.1")
         this.window.BackColor := "101217"
         this.logo := this.window.AddPicture("x10 y12 w56 h-1 +0x100", this.assetDir "\logo.png")
         this.window.SetFont("s7 w500 c9AA4B5", "Segoe UI")

@@ -41,6 +41,27 @@ jobs:
           if (-not $p.WaitForExit(10000)) { $p.Kill(); throw 'Entry smoke test timed out' }
           Get-Content "$env:RUNNER_TEMP/smoke-stdout.txt", "$env:RUNNER_TEMP/smoke-stderr.txt" -ErrorAction SilentlyContinue
           if ($p.ExitCode -ne 0) { throw 'Entry smoke test failed' }
+      - name: Compile the single portable EXE
+        shell: pwsh
+        run: ./workspaces-dikte/scripts/build-exe.ps1
+      - name: Test the isolated compiled EXE and complete exit
+        shell: pwsh
+        run: |
+          $runtime = Resolve-Path workspaces-dikte/vendor/AutoHotkey64.exe
+          $script = Resolve-Path workspaces-dikte/tests/compiled-tests.ahk
+          $exe = Resolve-Path paketler/Hizir-Bey-WorkSpaces-Dikte-0.4.1.exe
+          $result = Join-Path $env:RUNNER_TEMP 'compiled-tests.txt'
+          $p = Start-Process -FilePath $runtime -ArgumentList @('/ErrorStdOut', ('"' + $script + '"'), ('"' + $exe + '"'), ('"' + $result + '"')) -PassThru -RedirectStandardOutput "$env:RUNNER_TEMP/compiled-stdout.txt" -RedirectStandardError "$env:RUNNER_TEMP/compiled-stderr.txt"
+          if (-not $p.WaitForExit(45000)) { $p.Kill(); throw 'Compiled EXE tests timed out' }
+          Get-Content "$env:RUNNER_TEMP/compiled-stdout.txt", "$env:RUNNER_TEMP/compiled-stderr.txt" -ErrorAction SilentlyContinue
+          if (Test-Path $result) { Get-Content $result }
+          if ($p.ExitCode -ne 0 -or -not (Test-Path $result)) { throw 'Compiled EXE tests failed' }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: WorkSpaces-Dikte-0.4.1-EXE
+          path: |
+            paketler/Hizir-Bey-WorkSpaces-Dikte-0.4.1.exe
+            paketler/Hizir-Bey-WorkSpaces-Dikte-0.4.1.exe.sha256
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -50,3 +71,4 @@ jobs:
             ${{ runner.temp }}/ahk-*.txt
             ${{ runner.temp }}/smoke-*.txt
             ${{ runner.temp }}/dikte-preview.png
+            ${{ runner.temp }}/compiled-*.txt

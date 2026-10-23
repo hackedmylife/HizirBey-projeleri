@@ -7,7 +7,7 @@ import zipfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.4.0"
+VERSION = "0.4.1"
 RUNTIME_SHA256 = "2eab99848ebc07f8ab0cc448bf69af8c700b2fc7fcd1ff8794df743dcc58da51"
 FILES = [
     "BASLAT.cmd",
@@ -15,13 +15,16 @@ FILES = [
     "KULLANIM.txt",
     "README.md",
     "TEST-RAPORU.md",
+    "src/Assets.ahk",
     "src/Core.ahk",
     "src/Panel.ahk",
     "src/Theme.ahk",
     "assets/logo.png",
     "assets/hizirbey.ico",
     "scripts/package.py",
+    "scripts/build-exe.ps1",
     "tests/windows-tests.ahk",
+    "tests/compiled-tests.ahk",
     "tests/drag-driver.ahk",
     "tests/keys-driver.ahk",
     "tests/capture.ps1",
