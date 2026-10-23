@@ -1,25 +1,29 @@
-# Doğrulama — 0.3.0
+# Doğrulama — 0.4.0
 
-23 Ekim 2026. Yalnız yerel sesli yazma ve elle kopyalama sürümü.
+23 Ekim 2026. Yerel panelin koyu / altın teması, temel cümle sonu düzenlemesi ve uygulamayı tamamen kapatan X güncellemesi.
 
-**63 Windows kontrolü geçti.**
+**123 Windows kontrolü geçti.**
 
-- Gerçek dağıtım giriş betiği testlere dahil edildi; aynı Win+H ve Ctrl+C tanımları, ayrı bir süreçten üretilen klavye olaylarıyla çalıştırıldı.
-- Win+H yerel dikte başlatma isteğine yönlendi. İkinci Win+H ve büyük Durdur düğmesi durdurma isteğine yönlendi; taslak görünür kaldı ve otomatik kopyalanmadı.
-- Dikte etkin görünürken gerçek Ctrl+C, kısmi seçim bulunmasına rağmen kutunun tamamını Windows panosuna aldı. Türkçe karakterler, paragraf, boşluk ve noktalama korundu; başlatma / durdurma isteği üretilmedi. Seçim ve imleç yeri korunurken dikte etkin kaldı.
-- Sonradan gelen kelimeler panodaki önceki kopyayı kendiliğinden değiştirmedi; sonraki Ctrl+C yeni tam metni aldı.
-- Büyük Kopyala düğmesi gerçek fare tıklamasıyla çalıştı ve odağı metin kutusuna döndürdü.
-- Başlatma / durdurma, taslağı ve yazma konumunu korudu. Başlatma panoya dokunmadı; boş kutuda kopyalama eski panoyu korudu.
-- Yerel işlem meşgulken de Ctrl+C anında kopyaladı. Başka uygulamada Ctrl+C normal seçili metni kopyaladı; yerel taslak değişmedi.
-- Ayrı bir alıcı pencerenin metni bütün başlat / durdur / kopyala akışı boyunca değişmedi.
-- Panelde tam olarak iki düğme olduğu doğrulandı. 600, 930 ve 1080 piksel genişliklerde tüm kontroller 100 piksel yüksekliğindeki panel içine sığdı. Sağdaki düğmeler 160 × 40 piksel; metin kutusuyla örtüşmedi.
-- Gerçek fare basma / hareket / bırakma ile başlıktan sürükleme, X/Y konumunu INI dosyasına yazma, yeni örnekte aynı konuma dönme ve taslağı koruyarak konumu sıfırlama kontrolleri geçti.
-- Dağıtım giriş betiği ayrıca açılıp hatasız kapandı. Resmi taşınabilir AutoHotkey çalışma dosyasının SHA-256 değeri doğrulandı.
+Yeni doğrulamalar:
 
-[Başarılı Windows çalışması](https://github.com/hackedmylife/HizirBey-projeleri/actions/runs/39947116924).
+- Dağıtım giriş betiğindeki gerçek Win+H / Ctrl+C kısayolları ayrı test sürecinin klavye olaylarıyla çalıştırıldı. İki büyük işlem düğmesi, sürükleme, pano ve önceki 0.3.0 davranışları korunur.
+- Türkçe i / ı büyük harf ayrımı, eksik nokta, açık soru ekleri, var olan işaretler, satır sonları ve tekrar uygulandığında değişmeme kontrolleri geçti. Kod, URL, e-posta, sayı ve para örneklerinde veriyi koruma doğrulandı.
+- Dikte etkin görünürken Ctrl+C, kopyalanan metnin cümle sonunu tamamladı; canlı kutuyu değiştirmedi ve dinleme durumunu durdurmadı.
+- Durdurma sonrası sakinleşme aralığında son metin düzenlendi. Yalnız büyük harf düzeltmesi gerektiğinde de uygulandı. Windows panosu kendiliğinden değiştirilmedi; yerel Ctrl+Z düzenlemeyi geri aldı.
+- Yerel panel 600, 930 ve 1080 piksel genişliklerde 100 piksel yüksekliğe sığdı. İki büyük düğme 160 × 40, X 24 × 24 pikseldir; yazım alanıyla örtüşmez.
+- Gerçek native düğmelerin özel çizim kullandığı ve bütün etkileşimlerden sonra bu biçimi koruduğu doğrulandı. Orijinal logo GDI+ ile yüksek kalitede ölçeklendi. Gerçek panel PrintWindow ile PNG olarak alındı ve görsel olarak incelendi; README'deki görüntü bu sentetik test oturumundandır.
+- Dağıtılan giriş betiği ayrı bir süreçte gerçekten açıldı. Üst sağ X gerçek fare tıklamasıyla kapatıldı: pencere ve kendi AutoHotkey süreci sona erdi.
+- Aynı program yeniden açıldı. Native pencere kapatma isteğiyle tekrar tamamen kapandı. Başka AutoHotkey süreçlerini sonlandıran bir komut kullanılmaz; testin kendi AutoHotkey süreci çalışmayı sürdürdü.
+- Ana giriş betiği ayrıca açılıp hatasız kapandı. Resmi taşınabilir çalışma dosyasının SHA-256 değeri doğrulandı.
 
-Doğrulanan kaynak commit: `edfcef85f62535fa81d410bbd99d0fd9dfa33b25`.
+[Başarılı Windows çalışması](https://github.com/hackedmylife/HizirBey-projeleri/actions/runs/39953666619).
 
-Test ortamı Windows Server 2025 / 10.0.26100'dür. Windows 11 mikrofon tanıması test ortamında çalıştırılmadı; yerel mikrofon başlatma ve durdurma istekleri sayaçlarla değiştirildi. Pano, kısayollar, düğmeler ve fare hareketleri gerçek Windows kontrolleri üzerinde test edildi. Kullanıcı bilgisayarında çalışan Win+H / mikrofon gereklidir.
+Doğrulanan kaynak commit: `6b1f8b8f1dcb967cfa968efcdc0f49cad981f61f`.
 
-Yeni kaynak ve ZIP içinde Chrome köprüsü, görüşme doğrulaması, kontrol kodu alışverişi ve otomatik yapıştırma akışı yoktur. Önceki Chrome köprüsü kullanıcı tarafından kapatılmalı / kaldırılmalı, açık LiveChat sekmesi yenilenmelidir. Paket 14 izinli dosya içerir; ses, taslak, ekran görüntüsü, panel.ini, token ve API anahtarı içermez.
+Test ortamı Windows Server 2025 / 10.0.26100'dür. Gerçek Windows 11 mikrofon tanıması bu ortamda çalıştırılmadı; sesli yazmayı başlatma / durdurma çağrıları test sınıfında sayaçlarla değiştirildi. Pano, tuşlar, fare, düğmeler, uygulama kapatma / yeniden açma ve temel noktalama gerçek Windows kontrolleri üzerinde doğrulandı.
+
+Noktalama sınırı: bu yerel, kurallı cümle sonu ve ilk harf düzenlemesidir. Genel Türkçe cümle çözümlemesi, bağlama göre virgül koyma veya her soru cümlesini tanıma yapmaz. Mevcut işaretleri korur; kod, bağlantı ve sayısal sonlarda temkinlidir. Windows'un kendi Otomatik noktalama ayarına veya kayıt defterine dokunulmaz. Metin gönderilmeden önce kontrol edilmelidir.
+
+Kapatma sınırı: X, native kapatma ve Çıkış onay sormadan uygulamayı bitirir. Bellekteki taslak kapanınca kaybolur; gerekli metin önceden kopyalanmalıdır. Uygulama Chrome'a otomatik yapıştırma veya mesaj gönderme yapmaz.
+
+ZIP izin listesindeki 18 dosyayı içerir. Taslak, ses, kullanıcı ekran görüntüleri, panel.ini, token ve API anahtarı dahil değildir. Marka görselleri önceki public proje varlıklarıdır. Önizleme yalnız belgelerde tutulur, dağıtım ZIP'ine eklenmez.

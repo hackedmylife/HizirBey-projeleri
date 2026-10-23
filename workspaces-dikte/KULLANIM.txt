@@ -1,28 +1,33 @@
-HIZIR BEY YEREL DIKTE 0.3.0
+HIZIR BEY YEREL DIKTE 0.4.0
 
-IKI BUYUK DUGME: BASLAT / DURDUR ve KOPYALA.
+KOYU / ALTIN GORUNUM. IKI BUYUK DUGME VE UST SAGDA X.
 
-1. Eski yerel programi sag alttaki simgesinden Cikis ile kapat.
-2. ZIP'in tamamini kendi bilgisayarina cikar. BASLAT.cmd calistir.
-3. Eski LiveChat Aktarim Koprusu eklentisini WorkSpaces Chrome'dan
-   kaldir veya kapat; LiveChat sekmesini bir kez yenile.
+Eski surumu sag alttaki kendi simgesinden Cikis ile kapat.
+Yeni ZIP'in tamamini kendi bilgisayarina cikar. BASLAT.cmd calistir.
 
-Baslat veya Win+H -> Windows'ta Dinleniyor yazisini bekle -> konus.
-Durdur veya ikinci Win+H -> metin kutuda bekler.
-Kopyala veya yerel panelde Ctrl+C -> kutudaki metnin TAMAMI panoya alinir.
-Ctrl+C yazim sirasinda da calisir; dinlemeyi durdurmaz.
-Metin kismen secili olsa da tum kutu kopyalanir.
-Kopyadan sonra yeni kelimeler geldiyse yeniden kopyala.
-LiveChat'e kendin tiklayip Ctrl+V ile yapistir; gonderimi sen yap.
+Baslat / Win+H: yerel Windows diktesini ac. Dinleniyor yazisini bekle.
+Durdur / ikinci Win+H: dikteyi durdur; temel cumle sonu duzenlemesi yapilir.
+Kopyala / Ctrl+C: kutunun tamamini, temel cumle sonlariyla panoya al.
+Yazarken Ctrl+C, dinlemeyi durdurmaz ve canli kutuyu degistirmez.
+Durdurma sonrasi duzenlemeyi Ctrl+Z ile geri alabilirsin.
 Yeni metin icin kutuda Ctrl+A -> Delete kullan.
 
-Baslatma, durdurma ve kopyalama metni kendiliginden silmez.
-Paneli HIZIR BEY basligindan surukleyebilirsin; konum hatirlanir.
-Pencere 100 piksel yuksekligindedir; sagda iki adet 160 x 40 dugme vardir.
-Programi kapatmak icin sag alttaki simge -> Cikis.
-Taslak diske kaydedilmez. Metni kapatmadan once kopyala.
+X: UYGULAMAYI AUTOHOTKEY SURECIYLE BIRLIKTE TAMAMEN KAPATIR.
+Gizleyip arka planda birakmaz. BASLAT.cmd ile yeniden acabilirsin.
+Diger AutoHotkey makrolarini kapatmaz.
+X / Cikis onay beklemez; kapatmadan once gerekli metni kopyala.
+
+Noktalama yerel ve temel kurallarla yapilir; baglamsal bir dil modeli degildir.
+Cumle ici virgulleri veya her soru cumlesini kendiliginden anlayamaz.
+Sayi / kod / URL gibi alanlarda temkinlidir. Gondermeden once kontrol et.
+Windows'un Otomatik noktalama ayari Win+H disli menusundedir; uygulama bu
+ayari degistirmez. Ayrintilar ve ornekler README.md icindedir.
+
+Panel basliktan suruklenir; konumu hatirlanir. Yukseklik 100 pikseldir.
+Kopru, otomatik yapistirma ve mesaj gonderme bulunmaz.
+LiveChat'e kendin tikla -> Ctrl+V -> metni kontrol et -> gonder.
+Eski LiveChat Aktarim Koprusu eklentisini kapali tut / kaldir.
 
 Yedek dikte kisayolu: Ctrl+Alt+H.
-Iletisim koprusu, Chrome eklentisi veya otomatik aktarim bulunmaz.
-
-Ayrintilar: README.md ve TEST-RAPORU.md.
+Ses veya taslak diske kaydedilmez. Kurulum gerektirmeyen resmi AutoHotkey
+calisma dosyasi pakettedir. Test sinirlari TEST-RAPORU.md icindedir.
