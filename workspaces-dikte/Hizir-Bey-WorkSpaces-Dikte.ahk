@@ -12,9 +12,9 @@ global App := DikteApp()
 if A_Args.Length && A_Args[1] = "--smoke"
     SetTimer(() => ExitApp(0), -800)
 
-#HotIf App.ShouldCapture()
+#HotIf IsSet(App) && App.ShouldCapture()
 $#h::App.Toggle()
 $^!h::App.Toggle()
-#HotIf App.ShouldCopy()
+#HotIf IsSet(App) && App.ShouldCopy()
 $^c::App.CopyOnly()
 #HotIf

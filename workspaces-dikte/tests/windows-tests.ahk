@@ -42,6 +42,10 @@ ClickButton(app, button) {
 
 RunSuite() {
     global App, Results, Passed, LogFile
+    if !IsSet(App) {
+        SetTimer(RunSuite, -100)
+        return
+    }
     try {
         App.Dispose()
         App := NativeProbe(true)
