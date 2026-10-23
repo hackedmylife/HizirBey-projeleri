@@ -1,4 +1,4 @@
-HIZIR BEY SESLİ YAZMA — 0.1.9
+HIZIR BEY SESLİ YAZMA — 0.1.10
 
 1) ZIP'i bilgisayarında sabit bir klasöre çıkar. Örnek: Belgeler\HizirBey-Sesli-Yazma
 2) Chrome adres çubuğuna chrome://extensions yaz.
@@ -17,7 +17,9 @@ HIZIR BEY SESLİ YAZMA — 0.1.9
     her önizleme baştan sona eklenmez.
     Noktalama, en az 1 saniyelik durakta veya dinlemeyi bitirince bütün
     taslak üzerinden kontrol edilir. Ses parçası sonuna zorla nokta konmaz.
-11) Metni oku. Hazır olduğunda ENTER ile kendin gönder.
+11) LiveChat sayfasında SPACE (boşluk) ile dinlemeyi bitir. Son kelimeler
+    ve noktalama tamamlanınca metni oku; ENTER ile kendin gönder.
+    Sessizlik veya toplam oturum süresi dinlemeyi bitirmez.
 
 WIN + H
 Win + H için paketteki windows/Windows-Kisayol.txt adımlarını uygula.
@@ -51,18 +53,23 @@ KULLANIM
   aldıysan yeniden doldurabilirsin. Elle yazılmış farklı dolu metin
   korunur. Göndermek için metni okuyup ENTER kullan. Görüşme / sekme
   değişince veya mesaj gönderilince bu düğme devre dışı kalır.
-- ALT + H'ye yeniden basmak dinlemeyi bitirir; son cümle hazırlanır.
+- SPACE dinlemeyi bitirir; son cümle tamamlanır. Gönderim yapmaz.
+  Basılı tutmak veya hazırlıkta tekrar basmak ek boşluk oluşturmaz.
+  İşlem bitince boşluk tuşu normal yazım işlevine döner.
+- ALT + H'ye yeniden basmak da dinlemeyi bitirir; son cümle hazırlanır.
 - Dikte yazıldıktan sonra ENTER, görüşmenin Gönder düğmesini bir kez
   çalıştırır. LiveChat Enter ayarın satır açmak olsa da taslak gönderilir.
   Mikrofon ve bekleyen dikte kapanır; geç sonuçlar eklenmez. Gönderilen,
   yazı alanında gördüğün metindir. SHIFT + ENTER satır açmaya devam eder.
 - İlk metin henüz yazılmadıysa veya ekleme sürüyorsa Enter engellenir.
   Tuş sonradan otomatik gönderime dönüşmez; hazır metni okuyup tekrar bas.
-- Alt + H ile dinlemeyi normal bitirince de hazır taslak Enter ile
+- Space veya Alt + H ile dinlemeyi normal bitirince de hazır taslak Enter ile
   gönderilebilir. Düğme kullanılamıyorsa taslak korunur, panelde uyarı olur.
 - Enter ile gönderdiğinde mikrofon oturumu biter. Yeni mesaj için ALT + H.
 - İç not modundan müşteriye mesaj moduna geç; iç nota dikte aktarılmaz.
-- Görüşme veya sekme değişiminde kayıt kapanır.
+- Sessizlik / 15 dakika zamanlayıcısı yoktur. Normal dikte Space
+  ile bitene kadar sürer. Görüşme veya sekme değişiminde kayıt kapanır.
+  Kota, bağlantı, bekleyen ses belleği ve 8.000 karakter koruması sürer.
 - Alanı elle değiştirirsen geç gelen sonuç mevcut yazını ezmez.
   Gerekirse eklenti simgesinden Son dikte metnini kopyala.
 - Son kontrolde modelin kelime eklemesi, silmesi veya değiştirmesi

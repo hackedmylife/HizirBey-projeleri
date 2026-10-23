@@ -1,8 +1,8 @@
 # Hızır Bey Sesli Yazma
 
-Chrome / LiveChat için logolu Türkçe dikte uzantısı. Güncel sürüm: **0.1.9**.
+Chrome / LiveChat için logolu Türkçe dikte uzantısı. Güncel sürüm: **0.1.10**.
 
-**Win + H (Windows yönlendirmesiyle) → konuş → metni oku → Enter ile gönder.**
+**Win + H (Windows yönlendirmesiyle) → konuş → Space ile bitir → metni oku → Enter ile gönder.**
 
 Chrome’un doğrudan komutu Alt + H olarak kalır. Win tuşu Chrome uzantı komutlarında desteklenmediği için Windows’ta FastKeys veya paketteki ücretsiz AutoHotkey v2 yardımcısı gerekir. [Windows-Kisayol.txt](windows/Windows-Kisayol.txt) adımları içerir; yardımcı kendiliğinden kurulmaz veya başlatılmaz.
 
@@ -21,7 +21,7 @@ Groq hesabını **Free** planında tut, ödeme yöntemi ekleme ve Developer plan
 
 - Paneldeki **Yeniden yazdır**, son dikte metnini aynı görüşmenin yazı alanına geri koyar. Hazırlık sürerken kapalıdır; tıklanınca dinleme / bekleyen ses kapanır. Metin zaten alandaysa tekrar eklenmez. Silinen alan veya geri alınan dikte yeniden doldurulabilir; elle yazılmış farklı dolu metnin üzerine yazılmaz. Enter ile kullanıcı gönderir. Gönderim, görüşme / sekme / sayfa değişimi veya yeni dikte önceki yazdırma bağını kapatır. Son metin tarayıcı oturumu boyunca geçici olarak tutulur; bu işlem ek API çağrısı yapmaz ve ses kaydı saklamaz.
 
-- Başlatma/durdurma: Windows yönlendirmesi açıkken Win + H; doğrudan Chrome komutu Alt + H. Durdururken son ses parçası tamamlanır.
+- Başlatma: Windows yönlendirmesi açıkken Win + H; doğrudan Chrome komutu Alt + H. LiveChat sayfasında **Space (boşluk)** ile dinlemeyi bitir; son ses parçası ve noktalama tamamlanır, mesaj kendiliğinden gönderilmez. Alt + H ve paneldeki Durdur da kullanılabilir. Space’i basılı tutmak veya hazırlık sırasında tekrar basmak ek boşluk, ikinci durdurma ya da yeniden başlatma oluşturmaz. İşlem bitince Space normal boşluk yazar. Değiştirici tuşlu / IME girişleri durdurma sayılmaz.
 - Sayfada geniş çubuk yoktur. Dinleme veya metin hazırlanması sürerken ekranın tam ortasında tıklamaları engellemeyen 20 px kırmızı nokta görünür; işlem bitince kaybolur. Logolu Başlat/Durdur, geri al ve ayarlar paneli yalnızca Chrome eklenti simgesine tıklanınca açılır. Paneli kapatmak dikteyi durdurmaz.
 - Ses, Whisper Large v3 (veya seçilirse Turbo) ile Türkçe taslağa çevrilir. Kısa duraklarla devam eden sesler, en fazla 12 saniyelik ortak tanıma penceresinde değerlendirilir. Aynı pencerenin yeni sonucu, kendi eski metnini yeniler; kısmi tanımalar art arda eklenmez. En az 1 saniyelik durak yeni pencere açar. Her parçanın sonuna nokta eklenmez. Metin hızlı görünür. Noktalama kontrolü en az 1 saniyelik durakta veya dinlemeyi bitirdiğinde, bütün taslak üzerinden yapılır. Konuşma yeniden başlarsa eski noktalama sonucu uygulanmaz.
 - Ses tanıma sonucu, dil düzeltmesinden önce kalite denetiminden geçer. Segment güven verisi eksikse veya çözüm güveni düşükse parça otomatik yazılmaz. Yüksek sessizlik olasılığı tek başına ret nedeni değildir. Yüksek sıkıştırma oranı, düşük güven veya belirgin metin döngüsüyle birlikte değerlendirilir. Tamamen sessiz olduğu işaretlenen parça atlanır.
@@ -31,9 +31,9 @@ Groq hesabını **Free** planında tut, ödeme yöntemi ekleme ve Developer plan
 - Noktalama modelinin kelime eklemesi, silmesi, sıralaması veya değiştirmesi engellenir. Yalnızca noktalama ve büyük/küçük harf düzenlenebilir. Tutar, sayı, olumsuzluk ve işlem türü denetimleri de korunur. Bu denetim, ses tanımanın kendisindeki tüm kelime hatalarını yakalamaz.
 - Gerçek LiveChat Lexical editörü hedeflenir. İç not modunda aktarım engellenir.
 - Eklenti kendiliğinden göndermez. Dikte metni yazı alanına eklendikten sonra gerçek bir Enter basışı, aynı görüşmenin etkin Gönder düğmesini bir kez çalıştırır; LiveChat’in Enter/satır ayarını değiştirmek gerekmez. Gönderilen, ekranda gördüğün taslaktır. Mikrofon ve bekleyen dikte kapanır; sonradan gelen sonuç eklenmez. İlk metin henüz yazılmadıysa veya editör yazma işleminin ortasındaysa Enter engellenir; bekletilen tuş sonradan gönderime dönüşmez. Shift + Enter satır açar.
-- Dinlemeyi Alt + H ile normal bitirdiğinde de hazır taslağın Enter kısayolu korunur; nokta gizlenir. Gönder düğmesi eksik, kapalı veya belirsizse metin korunur ve açıklama gösterilir. Başka görüşmenin düğmesi kullanılmaz.
+- Dinlemeyi Space veya Alt + H ile normal bitirdiğinde de hazır taslağın Enter kısayolu korunur; nokta gizlenir. Gönder düğmesi eksik, kapalı veya belirsizse metin korunur ve açıklama gösterilir. Başka görüşmenin düğmesi kullanılmaz.
 - Taslak güncellemesi yalnızca bu oturumun diktesini yeniler; oturum başındaki yazının metni korunur. Geri al bütün mevcut dikte taslağını kaldırır ve yeniden eklenmesin diye mikrofonu kapatır. Kullanıcı alanı elle değiştirmişse geç gelen sonuç eklenmez; son metin popup'tan kurtarılabilir.
-- Sohbet, sekme veya sayfa değişiminde mikrofon kapanır. 90 saniye sessizlikte ve 15 dakikalık oturum sınırında kayıt sonlandırılır.
+- Dinleme, sessizlik veya toplam oturum süresi nedeniyle kendiliğinden bitmez; 90 saniyelik sessizlik ve 15 dakikalık oturum zamanlayıcıları kaldırılmıştır. Normal dikte Space ile bitirilir. Sohbet, sekme veya sayfa değişiminde mikrofon kapanır. Kota, bağlantı hatası, bekleyen ses belleği ve taslak uzunluğu korumaları aşağıda belirtilen şekilde sürer.
 - Ses tanıma isteği başına 45 saniyeye kadar beklenir. Ağ hatası, zaman aşımı veya geçici sunucu hatasında toplam en fazla 3 deneme yapılır. Yeniden denemeler de yerel ücretsiz kotaya sayılır; 400/401/403/429 hataları tekrar edilmez.
 - Taslağı aktarma duraklaması varsayılan **0,5 saniye**. Uzun konuşma 4 saniyeden sonra kısa doğal duraklarda veya en geç 8 saniyede parçalanır. İstekler arasında sabit 3,5 saniyelik ara kaldırılmıştır. Yerel dakikalık sınır dolarsa uygun sıra beklenir; günlük veya sağlayıcı sınırında durulur.
 - **Hızlı aktarım** varsayılan açıktır. Son noktalama kontrolünün toplam bütçesi 2,5 saniyedir; yetişmezse güvenlik denetiminden geçmiş taslak uyarıyla korunur, zorla son nokta eklenmez. Bu ayar kapatıldığında bütçe 10 saniyedir. Noktalama çağrısı tekrar edilmez. Ses tanıma ve ağ bağlantısının süresi bu bütçeden ayrıdır; sabit bir uçtan uca gecikme garantisi verilmez.

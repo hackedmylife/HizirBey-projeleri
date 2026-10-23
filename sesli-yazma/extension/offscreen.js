@@ -15,7 +15,6 @@ async function ask(session, type, data = {}) {
 }
 async function cleanup(s) {
   s.recording = false;
-  clearTimeout(s.limitTimer);
   if (s.worklet) {s.worklet.port.onmessage = null; s.worklet.disconnect();}
   s.filter?.destroy();
   s.source?.disconnect(); s.sink?.disconnect();
@@ -144,7 +143,7 @@ async function drain(s) {
 }
 async function start(id, config) {
   if (active) {const old = active; active = null; old.controller.abort(); await cleanup(old);}
-  const s = {id, config, queue: [], pieces: new Map(), gaps: new Map(), raw: '', rawVersion: 0, finalizedVersion: -1, utterance: 0, rejected: 0, warning: '', pendingSeconds: 0, nextResult: 1, pausedForBacklog: false, controller: new AbortController(), recording: true, processing: false, startedAt: Date.now(), lastMeter: 0, lastVoice: Date.now()};
+  const s = {id, config, queue: [], pieces: new Map(), gaps: new Map(), raw: '', rawVersion: 0, finalizedVersion: -1, utterance: 0, rejected: 0, warning: '', pendingSeconds: 0, nextResult: 1, pausedForBacklog: false, controller: new AbortController(), recording: true, processing: false, startedAt: Date.now(), lastMeter: 0};
   active = s;
   try {
     s.stream = await openMicrophone(config);
@@ -176,19 +175,16 @@ async function start(id, config) {
     s.source.connect(s.worklet); s.worklet.connect(s.sink); s.sink.connect(s.context.destination);
     s.consume = ({frame, speech}) => {
       const v = s.segmenter.push(frame, {speech}); s.rms = v.rms;
-      if (v.speaking) s.lastVoice = Date.now();
     };
     s.accept = input => {
       if (active !== s || !s.recording) return;
       try {if (s.filter) {for (const frame of s.filter.push(input)) s.consume(frame);} else s.consume({frame: input});}
       catch (error) {void fail(s, error); return;}
       meter(s);
-      if (Date.now() - s.lastVoice > 90000) void finish(id);
     };
     s.worklet.port.onmessage = event => s.accept(event.data);
     for (const track of s.stream.getTracks()) track.onended = () => {if (s.recording && active === s) void fail(s, new Error('Mikrofon bağlantısı kesildi.'));};
     await s.context.resume();
-    s.limitTimer = setTimeout(() => void finish(id), 15 * 60 * 1000);
     meter(s, true); return true;
   } catch (error) {
     if (active === s) active = null;

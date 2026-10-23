@@ -6,7 +6,7 @@
   shadow.innerHTML = `<style>:host{color-scheme:dark}.dot{display:block;width:20px;height:20px;border-radius:50%;background:#ef4444;box-shadow:0 0 0 2px #171a21,0 0 9px #ef444450}</style><span class="dot" id="indicator" role="img" aria-label="Hızır Bey sesli yazma etkin"></span>`;
   document.documentElement.append(host);
   const indicator = shadow.getElementById('indicator');
-  let active = null, observer = null, monitorTimer = null, heldSend = false, insertion = Promise.resolve();
+  let active = null, observer = null, monitorTimer = null, heldSend = false, heldStop = false, insertion = Promise.resolve();
   const ask = async message => {const response = await chrome.runtime.sendMessage(message); if (!response?.ok) throw new Error(response?.error || 'Eklenti bağlantısı yenilenmeli.'); return response.data;};
   function renderIndicator() {
     const visible = Boolean(active && (active.recording || active.busy || active.binding.writing));
@@ -36,7 +36,7 @@
     if (message.type === 'voice:bind') {try {bind(message.sessionId); respond({ok: true});} catch (error) {detach(); respond({ok: false, error: error.message});} return false;}
     if (!active || active.id !== message.sessionId) {respond({ok: false, error: 'Dikte oturumu artık açık değil.'}); return false;}
     if (message.type === 'voice:status') {
-      if (!active.reviewOnly && message.data.sessionId === active.id) {active.busy = message.data.busy; active.recording = message.data.recording; renderIndicator();}
+      if (!active.reviewOnly && message.data.sessionId === active.id) {active.busy = active.stopRequested || message.data.busy; active.recording = !active.stopRequested && message.data.recording; renderIndicator();}
       respond({ok: true}); return false;
     }
     if (message.type === 'voice:release') {
@@ -74,6 +74,21 @@
     }
     return false;
   });
+  const isSpace = event => event.code === 'Space' || event.key === ' ';
+  function beforeStop(event) {
+    if (!event.isTrusted || !isSpace(event)) return;
+    if (heldStop && event.repeat) {event.preventDefault(); event.stopImmediatePropagation(); return;}
+    if (event.repeat || event.shiftKey || event.altKey || event.ctrlKey || event.metaKey || event.isComposing || event.keyCode === 229) return;
+    const mine = active;
+    if (!mine || mine.reviewOnly || (!mine.recording && !mine.busy)) return;
+    event.preventDefault(); event.stopImmediatePropagation(); heldStop = true;
+    if (mine.stopRequested) return;
+    if (!mine.binding.valid()) {cancel('Görüşme değişti; mikrofon kapatıldı.'); return;}
+    // Stop, never toggle: a repeated key or delayed status must not restart
+    // capture or insert a space while the final audio is being drained.
+    mine.stopRequested = true; mine.recording = false; mine.busy = true; renderIndicator();
+    ask({type: 'content:finish', sessionId: mine.id}).catch(error => {if (active === mine) cancel(error.message);});
+  }
   function beforeSend(event) {
     if (!event.isTrusted) return;
     const keyboard = event.type === 'keydown';
@@ -101,8 +116,13 @@
     ask({type: 'content:sent', sessionId: mine.id, from, to}).catch(() => {});
     sendButton?.click();
   }
+  document.addEventListener('keydown', beforeStop, true);
   document.addEventListener('keydown', beforeSend, true);
-  document.addEventListener('keyup', event => {if (event.key === 'Enter') heldSend = false;}, true);
+  document.addEventListener('keyup', event => {
+    if (!event.isTrusted) return;
+    if (event.key === 'Enter') heldSend = false;
+    if (isSpace(event) && heldStop) {heldStop = false; event.preventDefault(); event.stopImmediatePropagation();}
+  }, true);
   document.addEventListener('click', beforeSend, true);
   document.addEventListener('visibilitychange', () => {if (document.hidden && active) cancel('Sekme değişti; mikrofon kapatıldı.');});
   addEventListener('pagehide', () => {if (active) cancel('LiveChat sayfası kapandı.');});

@@ -67,6 +67,22 @@ test('stop flushes the last spoken words and releases microphone resources', asy
   assert.equal(events.filter(x => x.type === 'audio:result' && x.sessionId === 'three').at(-1).final, true);
   assert.ok(tracks.at(-1).stopped); assert.equal(contexts.at(-1).state, 'closed');
 });
+test('silence and elapsed session time never stop capture; explicit finish still flushes the last words', async t => {
+  t.mock.timers.enable({apis: ['Date', 'setTimeout']});
+  try {
+    await send('capture:start', 'space-duration', config);
+    t.mock.timers.tick(91000); push(1, 0);
+    assert.equal(tracks.at(-1).stopped, false, 'A long silence must not end dictation');
+    t.mock.timers.tick(16 * 60 * 1000); push(1, 0);
+    assert.equal(tracks.at(-1).stopped, false, 'Elapsed time must not end dictation');
+    assert.equal(events.some(x => x.sessionId === 'space-duration' && x.type === 'audio:done'), false);
+    speechTexts = ['son kelimeler de yazılsın']; correctionOutput = raw => raw + '.';
+    push(4, 0.04); await send('capture:finish', 'space-duration');
+    assert.equal(tracks.at(-1).stopped, true);
+  } finally {t.mock.timers.reset();}
+  await until(() => events.some(x => x.sessionId === 'space-duration' && x.type === 'audio:done'));
+  assert.equal(events.filter(x => x.sessionId === 'space-duration' && x.type === 'audio:result').at(-1).text, 'Son kelimeler de yazılsın.');
+});
 test('one hallucinated segment is blocked while later clean speech continues', async () => {
   unsafeSpeech = true;
   await send('capture:start', 'unsafe', config); push(4, 0.04); push(7, 0);

@@ -66,9 +66,12 @@ async function cancel(message = 'Dinleme durduruldu.', phase = 'idle', keepDraft
   setTimeout(closeIdleOffscreen, 400);
 }
 async function finish() {
-  if (!session) return view();
+  if (!session || session.finishing) return view();
+  const mine = session; mine.finishing = true;
   await publish({phase: 'finishing', message: 'Son cümle hazırlanıyor…', recording: false, busy: true});
-  await offscreen('capture:finish', {sessionId: session.id});
+  if (session !== mine) return view();
+  const response = await offscreen('capture:finish', {sessionId: mine.id});
+  if (session === mine && !response?.ok) await cancel(response?.error || 'Dinleme bitirilemedi. Metni kontrol et.', 'error', true);
   return view();
 }
 async function start(tabId) {
@@ -98,7 +101,7 @@ async function start(tabId) {
   return view();
 }
 async function toggle(tabId) {
-  if (session) return ['finishing', 'starting'].includes(status.phase) ? cancel('Dikte iptal edildi.') : finish();
+  if (session) return session.finishing || ['finishing', 'starting'].includes(status.phase) ? cancel('Dikte iptal edildi.') : finish();
   if (!tabId) {const [tab] = await chrome.tabs.query({active: true, currentWindow: true}); tabId = tab?.id;}
   if (!tabId) throw new Error('Aktif LiveChat sekmesi bulunamadı.');
   return start(tabId);
@@ -213,6 +216,7 @@ async function handle(message, sender) {
     }
     if (!session || session.id !== message.sessionId || session.tabId !== sender.tab.id) return false;
     const mine = session;
+    if (message.type === 'content:finish') return serializedAction(() => session === mine ? finish() : false);
     if (message.type === 'content:cancel') return cancel(message.reason || 'Görüşme değişti; dikte durduruldu.');
     if (message.type === 'content:sent') {
       const settings = await getSettings();
@@ -232,8 +236,9 @@ async function handle(message, sender) {
     if (message.type === 'audio:meter') {
       const pendingSeconds = Math.max(0, Math.ceil(Number(message.pendingSeconds) || 0));
       const waiting = message.waiting && message.processing;
-      const text = message.pausedForBacklog ? `Mikrofon bekleme nedeniyle kapatıldı · ${pendingSeconds} sn ses sırayla tamamlanıyor. İptal için Alt + H.` : waiting ? message.waitingForQuota ? `Ücretsiz istek kotası bekleniyor · ${pendingSeconds} sn ses sırada. İptal için Alt + H.` : `Bağlantı bekleniyor · ${Math.min(3, message.attempt || 1)}/3 deneme · ${pendingSeconds} sn ses sırada` : message.processing ? 'Metin hazırlanıyor…' : message.buffered ? 'Seni dinliyorum…' : 'Konuşabilirsin · Hazır metni Enter ile gönder';
-      return publish({phase: message.processing ? (message.recording ? waiting ? 'waiting' : 'processing' : 'finishing') : message.buffered ? 'listening' : 'ready', recording: message.recording, busy: message.processing || message.buffered, level: message.level, seconds: message.seconds, pendingSeconds, message: text}, false);
+      const recording = Boolean(message.recording && !session.finishing);
+      const text = message.pausedForBacklog ? `Mikrofon bekleme nedeniyle kapatıldı · ${pendingSeconds} sn ses sırayla tamamlanıyor. İptal için Alt + H.` : session.finishing ? 'Son cümle hazırlanıyor…' : waiting ? message.waitingForQuota ? `Ücretsiz istek kotası bekleniyor · ${pendingSeconds} sn ses sırada. İptal için Alt + H.` : `Bağlantı bekleniyor · ${Math.min(3, message.attempt || 1)}/3 deneme · ${pendingSeconds} sn ses sırada` : message.processing ? 'Metin hazırlanıyor…' : message.buffered ? 'Seni dinliyorum · Space ile bitir' : 'Konuşabilirsin · Space ile bitir, Enter ile gönder';
+      return publish({phase: !recording ? 'finishing' : message.processing ? waiting ? 'waiting' : 'processing' : message.buffered ? 'listening' : 'ready', recording, busy: Boolean(session.finishing || message.processing || message.buffered), level: message.level, seconds: message.seconds, pendingSeconds, message: text}, false);
     }
     if (message.type === 'audio:result') {
       const mine = session;

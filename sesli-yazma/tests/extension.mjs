@@ -28,6 +28,7 @@ chrome.runtime.onMessage.addListener((m,s,r)=>{if(m?.target!=='qa'||s.id!==chrom
 chrome.runtime.onMessage.addListener((m,s,r)=>{
   if(m?.target!=='qa'||s.id!==chrome.runtime.id)return false;
   if(m.type==='qa:guard') {qa.requests=[];qa.long=true;qa.hold=false;qa.unsafe=false;qa.transientFailures=0;active.worklet.port.onmessage=null;r({filter:!!active.filter,rate:active.sampleRate});}
+  else if(m.type==='qa:tail') {qa.long=true;qa.fragments=[m.text];active.worklet.port.onmessage=null;active.windows.boundary();for(let i=0;i<4;i++)active.segmenter.push(new Float32Array(2048).fill(.04));r({buffered:active.segmenter.length>0});}
   else if(m.type==='qa:pcm') {const data=Float32Array.from(m.samples);for(let i=0;i<data.length;i+=2048)active.accept(data.subarray(i,i+2048));for(let i=0;i<12;i++)active.accept(new Float32Array(2048));r(true);}
   return false;
 });
@@ -123,10 +124,14 @@ try {
   await page.locator('#editor').fill(''); await page.evaluate(() => {globalThis.nativeEnterSends = false;});
   await toggle(); await listening(); await qa('qa:release');
   await page.waitForFunction(() => document.getElementById('editor').innerText.includes('henüz onaylanmadı'), undefined, {timeout: 15000});
-  await toggle();
+  assert.equal((await qa('qa:tail', {text: 'son kelimeler de yazılsın'})).buffered, true); checks++;
+  await page.locator('#editor').focus();
+  await page.keyboard.down('Space'); await page.keyboard.down('Space'); await page.keyboard.up('Space');
   const stoppedUntil = Date.now() + 5000;
   while ((await sessionStore()).session && Date.now() < stoppedUntil) await page.waitForTimeout(100);
   assert.equal((await sessionStore()).session, null); assert.equal(await page.locator('#hizir-voice-host').isVisible(), false); checks++;
+  assert.match((await page.locator('#editor').innerText()).trim(), /son kelimeler de yazılsın\.$/);
+  assert.equal(await page.evaluate(() => globalThis.sentCount), 1); checks++;
   await page.keyboard.press('Enter');
   assert.equal(await page.evaluate(() => globalThis.sentCount), 2); assert.equal(await page.evaluate(() => globalThis.sendClicks), 2); checks++;
   await page.evaluate(() => {globalThis.nativeEnterSends = true;});

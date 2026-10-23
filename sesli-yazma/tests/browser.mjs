@@ -149,6 +149,40 @@ await page.locator('main').evaluate(x => {x.dataset.chatId = 'DIFFERENT01';}); a
 assert.equal((await dispatch({type: 'voice:rewrite', sessionId: 'rewrite-other', text: 'Son dikte.'})).ok, false);
 assert.equal((await page.locator('#editor').innerText()).trim(), ''); checks++;
 
+// Trusted Space stops once, including with focus outside the composer. It
+// consumes held/repeated keys until completion, then normal typing returns.
+await page.locator('#editor').fill(''); await dispatch({type: 'voice:bind', sessionId: 'space-stop'});
+await dispatch({type: 'voice:insert', sessionId: 'space-stop', data: {segmentId: 1, text: 'Dinleme bitti son kelimeler', replace: true}});
+await dispatch({type: 'voice:status', sessionId: 'space-stop', data: {sessionId: 'space-stop', busy: false, recording: true}});
+const stopCount = () => page.evaluate(() => globalThis.__messages.filter(x => x.type === 'content:finish').length);
+const beforeSpace = await stopCount(), sendsBeforeSpace = await page.evaluate(() => globalThis.sentCount);
+await page.evaluate(() => document.dispatchEvent(new window.KeyboardEvent('keydown', {key: ' ', code: 'Space', bubbles: true, cancelable: true})));
+assert.equal(await stopCount(), beforeSpace); checks++;
+await page.locator('body').evaluate(x => {x.tabIndex = -1; x.focus();});
+await page.keyboard.press('Control+Space'); await page.keyboard.press('Shift+Space');
+assert.equal(await stopCount(), beforeSpace); checks++;
+await page.keyboard.down('Space'); await page.keyboard.down('Space'); await page.keyboard.up('Space');
+assert.equal(await stopCount(), beforeSpace + 1);
+assert.equal(await page.evaluate(() => globalThis.__messages.filter(x => x.type === 'content:finish').at(-1).sessionId), 'space-stop'); checks++;
+await dispatch({type: 'voice:status', sessionId: 'space-stop', data: {sessionId: 'space-stop', busy: false, recording: true}});
+await page.locator('#editor').focus(); await page.keyboard.press('Space');
+assert.equal(await stopCount(), beforeSpace + 1);
+assert.equal((await page.locator('#editor').innerText()).trim(), 'Dinleme bitti son kelimeler');
+assert.equal(await page.locator('#hizir-voice-host').locator('#indicator').getAttribute('data-phase'), 'processing'); checks++;
+assert.equal((await dispatch({type: 'voice:insert', sessionId: 'space-stop', data: {segmentId: 2, text: 'Dinleme bitti, son kelimeler.', replace: true, final: true}})).ok, true);
+assert.equal(await page.evaluate(() => globalThis.sentCount), sendsBeforeSpace); checks++;
+await dispatch({type: 'voice:release', sessionId: 'space-stop', keepDraft: true});
+assert.equal(await page.locator('#hizir-voice-host').isVisible(), false); checks++;
+await page.keyboard.press('Space'); await page.keyboard.type('kontrol');
+assert.match(await page.locator('#editor').innerText(), /kelimeler\.\s+kontrol$/);
+assert.equal(await stopCount(), beforeSpace + 1); checks++;
+await page.keyboard.press('Enter'); assert.equal(await page.evaluate(() => globalThis.sentCount), sendsBeforeSpace + 1); checks++;
+// Space during microphone startup also requests a finish rather than a toggle.
+await page.locator('#editor').fill(''); await dispatch({type: 'voice:bind', sessionId: 'space-starting'});
+await page.keyboard.press('Space');
+assert.equal(await stopCount(), beforeSpace + 2); checks++;
+await dispatch({type: 'voice:release', sessionId: 'space-starting'});
+
 // Render actual packaged UI with a local fake extension transport.
 const mime = {'.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png'};
 const server = createServer(async (req, res) => {try {const file = path.resolve(extensionPath, '.' + new URL(req.url, 'http://localhost').pathname); if (!file.startsWith(extensionPath + path.sep)) throw new Error('bad path'); const bytes = await readFile(file); res.writeHead(200, {'Content-Type': mime[path.extname(file)] || 'application/octet-stream'}); res.end(bytes);} catch {res.writeHead(404); res.end();}});
@@ -177,6 +211,7 @@ const popup = await context.newPage(); await popup.setViewportSize({width: 550, 
 assert.equal(await popup.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
 assert.equal(await popup.locator('.panel-logo').evaluate(x => x.complete && x.naturalWidth > 0), true); checks++;
 assert.equal(await popup.locator('#rewrite').isDisabled(), true); checks++;
+assert.match(await popup.locator('.popup-footer').textContent(), /Space ile bitir/); checks++;
 await popup.screenshot({path: path.join(output, 'popup.png')});
 await popup.locator('#toggle').click(); assert.equal(await popup.evaluate(() => globalThis.__uiMessages.some(x => x.type === 'ui:toggle')), true); checks++;
 await popup.evaluate(() => globalThis.__uiListeners.forEach(fn => fn({type: 'voice:status', target: 'ui', data: {sessionId: 'qa', phase: 'finishing', busy: true, recording: false, seconds: 20, level: 0.4, message: 'Son cümle hazırlanıyor…', canUndo: true, lastText: 'Merhaba.', lastLatencyMs: 1250}})));

@@ -1,3 +1,13 @@
+# 0.1.10 — Space ile kullanıcı kontrollü dinleme
+
+23 Ekim 2026
+
+- 90 saniye sessizlikte ve 15 dakika toplam sürede dinlemeyi kapatan zamanlayıcılar kaldırıldı. Duraklamalar yalnızca ses aktarımı / noktalama içindir; normal dikte kullanıcı bitirene kadar sürer.
+- LiveChat sayfasında gerçek Space (boşluk) basışı mikrofonu durdurur; son ses parçası boşaltılır ve bütün taslak için son noktalama tamamlanır. Otomatik gönderim yoktur; hazır metni okuyup Enter ile gönder.
+- Space başlangıç sırasında da bitirme isteği verir. Basılı tutma, tekrar basma ve geç durum mesajları ikinci bir bitirme / yeniden başlatma veya taslağa yanlış boşluk ekleme oluşturmaz. Son işleme tamamlandığında normal boşluk yazımı geri döner. Değiştirici tuşlar ve IME girişi korunur; sayfanın ürettiği sahte klavye olayları bitirme başlatmaz.
+- Bitirme isteği aynı sekme / görüşme oturumuna bağlıdır. Kuyruk bittikten sonra Enter ve Yeniden yazdır bağı korunur. Alt + H / Win + H yönlendirmesi, 20 px merkez noktası, logo, anahtar ve sözlük korunur.
+- Bu değişiklik süreye bağlı kapanmayı kaldırır. Gönderim, görüşme / sekme değişimi, gerçek mikrofon veya bağlantı hataları, ücretsiz kota, yaklaşık 106 saniyelik bekleyen ses belleği ve 8.000 karakter taslak korumaları sürer.
+
 # 0.1.9 — Arka plan müziği tetiklemelerini azaltma
 
 18 Ekim 2026

@@ -96,6 +96,27 @@ test('minute quota reports a resumable wait without consuming an extra request',
   await send('content:cancel', {sessionId}, content);
   if (previous) local[STORE.usage] = previous; else delete local[STORE.usage];
 });
+test('Space finish is bound to the current tab and session, idempotent, and drains late results before review', async () => {
+  await send('content:toggle', {}, content);
+  const sessionId = (await send('ui:get')).data.status.sessionId;
+  await send('audio:meter', {sessionId, recording: true, processing: false}, audio);
+  assert.equal((await send('content:finish', {sessionId: 'stale'}, content)).data, false);
+  assert.equal((await send('content:finish', {sessionId}, {...content, tab: {id: 99}})).data, false);
+  assert.equal((await send('content:finish', {sessionId}, {...content, frameId: 1})).ok, false);
+  const before = messages.filter(x => x.type === 'capture:finish').length;
+  await Promise.all([send('content:finish', {sessionId}, content), send('content:finish', {sessionId}, content)]);
+  assert.equal(messages.filter(x => x.type === 'capture:finish').length, before + 1);
+  await send('audio:meter', {sessionId, recording: true, processing: false}, audio);
+  const finishing = (await send('ui:get')).data.status;
+  assert.equal(finishing.phase, 'finishing'); assert.equal(finishing.recording, false); assert.equal(finishing.busy, true);
+  await send('content:finish', {sessionId}, content);
+  assert.equal(messages.filter(x => x.type === 'capture:finish').length, before + 1);
+  assert.equal((await send('audio:result', {sessionId, segmentId: 1, text: 'Son kelimeler.', raw: 'son kelimeler'}, audio)).data, true);
+  await send('audio:done', {sessionId}, audio);
+  const state = (await send('ui:get')).data.status;
+  assert.equal(state.sessionId, null); assert.equal(state.lastText, 'Son kelimeler.'); assert.equal(state.canRewrite, true);
+  assert.equal((await send('content:finish', {sessionId}, content)).data, false);
+});
 test('normal capture completion preserves only the reviewed draft shortcut', async () => {
   await send('content:toggle', {}, content);
   const sessionId = (await send('ui:get')).data.status.sessionId;
