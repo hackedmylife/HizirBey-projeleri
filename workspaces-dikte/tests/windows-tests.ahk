@@ -57,6 +57,7 @@ RunSuite() {
         Assert(!DikteCore.HasText(" `r`n `t"), "Whitespace is not a draft")
         punctuation := [
             ["merhaba işleminizi kontrol ediyorum", "Merhaba işleminizi kontrol ediyorum."],
+            ["merhaba.", "Merhaba."],
             ["işleminizi kontrol ediyorum", "İşleminizi kontrol ediyorum."],
             ["ışık kontrol ediliyor", "Işık kontrol ediliyor."],
             ["yardımcı olabilir miyim", "Yardımcı olabilir miyim?"],
@@ -73,8 +74,8 @@ RunSuite() {
             [" `r`n `t", " `r`n `t"]]
         for item in punctuation {
             actual := DikteCore.FinalizeText(item[1])
-            Assert(actual = item[2], "Punctuation, Turkish casing or protected-data case")
-            Assert(DikteCore.FinalizeText(actual) = actual, "Punctuation is idempotent")
+            Assert(actual == item[2], "Punctuation, Turkish casing or protected-data case")
+            Assert(DikteCore.FinalizeText(actual) == actual, "Punctuation is idempotent")
         }
         box := DikteCore.DockBounds(0, 0, 1918, 878)
         Assert(box.w = 930 && box.h = 100, "Original compact strip dimensions retained")
@@ -128,7 +129,7 @@ RunSuite() {
         Assert(A_Clipboard = App.editor.Value, "Next Ctrl+C copies latest words")
         App.editor.Value := "yardımcı olabilir miyim"
         Drive("copy")
-        Assert(A_Clipboard = "Yardımcı olabilir miyim?", "Live copy snapshot gets terminal punctuation")
+        Assert(A_Clipboard == "Yardımcı olabilir miyim?", "Live copy snapshot gets terminal punctuation")
         Assert(App.editor.Value = "yardımcı olabilir miyim" && App.voiceRequested, "Live editor remains raw and listening during punctuated copy")
         App.editor.Value := expected " Yeni kelimeler."
         ClickButton(App, App.copyButton)
@@ -172,11 +173,16 @@ RunSuite() {
         A_Clipboard := "clipboard must not change on stop"
         Drive("toggle")
         Sleep(1100)
-        Assert(App.editor.Value = "Merhaba işleminizi kontrol ediyorum.", "Stopped dictation receives final punctuation after quiet interval")
+        Assert(App.editor.Value == "Merhaba işleminizi kontrol ediyorum.", "Stopped dictation receives final punctuation after quiet interval")
         Assert(!App.finalizePending && !App.voiceRequested, "Finalization completes without restarting dictation")
         Assert(A_Clipboard = "clipboard must not change on stop", "Stop punctuation never copies automatically")
         Drive("undo")
         Assert(App.editor.Value = "merhaba işleminizi kontrol ediyorum", "Native Ctrl+Z undoes stopped-text punctuation")
+        Drive("toggle")
+        App.editor.Value := "merhaba."
+        Drive("toggle")
+        Sleep(1100)
+        Assert(App.editor.Value == "Merhaba.", "Stopped finalization also applies casing-only corrections")
         App.editor.Value := "Merhaba, işleminizi kontrol ediyorum."
         App.SetStatus("Hazır · Cümle sonları tamamlandı")
         App.window.Show("w930 h100 x10 y50")

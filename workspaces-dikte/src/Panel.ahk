@@ -293,7 +293,7 @@ class DikteApp {
         this.finalizePending := false
         raw := this.editor.Value
         text := DikteCore.FinalizeText(raw)
-        if text != raw {
+        if !(text == raw) {
             start := Buffer(4, 0), finish := Buffer(4, 0)
             SendMessage(0xB0, start.Ptr, finish.Ptr, this.editor.Hwnd)
             left := NumGet(start, 0, "UInt"), right := NumGet(finish, 0, "UInt")
@@ -302,7 +302,7 @@ class DikteApp {
             SendMessage(0xB1, 0, -1, this.editor.Hwnd)
             SendMessage(0xC2, 1, StrPtr(text), this.editor.Hwnd)
             SendMessage(0xB1, left, right, this.editor.Hwnd)
-            if this.lastCopiedText = raw
+            if this.lastCopiedText == raw
                 this.lastCopiedText := text
         }
         this.SetStatus("Hazır · Cümle sonları tamamlandı")
@@ -338,7 +338,7 @@ class DikteApp {
         }
         try {
             A_Clipboard := text
-            if !ClipWait(1) || A_Clipboard != text
+            if !ClipWait(1) || !(A_Clipboard == text)
                 throw Error("clipboard")
             this.lastCopiedText := raw
             this.SetStatus(this.voiceRequested ? "Kopyalandı · Dikte sürüyor" : "Kopyalandı · Metin burada")
