@@ -1,24 +1,27 @@
-# Doğrulama — 0.2.1
+# Doğrulama — 0.2.2
 
-23 Ekim 2026. Boş yerel kutudan Win+H başlangıcı düzeltildi; açık Taşı tutamacı ve kalıcı konum eklendi.
+23 Ekim 2026. LiveChat'e düşen `HB-DIKTE-2|ERROR|…|identity` konuşma tanıma çıktısı değil, köprünün kontrol yanıtıydı. Önceki kod görüşme kimliğini yalnız sayfadaki belirli DOM niteliklerinden arıyor, bu nitelikler bulunmayınca başarısız oluyordu. Kontrol yanıtları başarısız yoklama sonrasında panoda kalabiliyor, köprü oturumu yokken yapılan yapıştırma da bunları engellemiyordu. Görsel tek başına bu yapıştırmayı hangi tuş veya ara katmanın tetiklediğini kanıtlamaz.
 
-**75 Windows kontrolü ve 31 Chromium kontrolü geçti.**
+**97 Windows kontrolü ve 95 Chromium kontrolü geçti.**
 
-Yeni regresyon denemeleri:
+Yeni regresyon kapsamı:
 
-- Boş yerel panelde ilk kısayol dikte başlangıcına yönlenir; ikinci kısayol bitirme işlemine yönlenir.
-- Tamamlanmış yerel panelden yeni dikte başlatılır; önceki metin kurtarılabilir kalır.
-- Hedef pencere bulunamaması veya köprü yanıtının gelmemesi yerel dikte başlangıç isteğini engellemez.
-- Ayrı bir test süreci gerçek fare basma / hareket / bırakma olaylarıyla Taşı tutamacını sürükledi. Pencere 60 × 35 piksel hareket etti.
-- Hareket bitince gerçek pencere koordinatları geçici INI dosyasına kaydedildi. Yeni uygulama örneği aynı konumu geri yükledi.
-- Konum sıfırlama taslak metni korudu. Panel ve bütün düğmeler 100 piksel yüksekliğindeki şerit içinde kaldı.
-- Mevcut Unicode pano, odak yarışı, kapalı hedef, taslak korunması ve köprü oturum kimliği kontrolleri geçti.
-- Chromium'da tamamlanmış metnin LiveChat alanına eklenmesi, mevcut metnin korunması, değişmiş görüşme / taslak kontrolü ve mesaj gönderim sayısının sıfır kalması doğrulandı.
+- Sayfada `chat-feed` veya `data-chat-id` bulunmayan düzende, `/chats/<görüşme>/<konu>` adresi ve tek görünür mesaj kutusuyla bağlanma ve Türkçe metin ekleme.
+- Aynı kutu yerinde kalırken görüşme veya konu adresinin değişmesi ve kutunun başka bir DOM öğesiyle değiştirilmesi durumunda aktarımı durdurma.
+- Sohbet adresi ve DOM kimliği birlikte bulunmadığında aktarımı reddetme; mevcut taslak ve iç not kontrollerini koruma.
+- Köprü oturumu yokken, kimlik hatasından sonra, hazırlıkta, aktarım açıkken, tamamlandıktan ve ekleme hatasından sonra ERROR / READY / DONE / WAIT kontrol metinlerini gerçek Ctrl+V olayında engelleme. Bozuk kimlikli ve gelecekteki protokol sürümü önekleri de engellendi. LiveChat'i taklit eden sayfanın yapıştırma işleyicisi bu kodları almadı.
+- Önceki sürümden kalmış hata kodu zaten taslaktaysa sonuna konuşma eklemeyi reddetme; normal elle yapıştırmayı koruma.
+- Yerel Windows panosunda kimlik hatası, başarı onayı, zaman aşımı ve kısayol istisnasından sonra önceki Unicode içeriğini geri getirme. Boş pano ve önceden kalmış kontrol kodu temizliği; kullanıcı o sırada başka metin kopyaladıysa onu koruma.
+- Bitirme sırasında köprü hatasında asıl konuşma metnini panoda ve panelde koruma; hedef alana hiçbir hata kodu yazmama.
+- Gerçek yerel Ctrl+V sonrasında ekleme onayı hatası simülasyonu: bir kez yapıştırma, ikinci yapıştırma yapmama, ERROR yanıtını panoda asıl konuşmayla değiştirme ve kontrol için paneli açık tutma.
+- Önceki yerel başlangıç, fareyle sürükleme, konumu hatırlama, odak yarışı, Unicode, mevcut taslağa ekleme ve mesaj gönderim sayısının sıfır kalması kontrolleri.
 
-[Başarılı Windows ve Chromium çalışması](https://github.com/hackedmylife/HizirBey-projeleri/actions/runs/39928863276).
+[Başarılı Windows ve Chromium çalışması](https://github.com/hackedmylife/HizirBey-projeleri/actions/runs/39931458714).
 
-Doğrulanan kaynak commit: `a42f9cd5dc7c816442f327647b8663795559c4c0`.
+Doğrulanan kaynak commit: `01a2ef4fc3309b21996b7b1eb00136edcbcfb8c3`.
 
-Test ortamı Windows Server 2025 / 10.0.26100 ve yüklü Chrome'dur. Başlangıç yönlendirme testlerinde mikrofon yerine başlangıç isteğini sayan test sınıfı kullanıldı; ana başlangıç dosyası ayrıca açılıp hatasız kapandı. Gerçek Windows 11 Win+H mikrofon akışı ve kurumun tam ekran WorkSpaces bağlantısı kullanıcı bilgisayarında tekrar denenmelidir.
+Test ortamı Windows Server 2025 / 10.0.26100 ve yüklü Chrome'dur. Chromium kontrolleri gerçek pano ve güvenilir Ctrl+V olaylarıyla, sentetik LiveChat sayfalarında çalışır; gerçek LiveChat oturumu veya Amazon WorkSpaces bağlantısı değildir. Yerel mikrofon başlangıç testlerinde istekleri sayan test sınıfı kullanılır. Gerçek Windows 11 Win+H mikrofonu ve kurumun tam ekran WorkSpaces pano bağlantısı kullanıcı ortamında tekrar denenmelidir.
 
-LiveChat köprüsü 0.2.0 protokolüyle uyumludur; mevcut köprü bu masaüstü güncellemesiyle kullanılabilir. Yalnız panel koordinatları kullanıcı bilgisayarındaki panel.ini dosyasında tutulur; taslak, ses, token veya API anahtarı pakete eklenmez. Resmi AutoHotkey çalışma dosyası SHA-256 ile doğrulanır.
+Bu güncelleme için yerel programla birlikte **WorkSpaces Chrome köprüsü 0.2.2** kurulmalı, köprü yeniden yüklenmeli ve LiveChat sekmesi yenilenmelidir. Önceki denemeden yazı alanında kalan HB-DIKTE kodu elle silinmelidir. İki yönlü WorkSpaces metin panosu hâlâ gereklidir.
+
+Paket yalnız izin listesindeki 18 dosyayı içerir. Resmi AutoHotkey çalışma dosyası SHA-256 ile doğrulanır. Taslak, ses, ekran görüntüsü, panel.ini, token veya API anahtarı pakete eklenmez.

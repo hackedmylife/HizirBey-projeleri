@@ -1,6 +1,17 @@
-# Hızır Bey · WorkSpaces Dikte 0.2.1
+# Hızır Bey · WorkSpaces Dikte 0.2.2
 
 Konuşma önce **kendi bilgisayarındaki yerel kutuya** yazılır. Win+H / Ctrl+Enter ile bitirince tamamlanan metin, WorkSpaces içindeki LiveChat yazı alanına otomatik eklenir. Mesajın gönderilmesi kullanıcıya aittir.
+
+## 0.2.1'den güncelleme
+
+Bu düzeltmede **yerel programı ve WorkSpaces Chrome köprüsünü birlikte güncelle**. Yalnız BASLAT.cmd ile yeni yerel programı açmak yeterli değildir.
+
+1. Eski yerel programı sağ alttaki simgesinden **Çıkış** ile kapat. Yeni ZIP'i tamamen çıkar ve kendi bilgisayarında **BASLAT.cmd** çalıştır.
+2. WorkSpaces'te kurulu köprünün `livechat-kopru` klasöründeki dosyaları bu paketteki yeni dosyalarla değiştir. Chrome `chrome://extensions` sayfasında **Hızır Bey · LiveChat Aktarım Köprüsü** kartının yenile düğmesine bas. Sürüm **0.2.2** olmalı. İlk kurulumsa aşağıdaki kurulum adımlarını kullan.
+3. LiveChat sekmesini yenile. Yazı alanında önceki denemeden `HB-DIKTE…` yazısı kaldıysa onu bir kez elle sil. **Gönder** düğmesine basma.
+4. Doğru görüşmeyi seçip Win+H ile dene: önce yerel kutu, bitirince LiveChat yazı alanı.
+
+Önceki görseldeki `ERROR … identity`, konuşma tanıma çıktısı değil, köprünün görüşme doğrulama hatasıydı. Bu sürüm, sohbet kimliğini `/chats/<görüşme>/<konu>` adresinden de doğrular. Kontrol kodlarını köprü oturumu olmasa bile yapıştırma aşamasında engeller; yerel araç başarısız yoklama sonrasında eski pano içeriğini, bitirme sırasında ise konuşma metnini korur. Önceki sürümden kalan kontrol kodunun sonuna yeni konuşma eklenmesine izin verilmez; kodun elle silinmesi istenir.
 
 ## Bir kez yapılacak kurulum
 
@@ -11,7 +22,7 @@ Konuşma önce **kendi bilgisayarındaki yerel kutuya** yazılır. Win+H / Ctrl+
 5. `chrome://extensions/shortcuts` sayfasında köprünün **Ctrl+Shift+Y** kısayoluna sahip olduğunu kontrol et. Kapsamı Chrome'da olsun. Yerel araç bu tuşları otomatik kullanır.
 6. LiveChat sayfasını yenile ve bir görüşme seç.
 
-Paketin doğrudan adresi: https://github.com/hackedmylife/HizirBey-projeleri/raw/refs/heads/main/paketler/Hizir-Bey-WorkSpaces-Dikte-0.2.1.zip
+Paketin doğrudan adresi: https://github.com/hackedmylife/HizirBey-projeleri/raw/refs/heads/main/paketler/Hizir-Bey-WorkSpaces-Dikte-0.2.2.zip
 
 ## Kullanım
 
@@ -28,7 +39,7 @@ Panelin yüksekliği 100 fiziksel pikseldir; ekrandaki normal 930 × 104 piksel 
 
 ## Aktarımın korunması
 
-- Başlangıçtaki görüşme, yazı kutusu ve mevcut taslak metni bağlanır. Sohbet, yazım modu veya taslak değişirse otomatik aktarım durur; yerel metin korunur.
+- Başlangıçtaki görüşme adresi, varsa sayfadaki görüşme kimliği, yazı kutusu ve mevcut taslak metni bağlanır. Sohbet veya konu adresi, yazım modu, kutunun kendisi veya taslak değişirse otomatik aktarım durur; yerel metin korunur.
 - İç not alanına otomatik aktarım yapılmaz.
 - Köprü yazı alanını odaklar, gelen yapıştırmayı aynı alana yönlendirir ve eklenen metni doğruladıktan sonra panodan yerel araca onay verir. Otomatik aktarım için WorkSpaces'in **iki yönlü metin panosu** açık olmalıdır. Dikte başlangıcında köprüye ulaşılamamışsa bitirme sırasında aynı oturuma yeniden bağlanılır; bağlantı ancak o anda ilk kez kurulmuşsa hedefi kontrol edip yeniden **Bitir ve aktar** kullanman istenir. Metin yerel kutuda kalır.
 - Bağlantı veya odak aksarsa taslak silinmez ve otomatik ikinci yapıştırma yapılmaz. **Onay gelmedi** durumunda önce LiveChat'i kontrol et.
