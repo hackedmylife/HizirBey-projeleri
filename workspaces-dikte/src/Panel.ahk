@@ -420,6 +420,7 @@ class DikteApp {
             this.lastText := this.editor.Value
             this.editor.Value := ""
             this.pasteIssued := false
+            this.bridgeSession := ""
         }
     }
 
