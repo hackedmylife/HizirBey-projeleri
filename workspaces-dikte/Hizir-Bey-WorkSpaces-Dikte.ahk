@@ -4,7 +4,7 @@
 ;@Ahk2Exe-SetCompanyName Hızır Bey
 ;@Ahk2Exe-SetMainIcon assets\hizirbey.ico
 ;@Ahk2Exe-AddResource vendor\license.txt, LICENSE
-;@Ahk2Exe-SetLegalCopyright GPL-2.0-or-later | github.com/hackedmylife/HizirBey-projeleri
+;@Ahk2Exe-SetCopyright GPL-2.0-or-later | github.com/hackedmylife/HizirBey-projeleri
 #Requires AutoHotkey v2.0.30 64-bit
 #SingleInstance Ignore
 #UseHook
