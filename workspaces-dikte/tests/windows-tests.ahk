@@ -187,6 +187,9 @@ RunSuite() {
         App.SetStatus("Hazır · Cümle sonları tamamlandı")
         App.window.Show("w930 h100 x10 y50")
         Sleep(150)
+        Assert(App.theme.draws > 0, "Native buttons actually use custom drawing")
+        for button in [App.toggleButton, App.copyButton, App.closeButton]
+            Assert((DllCall("user32\GetWindowLongPtrW", "Ptr", button.Hwnd, "Int", -16, "Ptr") & 0xF) = 0xB, "Premium button style survives interaction")
         SplitPath(LogFile,, &logDir)
         preview := logDir "\dikte-preview.png"
         capture := Format('powershell.exe -NoProfile -ExecutionPolicy Bypass -File "{1}" -WindowHandle {2} -Output "{3}"', A_ScriptDir "\capture.ps1", App.window.Hwnd, preview)

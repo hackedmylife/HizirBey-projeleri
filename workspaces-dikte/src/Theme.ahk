@@ -6,6 +6,7 @@ class DikteTheme {
         this.hover := 0
         this.width := 930
         this.height := 100
+        this.draws := 0
         this.titleFont := this.MakeFont(14, 600)
         this.hintFont := this.MakeFont(10, 400)
         this.drawCallback := ObjBindMethod(this, "DrawButton")
@@ -18,6 +19,13 @@ class DikteTheme {
         OnMessage(0x200, this.mouseCallback)
         OnMessage(0x2A3, this.leaveCallback)
         OnMessage(0x20, this.cursorCallback)
+        ; AutoHotkey normalizes Button type bits at creation. Apply owner draw
+        ; after creation, preserving the native Button control and click events.
+        for button in [app.toggleButton, app.copyButton, app.closeButton] {
+            style := DllCall("user32\GetWindowLongPtrW", "Ptr", button.Hwnd, "Int", -16, "Ptr")
+            DllCall("user32\SetWindowLongPtrW", "Ptr", button.Hwnd, "Int", -16, "Ptr", (style & ~0xF) | 0xB, "Ptr")
+            DllCall("user32\SetWindowPos", "Ptr", button.Hwnd, "Ptr", 0, "Int", 0, "Int", 0, "Int", 0, "Int", 0, "UInt", 0x27)
+        }
     }
 
     MakeFont(size, weight) {
@@ -88,6 +96,7 @@ class DikteTheme {
         control := NumGet(item, offset, "Ptr")
         if control != this.app.toggleButton.Hwnd && control != this.app.copyButton.Hwnd && control != this.app.closeButton.Hwnd
             return
+        this.draws += 1
         hdc := NumGet(item, offset + A_PtrSize, "Ptr")
         rect := item + offset + 2 * A_PtrSize
         width := NumGet(rect, 8, "Int") - NumGet(rect, 0, "Int")
