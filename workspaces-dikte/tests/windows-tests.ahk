@@ -63,6 +63,22 @@ class ClipboardProbe extends DikteApp {
     }
 }
 
+class DoneFailureProbe extends DikteApp {
+    RequiresBridge() {
+        return true
+    }
+    SendBridgeRequest() {
+        A_Clipboard := "HB-DIKTE-2|READY|1234567890abcdef1234567890abcdef|armed"
+    }
+    WaitBridge(kind, expectedId := "", arm := false, timeoutMs := 0) {
+        if kind = "DONE" {
+            A_Clipboard := "HB-DIKTE-2|ERROR|1234567890abcdef1234567890abcdef|verify"
+            return false
+        }
+        return super.WaitBridge(kind, expectedId, arm, timeoutMs)
+    }
+}
+
 try {
     Assert(DikteCore.IsWorkspacesProcess("workspaces.exe"), "WorkSpaces process")
     Assert(DikteCore.IsWorkspacesProcess("WorkSpacesClient.EXE"), "WorkSpaces process case")
@@ -264,6 +280,19 @@ try {
     Assert(clipboard.editor.Value = "Asıl konuşma metni panoda kalmalı." && !clipboard.pasteIssued, "Failed Finish preserves source and does not mark it inserted")
     Assert(fixtureEdit.Value = "", "Failed handshake never pastes error into target")
     clipboard.Dispose()
+
+    doneFailure := DoneFailureProbe(true)
+    doneFailure.testMode := true
+    doneFailure.CaptureTarget(fixture.Hwnd)
+    doneFailure.bridgeSession := "1234567890abcdef1234567890abcdef"
+    doneFailure.delayMs := 150
+    doneFailure.editor.Value := "Onay hatasında da asıl metin korunur."
+    doneFailure.ShowPanel()
+    doneFailure.Finish()
+    Assert(fixtureEdit.Value = doneFailure.editor.Value, "Verification error does not issue a second paste")
+    Assert(A_Clipboard = doneFailure.editor.Value, "Post-paste error reply is replaced by actual speech")
+    Assert(!doneFailure.pasteIssued && doneFailure.panelOpen, "Unconfirmed paste keeps source visible for inspection")
+    doneFailure.Dispose()
     fixture.Destroy()
 
     app.Dispose()
