@@ -17,7 +17,7 @@
     }
   }
   async function signalError(error) {
-    const allowed = new Set(['editor', 'identity', 'note', 'changed', 'edited', 'focus', 'verify', 'text', 'clipboard', 'expired']);
+    const allowed = new Set(['editor', 'identity', 'note', 'changed', 'edited', 'focus', 'verify', 'text', 'clipboard', 'expired', 'protocol']);
     const code = allowed.has(error.message) ? error.message : 'editor';
     await copySignal('ERROR', session?.id || '0'.repeat(32), code).catch(() => {});
     return {ok: false, error: code};
@@ -45,13 +45,20 @@
     void prepare(message.type === 'hb:reset').then(reply);
     return true;
   });
-  document.addEventListener('paste', event => {
+  // Control replies are never customer text. Guard before any LiveChat handler,
+  // even before preparation, after a failure, or after the transfer completed.
+  window.addEventListener('paste', event => {
+    const raw = event.clipboardData?.getData('text/plain') || '';
+    if (HizirDikteEditor.isControlText(raw)) {
+      event.preventDefault(); event.stopImmediatePropagation();
+      return;
+    }
     if (!session || !['armed', 'writing'].includes(session.phase) || !event.isTrusted) return;
     event.preventDefault(); event.stopImmediatePropagation();
     if (session.phase === 'writing') return;
     if (Date.now() > session.armedUntil) { session.phase = 'prepared'; void signalError(new Error('expired')); return; }
-    const text = event.clipboardData?.getData('text/plain').replace(/\r?\n/g, ' ').trim() || '';
-    if (!text || text.length > 10000 || text.startsWith(`${PREFIX}|`) || text.startsWith('HB-DIKTE-WAIT-')) {
+    const text = raw.replace(/\r?\n/g, ' ').trim();
+    if (!text || text.length > 10000) {
       void signalError(new Error('text')); return;
     }
     session.phase = 'writing';

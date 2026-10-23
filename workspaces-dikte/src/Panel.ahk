@@ -16,13 +16,14 @@ class DikteApp {
         this.delayMs := 1000
         this.bridgeSession := ""
         this.bridgePhase := ""
+        this.bridgeError := ""
         this.bridgeTimeout := testing ? 150 : 6000
         this.dockTarget := -1
         this.customPosition := false
         this.settingsPath := settingsPath != "" ? settingsPath : (testing ? "" : EnvGet("LOCALAPPDATA") "\HizirBey\WorkSpacesDikte\panel.ini")
         this.LoadPosition()
 
-        this.window := Gui("+AlwaysOnTop -Caption +ToolWindow +Border -DPIScale", "Hızır Bey · WorkSpaces Dikte 0.2.1")
+        this.window := Gui("+AlwaysOnTop -Caption +ToolWindow +Border -DPIScale", "Hızır Bey · WorkSpaces Dikte 0.2.2")
         this.window.BackColor := "F3F5FA"
         this.window.SetFont("s8 w400 c3451B2", "Segoe UI")
         this.dragHandle := this.window.AddText("x6 y4 w54 h23 Center Border +0x100 BackgroundE2E8FA", "↔ Taşı")
@@ -361,6 +362,9 @@ class DikteApp {
                 return
             }
             this.lastText := this.editor.Value
+            ; Recovery must always expose the dictated text, never an ACK token.
+            if !this.PutClipboard(text)
+                return
             this.ResolveTarget()
             if !this.TargetExists() {
                 this.PutClipboard(text)
@@ -379,7 +383,7 @@ class DikteApp {
             if bridge && this.bridgeSession = "" {
                 if !this.RequestBridge(false) {
                     this.ShowPanel()
-                    this.SetStatus("Köprü yanıt vermedi. Yerel metin korundu; Kopyala kullanabilirsin.")
+                    this.SetStatus(this.BridgeProblem())
                     return
                 }
                 if this.bridgePhase = "prepared" {
@@ -390,7 +394,7 @@ class DikteApp {
             }
             if bridge && !this.RequestBridge(true) {
                 this.ShowPanel()
-                this.SetStatus("LiveChat hedefi doğrulanamadı. Taslak burada; köprüyü kontrol et.")
+                this.SetStatus(this.BridgeProblem())
                 return
             }
             if !this.PutClipboard(text) {
@@ -424,6 +428,8 @@ class DikteApp {
             this.ShowPanel()
             this.SetStatus("Aktarım tamamlanamadı; metnin panelde duruyor. Kopyala ile devam edebilirsin.")
         } finally {
+            if IsSet(text) && text != "" && DikteCore.IsBridgeControl(A_Clipboard)
+                this.PutClipboard(text)
             this.busy := false
         }
     }
@@ -447,11 +453,33 @@ class DikteApp {
     }
 
     RequestBridge(arm := false, timeoutMs := 0) {
-        if !this.PutClipboard("HB-DIKTE-WAIT-" A_TickCount)
-            return false
+        saved := DikteCore.IsBridgeControl(A_Clipboard) ? DikteCore.ChatText(this.editor.Value) : ClipboardAll()
+        this.bridgeError := ""
+        try {
+            if !this.PutClipboard("HB-DIKTE-WAIT-" A_TickCount)
+                return false
+            this.SendBridgeRequest()
+            return this.WaitBridge("READY", arm ? this.bridgeSession : "", arm, timeoutMs)
+        } finally {
+            ; Preserve other clipboard formats too; do not replace a user's newer copy.
+            if DikteCore.IsBridgeControl(A_Clipboard)
+                A_Clipboard := saved
+        }
+    }
+
+    SendBridgeRequest() {
         SendLevel(0)
         SendEvent("^+y")
-        return this.WaitBridge("READY", arm ? this.bridgeSession : "", arm, timeoutMs)
+    }
+
+    BridgeProblem() {
+        messages := Map(
+            "identity", "Görüşme tanınamadı. Chrome köprüsünü güncelle ve LiveChat'i yenile.",
+            "protocol", "LiveChat'teki eski HB-DIKTE hata yazısını silip yeniden dene.",
+            "note", "LiveChat'te Mesaj modunu seç. Metnin burada ve panoda.",
+            "changed", "Görüşme değişti. Doğru sohbeti seçip köprü simgesinden yeniden bağlan.",
+            "edited", "LiveChat taslağı değişti. Metnin burada ve panoda; alanı kontrol et.")
+        return messages.Has(this.bridgeError) ? messages[this.bridgeError] : "Köprü doğrulanamadı. Metnin panoda; Chrome köprüsünü ve sayfayı kontrol et."
     }
 
     WaitBridge(kind, expectedId := "", arm := false, timeoutMs := 0) {
@@ -464,8 +492,14 @@ class DikteApp {
                 continue
             if signal.kind = ""
                 continue
-            if signal.kind = "ERROR" || (expectedId != "" && signal.id != expectedId)
+            if signal.kind = "ERROR" {
+                this.bridgeError := signal.detail
                 return false
+            }
+            if expectedId != "" && signal.id != expectedId {
+                this.bridgeError := "changed"
+                return false
+            }
             if signal.kind != kind
                 continue
             if kind = "READY" {

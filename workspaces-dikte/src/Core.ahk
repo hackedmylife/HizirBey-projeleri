@@ -11,6 +11,10 @@ class DikteCore {
         return {kind: "", id: "", detail: ""}
     }
 
+    static IsBridgeControl(raw) {
+        return RegExMatch(raw, "^\s*\x{FEFF}?HB-DIKTE-(?:\d+\||WAIT-)") > 0
+    }
+
     static IsWorkspacesProcess(name) {
         return RegExMatch(StrLower(name), "^(workspaces|workspacesclient|amazonworkspaces)\.exe$") > 0
     }

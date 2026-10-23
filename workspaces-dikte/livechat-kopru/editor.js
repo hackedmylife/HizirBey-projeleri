@@ -5,6 +5,7 @@
   const visible = x => x.isConnected && x.getClientRects().length > 0 && getComputedStyle(x).visibility !== 'hidden';
   const read = x => (x.tagName === 'TEXTAREA' ? x.value : x.innerText).replace(/\u00a0/g, ' ').replace(/\r\n/g, '\n').replace(/\n$/, '');
   const fail = code => { throw new Error(code); };
+  const isControlText = text => /^\s*\uFEFF?HB-DIKTE-(?:\d+\||WAIT-)/.test(text);
   function find() {
     const editors = [...document.querySelectorAll(SELECTOR)].filter(visible);
     if (editors.length !== 1) fail('editor');
@@ -17,6 +18,9 @@
       .some(x => /internal note|private note|dahili not|iç not|müşteri.*göreme/i.test(x.textContent || x.getAttribute('data-placeholder') || ''));
   }
   function identity(editor) {
+    // LiveChat also renders the composer without chat-feed / data-chat-id.
+    // Its selected chat and optional thread still have a concrete /chats/... route.
+    const route = location.pathname.match(/^\/chats\/([a-z0-9][a-z0-9_-]{3,127})(?:\/([a-z0-9][a-z0-9_-]{3,127}))?\/?$/i);
     let scope = editor.parentElement;
     while (scope.parentElement && !scope.querySelector('[data-testid="chat-feed"]')) scope = scope.parentElement;
     const feeds = [...scope.querySelectorAll('[data-testid="chat-feed"]')].filter(visible);
@@ -25,8 +29,8 @@
     const stable = owner?.dataset.chatId || owner?.dataset.conversationId || owner?.dataset.threadId || feed?.dataset.chatId || feed?.dataset.conversationId || '';
     const reaction = feed?.querySelector('[data-testid$="-reaction"]')?.getAttribute('data-testid') || '';
     const thread = reaction.match(/^([a-z0-9]{6,})[_-]\d+-reaction$/i)?.[1] || '';
-    if (!feed && !stable) fail('identity');
-    return {url: location.href, feed, stable, thread};
+    if (!feed && !stable && !route) fail('identity');
+    return {url: location.href, chat: route?.[1] || '', routeThread: route?.[2] || '', feed, stable, thread};
   }
   class Binding {
     constructor() {
@@ -34,11 +38,12 @@
       if (isNote(this.editor)) fail('note');
       this.identity = identity(this.editor);
       this.expected = read(this.editor);
+      if (isControlText(this.expected)) fail('protocol');
     }
     assert() {
+      if (!this.editor.isConnected || !visible(this.editor) || find() !== this.editor || isNote(this.editor)) fail('changed');
       const next = identity(this.editor);
-      if (!this.editor.isConnected || !visible(this.editor) || find() !== this.editor || isNote(this.editor)
-          || Object.keys(this.identity).some(k => this.identity[k] !== next[k])) fail('changed');
+      if (Object.keys(this.identity).some(k => this.identity[k] !== next[k])) fail('changed');
       if (read(this.editor) !== this.expected) fail('edited');
     }
     focus() {
@@ -70,5 +75,5 @@
       this.expected = target;
     }
   }
-  globalThis.HizirDikteEditor = {Binding, read};
+  globalThis.HizirDikteEditor = {Binding, read, isControlText};
 })();

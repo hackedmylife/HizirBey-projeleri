@@ -7,7 +7,7 @@ import zipfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.2.1"
+VERSION = "0.2.2"
 RUNTIME_SHA256 = "2eab99848ebc07f8ab0cc448bf69af8c700b2fc7fcd1ff8794df743dcc58da51"
 FILES = [
     "BASLAT.cmd",
@@ -42,7 +42,7 @@ def validate():
                 raise ValueError(f"Credential-like content found: {relative}")
     import json
     manifest = json.loads((ROOT / "livechat-kopru/manifest.json").read_text(encoding="utf-8"))
-    if manifest["version"] != "0.2.0" or "clipboardRead" in manifest["permissions"]:
+    if manifest["version"] != VERSION or "clipboardRead" in manifest["permissions"] or manifest["content_scripts"][0]["run_at"] != "document_start":
         raise ValueError("Unexpected bridge version or clipboard read permission")
     digest = hashlib.sha256((ROOT / "vendor/AutoHotkey64.exe").read_bytes()).hexdigest()
     if digest != RUNTIME_SHA256:

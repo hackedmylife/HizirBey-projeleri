@@ -43,6 +43,26 @@ class NativeProbe extends DikteApp {
     }
 }
 
+class ClipboardProbe extends DikteApp {
+    mode := "identity"
+    RequiresBridge() {
+        return true
+    }
+    SendBridgeRequest() {
+        if this.mode = "throw"
+            throw Error("simulated shortcut failure")
+        if this.mode = "timeout"
+            return
+        if this.mode = "usercopy" {
+            A_Clipboard := "User copied a newer value."
+            return
+        }
+        A_Clipboard := this.mode = "ready"
+            ? "HB-DIKTE-2|READY|1234567890abcdef1234567890abcdef|prepared"
+            : "HB-DIKTE-2|ERROR|1234567890abcdef1234567890abcdef|identity"
+    }
+}
+
 try {
     Assert(DikteCore.IsWorkspacesProcess("workspaces.exe"), "WorkSpaces process")
     Assert(DikteCore.IsWorkspacesProcess("WorkSpacesClient.EXE"), "WorkSpaces process case")
@@ -70,6 +90,9 @@ try {
     Assert(ready.kind = "READY" && ready.detail = "armed", "Bridge signal parsed")
     Assert(DikteCore.BridgeSignal("ordinary customer text").kind = "", "Plain text is not an acknowledgement")
     Assert(DikteCore.BridgeSignal("HB-DIKTE-2|READY|invalid|armed").kind = "", "Malformed session rejected")
+    Assert(DikteCore.IsBridgeControl("HB-DIKTE-2|ERROR|invalid|identity"), "Even malformed protocol text is reserved")
+    Assert(DikteCore.IsBridgeControl(" `tHB-DIKTE-WAIT-123"), "Wait markers cannot become customer text")
+    Assert(!DikteCore.IsBridgeControl("Müşterinin normal mesajı."), "Ordinary speech is not a control marker")
 
     app := DikteApp(true)
     app.ShowPanel()
@@ -173,7 +196,7 @@ try {
     try DirDelete(configDir, true)
 
     fixture := Gui(, "Hizir Bey HOTKEY TARGET")
-    fixture.AddEdit("w420 h90")
+    fixtureEdit := fixture.AddEdit("w420 h90")
     fixture.Show()
     route := RouteProbe(true)
     route.testMode := true
@@ -203,6 +226,44 @@ try {
     Assert(native.attempts = 1 && native.requests = 1, "Missing bridge acknowledgement does not block native dictation request")
     Assert(native.voiceRequested && !native.busy, "Local dictation remains active after bridge failure")
     native.Dispose()
+
+    clipboard := ClipboardProbe(true)
+    A_Clipboard := "Panoda Türkçe metin: ığüşöç."
+    Assert(!clipboard.RequestBridge(), "Identity failure rejects transfer")
+    Assert(A_Clipboard = "Panoda Türkçe metin: ığüşöç.", "Identity failure restores original Unicode clipboard")
+    Assert(clipboard.bridgeError = "identity", "Identity error is kept outside customer text")
+    Assert(InStr(clipboard.BridgeProblem(), "güncelle"), "Identity failure suggests bridge update")
+    clipboard.mode := "ready"
+    Assert(clipboard.RequestBridge(), "Ready acknowledgement still establishes session")
+    Assert(A_Clipboard = "Panoda Türkçe metin: ığüşöç.", "Ready acknowledgement never remains in clipboard")
+    clipboard.mode := "timeout"
+    Assert(!clipboard.RequestBridge(), "Bridge timeout still rejects transfer")
+    Assert(A_Clipboard = "Panoda Türkçe metin: ığüşöç.", "Timeout wait marker is removed")
+    clipboard.mode := "throw"
+    caught := false
+    try clipboard.RequestBridge()
+    catch
+        caught := true
+    Assert(caught && A_Clipboard = "Panoda Türkçe metin: ığüşöç.", "Shortcut exception restores clipboard")
+    clipboard.mode := "identity"
+    A_Clipboard := ""
+    Assert(!clipboard.RequestBridge() && A_Clipboard = "", "Empty clipboard restored without waiting for text")
+    A_Clipboard := "HB-DIKTE-2|ERROR|1234567890abcdef1234567890abcdef|identity"
+    Assert(!clipboard.RequestBridge() && A_Clipboard = "", "Pre-existing stale protocol clipboard is discarded")
+    clipboard.mode := "usercopy"
+    Assert(!clipboard.RequestBridge() && A_Clipboard = "User copied a newer value.", "Concurrent user copy is preserved")
+
+    clipboard.testMode := true
+    clipboard.mode := "identity"
+    clipboard.bridgeSession := ""
+    Assert(clipboard.CaptureTarget(fixture.Hwnd), "Failed-transfer clipboard fixture bound")
+    clipboard.editor.Value := "Asıl konuşma metni panoda kalmalı."
+    clipboard.ShowPanel()
+    clipboard.Finish()
+    Assert(A_Clipboard = clipboard.editor.Value, "Failed Finish leaves actual speech in clipboard")
+    Assert(clipboard.editor.Value = "Asıl konuşma metni panoda kalmalı." && !clipboard.pasteIssued, "Failed Finish preserves source and does not mark it inserted")
+    Assert(fixtureEdit.Value = "", "Failed handshake never pastes error into target")
+    clipboard.Dispose()
     fixture.Destroy()
 
     app.Dispose()
