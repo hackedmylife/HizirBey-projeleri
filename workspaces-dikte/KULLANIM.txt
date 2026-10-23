@@ -1,28 +1,28 @@
-HIZIR BEY - WORKSPACES DIKTE 0.1.0 (DENEME)
+HIZIR BEY WORKSPACES DIKTE 0.2.0
 
-1. ZIP'in tamamini bir klasore cikart.
-2. BASLAT.cmd dosyasini KENDI bilgisayarinda calistir.
-3. WorkSpaces tam ekran acikken yazilacak bos alana tikla.
-4. Win+H: yerel paneli ve Windows diktesini ac.
-   Windows cubugunda Dinleniyor yazisini bekle ve konus.
-5. Ikinci Win+H / Ctrl+Enter / Bitir ve aktar: metni WorkSpaces'e aktar.
-6. Mesaji kontrol et. Gondermek icin Enter'a sen bas.
+AKIS: ONCE YEREL KUTU -> BITIR -> LIVECHAT YAZI ALANI.
+Mesaj gonderilmez. Gonderimi sen yaparsin.
 
-Win+H yakalanmazsa: Ctrl+Alt+H.
-Sag alttaki simge: Kisayolu yeniden yakala / Paneli ac / Cikis.
-Yavas baglanti: panelde Aktarim beklemesi = 1,5 veya 2,5 saniye.
-Metin yapismadiysa: Kopyala, hedef alana tikla, Ctrl+V.
+BIR KEZ KUR:
+1. Eski surumu sag alttaki simgeden Cikis ile kapat.
+2. ZIP'in tamamini kendi bilgisayarina cikart. BASLAT.cmd burada calisacak.
+3. livechat-kopru klasorunu WorkSpaces'e de kopyala.
+4. WorkSpaces Chrome: chrome://extensions -> Gelistirici modu ->
+   Paketlenmemis oge yukle -> livechat-kopru klasorunu sec.
+5. chrome://extensions/shortcuts -> kopru kisayolu Ctrl+Shift+Y olmali.
+6. LiveChat sayfasini yenile.
 
-Panelde Gizle veya X uygulamayi kapatmaz. Metin uygulama acikken bellekte
-kalir; program kapaninca taslak kaybolur. Son metni getir bir onceki metni
-kurtarir. Pano aktarim icin kullanilir, eski pano icerigi degisir.
+KULLAN:
+LiveChat gorusmesini sec -> Win+H -> Dinleniyor yazisini bekle -> konus.
+Konusma once uygulamanin kendi kutusunda yazilir.
+Bitir: ikinci Win+H / Ctrl+Enter / Bitir ve aktar.
+Tamamlanan metin otomatik LiveChat yazim alanina eklenir.
+Mesaji kontrol et; gondermek icin Enter'a sen bas.
 
-Bu paket ham ses kaydi yapmaz; Windows'un kendi ses tanimasini kullanir.
-Internet, mikrofon erisimi ve WorkSpaces'e pano aktarimi acik olmalidir.
-Dikte sirasinda hedef sohbeti degistirme. Uygulama uzak imleci goremez.
-Tam ekran WorkSpaces + Win+H ses akisi senin bilgisayarinda denenmelidir.
+Panel 100 piksel yuksekligindedir. HIZIR BEY basligindan suruklenebilir.
+Onay gelmediyse LiveChat'i kontrol et. Metin yerel kutuda durur.
+Kopyala: duz metni panoya alir. Son metin: onceki dikteyi getirir.
+Kopru LiveChat'te farkli gorusmeye gecildiginde aktarimi durdurur.
+Iki yonlu WorkSpaces metin panosu acik olmalidir.
 
-Kurulum / Python / API anahtari / AutoHotkey kurulumu GEREKMEZ.
-Tasinarak calisan resmi AutoHotkey v2.0.30 x64 dosyasi vendor klasorundedir.
-
-Ayrintilar: README.md
+Ayrintili kurulum ve sorun giderme: README.md

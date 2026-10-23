@@ -4,7 +4,7 @@ Projelerin son erişilebilir kaynak sürümleri ve kurulum paketleri. Güncellem
 
 | Proje | Sürüm / durum | Dosyalar |
 |---|---|---|
-| WorkSpaces Dikte | 0.1.0 deneme; tam ekran üzerinde yerel Win+H paneli ve metin aktarımı; 39 Windows kontrolü geçti, gerçek WorkSpaces denemesi bekliyor | [Kaynak ve kullanım](workspaces-dikte/) · [Paket](paketler/Hizir-Bey-WorkSpaces-Dikte-0.1.0.zip) |
+| WorkSpaces Dikte | 0.2.0 deneme; 100 px yerel metin şeridi, LiveChat alanına doğrulanan aktarım ve gönderimsiz köprü | [Kaynak ve kurulum](workspaces-dikte/) · [Paket](paketler/Hizir-Bey-WorkSpaces-Dikte-0.2.0.zip) |
 | Sesli yazma | 0.2.0; Google / Chrome denemesi, sessizlikte devam, yalnız Space sonrası tek noktalama ve Enter ile gönderim | [Kaynak ve kurulum](sesli-yazma/) · [Paket](paketler/Hizir-Bey-Sesli-Yazma-0.2.0.zip) |
 | Sohbet asistanı | 0.3.3; 10 MB / 20.000 örnek hafızası, kapasite göstergesi, hızlı yerel örnek seçimi ve büyük JSON yedeği; 108 test geçti | [Kaynak ve güncelleme](sohbet-asistani/) · [Paket](paketler/Hizir-Bey-Sohbet-Asistani-0.3.3.zip) |
 | Yatırım / çekim hesaplayıcı | Logolu sürüm; alt düğme yerleşimi düzeltildi | [Kaynak ve EXE oluşturma](hesaplayici/) · [Paket](paketler/HizirBey_EXE_Olusturma.zip) |

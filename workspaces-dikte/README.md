@@ -1,51 +1,51 @@
-# Hızır Bey · WorkSpaces Dikte
+# Hızır Bey · WorkSpaces Dikte 0.2.0
 
-**0.1.0 — Windows 11 için deneme sürümü.** WorkSpaces tam ekran kullanılırken konuşmayı yerel bir metin alanında toplar, ardından hedef pencereye bir kez yapıştırmayı dener. Windows'un kendi Win+H ses tanımasını kullanır. Ayrı API anahtarı veya AutoHotkey kurulumu gerekmez; doğrulanmış taşınabilir çalışma dosyası pakettedir.
+Konuşma önce **kendi bilgisayarındaki yerel kutuya** yazılır. Win+H / Ctrl+Enter ile bitirince tamamlanan metin, WorkSpaces içindeki LiveChat yazı alanına otomatik eklenir. Mesajın gönderilmesi kullanıcıya aittir.
 
-## Deneme
+## Bir kez yapılacak kurulum
 
-1. ZIP'in **tamamını** bir klasöre çıkar. `BASLAT.cmd` dosyasını **kendi bilgisayarında** çalıştır.
-2. WorkSpaces'i tam ekran aç ve konuşmanın yazılacağı boş alana tıkla.
-3. **Win+H**'ye bas. Yerel panel ve Windows'un sesli yazma çubuğu açılmalıdır. **Dinleniyor** yazısını bekle, sonra konuş.
-4. Bitirince yeniden **Win+H**, **Ctrl+Enter** veya paneldeki **Bitir ve aktar** düğmesini kullan.
-5. Son kelimeler için en az 1 saniye ve pano eşitlemesi için seçilen süre beklenir. Uygulama WorkSpaces'i öne getirip **bir kez Ctrl+V** gönderir. Doğru sohbeti/metni kontrol edip gönderimi kendin yap.
+1. Eski Hızır Bey WorkSpaces Dikte sürümünü sağ alttaki simgeden **Çıkış** ile kapat.
+2. ZIP'in tamamını kendi bilgisayarında bir klasöre çıkar. Yerel **BASLAT.cmd** dosyasını kullan.
+3. Aynı ZIP içindeki **livechat-kopru** klasörünü WorkSpaces'e aktar. Alternatif olarak ZIP'i WorkSpaces Chrome'undan indirip orada da çıkar.
+4. **WorkSpaces içindeki Chrome'da** `chrome://extensions` sayfasını aç. **Geliştirici modu → Paketlenmemiş öğe yükle** ile `livechat-kopru` klasörünü seç. Dosya seçme penceresinde `manifest.json` dosyasını değil, onu içeren klasörü seç.
+5. `chrome://extensions/shortcuts` sayfasında köprünün **Ctrl+Shift+Y** kısayoluna sahip olduğunu kontrol et. Kapsamı Chrome'da olsun. Yerel araç bu tuşları otomatik kullanır.
+6. LiveChat sayfasını yenile ve bir görüşme seç.
 
-Win+H yakalanmazsa **Ctrl+Alt+H** dene. Sağ alttaki uygulama simgesinden **Kısayolu yeniden yakala** seçeneği de kullanılabilir. Diğer kısayollar için bir yeniden eşleme yapılmaz; Win+H ve Ctrl+Alt+H yalnız WorkSpaces ve yerel panel bağlamında yakalanır.
+Paketin doğrudan adresi: https://github.com/hackedmylife/HizirBey-projeleri/raw/refs/heads/main/paketler/Hizir-Bey-WorkSpaces-Dikte-0.2.0.zip
 
-## Aktarım ve kurtarma
+## Kullanım
 
-- Tam ekran boyutu değiştirilmez. Yerel panel yalnız dikte sırasında WorkSpaces'in üzerinde görünür.
-- Taslak, uygulama çalışırken bellekte korunur. Hedef kapanırsa, odak değişirse veya panoya yazılamazsa taslak silinmez.
-- Metin panoda bırakılır; erken pano geri yüklemesiyle WorkSpaces eşitlemesi bozulmaz. Önceki pano içeriğinin yerine konuşma metni gelir.
-- Yavaş bağlantıda **Aktarım beklemesi** değerini 1,5 veya 2,5 saniyeye çıkar. Gerekirse **Kopyala** ile doğru alana elle Ctrl+V yap.
-- Uzak alana yapıştırmanın başarılı olduğu yerel bilgisayardan doğrulanamaz. Otomatik tekrar yoktur; bu, metnin iki kez yazılmasını önler.
-- Yeni dikte önceki aktarılmış metni temizlerken bir önceki metni **Son metni getir** ile erişilebilir tutar. Henüz aktarılmamış taslak açılıp kapanınca silinmez.
-- Gizle / pencerenin X düğmesi uygulamayı kapatmaz. Çıkmak için sağ alttaki simgeden **Çıkış** seçilir. Program kapanınca bellekteki taslaklar kaybolur.
-- Taslak satır sonları yapıştırma sırasında boşluğa dönüşür; ek noktalama veya yapay Enter gönderilmez.
+- WorkSpaces tam ekrandayken LiveChat görüşmesini seç ve **Win+H**'ye bas. Yedek kısayol **Ctrl+Alt+H**.
+- Araç önce açık görüşmenin yazı alanını köprüyle bağlar; ardından **yerel kutuyu** ve Windows diktesini açar. Windows'ta **Dinleniyor** yazısını bekle, sonra konuş.
+- Konuşma sürerken metin yalnız yerel kutudadır. Kısa sessizlikler otomatik aktarım tetiklemez.
+- İkinci kez **Win+H**, **Ctrl+Enter** veya **Bitir ve aktar** ile bitir. Son kelimeler beklenir, LiveChat alanı doğrulanır ve tamamlanmış metin otomatik eklenir.
+- Mesajı kontrol edip göndermek için LiveChat'i kendin kullan. Köprü hiçbir gönder düğmesini tıklamaz ve Enter üretmez.
+- LiveChat alanındaki önceden yazılmış metin korunur; yeni dikte sonuna eklenir.
 
-## Gereksinimler ve sınırlar
+## İnce panel
 
-- Windows 11 x64 ve yerel Windows sesli yazma özelliğinin çalışması gerekir. ARM64 bilgisayarların x64 öykünmesi bu sürümde doğrulanmadı.
-- Windows diktesi internet ve mikrofon erişimi gerektirir. Bu uygulama Microsoft'un ses tanıma hatalarını veya internet kesintisini gidermez; WorkSpaces'e ses taşıma gereksinimini ayırır.
-- WorkSpaces'te yerel panodan uzak oturuma metin aktarımı kurum tarafından açık olmalıdır. Kapalıysa kurum yöneticisinin desteklemesi gerekir.
-- Yerel Win+H'yi başlatma ve durdurma Windows arayüzündeki klavye işlemleriyle yapılır; sesli yazmanın sessizlikte durma süresi uygulamadan değiştirilemez. **Dikteye devam** yeniden başlatma talebi gönderir; Windows çubuğundaki mikrofon durumunu kontrol et.
-- Uygulama hedef pencerenin HWND/PID'sini ve yapıştırmadan hemen önceki odağı denetler. Uzak oturumdaki sohbeti veya imleci okuyamaz. Dikte sırasında hedef sohbeti değiştirme; aktarmadan önce seçilen yazı alanını kontrol et.
-- WorkSpaces istemcisinin kısayolu engellemesi, ayrı yetki düzeyleri veya kurumsal kısıtlar yerel panelin açılmasını engelleyebilir. WorkSpaces'e giriş yaptıktan sonra aracı başlatmak ve kısayolu yenilemek denenebilir. Sistem/kurum korumaları aşılmaz.
-- Not Defteri ile bağımsız deneme için sağ alttaki simgeden **Not Defteri vb. için deneme modu** açılabilir. Bu seçenek açıkken Win+H diğer uygulamalarda da paneli açar; varsayılan kapalıdır.
+Panelin yüksekliği 100 fiziksel pikseldir; ekrandaki normal 930 × 104 piksel işaretli alana sığar. Genişlik, WorkSpaces pencere boyutuna göre 600–1080 piksel arasında hesaplanır. İlk yerleşim görseldeki üst orta alana göre ayarlanır; **HIZIR BEY** başlığından tutup sürükleyebilirsin. Konum aynı uygulama oturumunda korunur. İşlem tamamlandığında şerit yazı alanını kapatmadan görünür kalır ve odak LiveChat'e döner.
 
-## Veri
+## Aktarımın korunması
 
-Uygulama ses dosyası kaydetmez, taslağı diske yazmaz, kendi sunucusuna veri göndermez ve anahtar istemez. Ses tanıma Windows'un mevcut Microsoft hizmetine aittir. Otomatik başlangıç, kayıt defteri değişikliği veya kurulum yapılmaz.
+- Başlangıçtaki görüşme, yazı kutusu ve mevcut taslak metni bağlanır. Sohbet, yazım modu veya taslak değişirse otomatik aktarım durur; yerel metin korunur.
+- İç not alanına otomatik aktarım yapılmaz.
+- Köprü yazı alanını odaklar, gelen yapıştırmayı aynı alana yönlendirir ve eklenen metni doğruladıktan sonra panodan yerel araca onay verir. Bu akış için WorkSpaces'in **iki yönlü metin panosu** açık olmalıdır.
+- Bağlantı veya odak aksarsa taslak silinmez ve otomatik ikinci yapıştırma yapılmaz. **Onay gelmedi** durumunda önce LiveChat'i kontrol et.
+- **Kopyala** tamamlanmış metni düz metin olarak panoya alır; gerektiğinde doğru alana elle Ctrl+V yapabilirsin. **Son metin** önceki dikteyi getirir.
+- Yazı alanı değiştiği için köprü durduysa yerel taslağı koru; LiveChat'te doğru görüşmeyi seçip Chrome'daki köprü simgesine tıklayarak bağlantıyı sıfırla. Devam eden taslağı gerekiyorsa Kopyala ile elle aktar. Yeni dikte için yerel **Temizle**, ardından WorkSpaces'te Win+H kullan.
+- Sağ alttaki simgeden aktarım beklemesi 1 / 2,5 saniye olarak değiştirilebilir. × şeridi gizler; programı kapatmaz.
 
-## Doğrulama ve yeniden paketleme
+## Veri ve gereksinimler
 
-- `python scripts/package.py --check`: çalışma dosyasının SHA-256 kontrolü ve paket içerik denetimi.
-- Windows'ta `vendor\AutoHotkey64.exe /ErrorStdOut tests\windows-tests.ahk results.txt`: süreç kapsamı, gerçek Unicode pano, gerçek yerel düzenleme alanına tek yapıştırma, odak yarışı, kapalı hedef, taslak korunması ve yerleşim testleri.
-- `python scripts/package.py`: aynı kaynaklardan yeniden üretilebilir ZIP oluşturur.
-- GitHub Actions: [Windows doğrulamaları](../.github/workflows/test-workspaces-dikte.yml).
+Windows 11 x64, çalışan yerel Win+H ve mikrofon/internet erişimi gerekir. Windows'un sesli yazması Microsoft hizmetine aittir. Bu araç ses kaydı yapmaz, taslağı diske veya başka sunucuya göndermez; API anahtarı, yerel web sunucusu veya ayrı AutoHotkey kurulumu istemez. Taşınabilir resmi AutoHotkey 2.0.30 x64 çalışma dosyası pakettedir. Köprü mikrofon veya pano okuma izni istemez; yalnız kullanıcı tarafından tetiklenen yapıştırma olayındaki metni işler ve aktarım onayı için panoya yazar.
 
-Windows 11'de **gerçek Win+H mikrofon akışı ve tam ekran WorkSpaces uçtan uca denemesi kullanıcı bilgisayarında yapılmalıdır**. CI'daki yerel pencere/pano testleri bu denemenin yerine geçmez.
+Taslak ve bir önceki metin uygulama belleğinde tutulur; **Çıkış** ile kapanınca kaybolur. Pano bu akışta kullanıldığı için eski pano içeriği değişir. Kurum eklenti yüklemeyi veya pano aktarımını engelliyorsa bu işlemler kurum yöneticisi tarafından desteklenmelidir. Kurum korumaları aşılmaz.
 
-## Lisans
+## Doğrulama
 
-Bu araç GPL-2.0-or-later lisanslıdır. Paketteki değiştirilmemiş AutoHotkey çalışma dosyasının lisansı ve kaynak adresi `vendor/license.txt` ve `vendor/PROVENANCE.txt` içindedir.
+`TEST-RAPORU.md` test sonuçlarını ve sınırlarını içerir. Windows testleri: `vendor\AutoHotkey64.exe /ErrorStdOut tests\windows-tests.ahk results.txt`. Chromium testi: Playwright yüklü bir ortamda `node tests/bridge-browser.mjs`. Paketleme: Python standart kütüphanesiyle `python scripts/package.py`. Son kullanıcı için Python gerekmez.
+
+Gerçek Windows 11 mikrofon akışı ve kurumun tam ekran WorkSpaces / pano bağlantısı kullanıcı bilgisayarında denenmelidir. Denetimli Windows ve Chromium testleri bu uçtan uca denemenin yerine geçmez.
+
+Lisans GPL-2.0-or-later. Resmi çalışma dosyasının lisansı ve kaynak adresi `vendor/license.txt` ve `vendor/PROVENANCE.txt` içindedir.
