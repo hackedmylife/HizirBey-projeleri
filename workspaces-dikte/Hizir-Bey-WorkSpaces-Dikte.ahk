@@ -5,6 +5,7 @@
 #Include src\Core.ahk
 #Include src\Panel.ahk
 
+; Local speech stays in this app. The remote bridge inserts only completed text.
 ; No credentials, audio recording, telemetry, registry changes or startup changes.
 ; Native Windows voice typing retains its own Microsoft network requirements.
 global App := DikteApp()

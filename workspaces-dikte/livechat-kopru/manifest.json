@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "Hızır Bey · LiveChat Aktarım Köprüsü",
+  "version": "0.2.0",
+  "description": "Yerel Hızır Bey kutusunda tamamlanan metni seçili LiveChat yazı alanına aktarır. Mesaj göndermez; mikrofon kullanmaz.",
+  "minimum_chrome_version": "120",
+  "permissions": ["activeTab", "clipboardWrite"],
+  "host_permissions": ["https://my.livechatinc.com/*", "https://my.livechat.com/*"],
+  "background": {"service_worker": "background.js"},
+  "action": {"default_title": "Aktarım oturumunu sıfırla / bu LiveChat görüşmesine bağlan"},
+  "commands": {
+    "prepare-transfer": {
+      "suggested_key": {"default": "Ctrl+Shift+Y"},
+      "description": "Hızır Bey yerel paneli için LiveChat yazı alanını hazırla"
+    }
+  },
+  "content_scripts": [{
+    "matches": ["https://my.livechatinc.com/*", "https://my.livechat.com/*"],
+    "js": ["editor.js", "content.js"],
+    "run_at": "document_idle"
+  }],
+  "content_security_policy": {"extension_pages": "script-src 'self'; object-src 'none'; connect-src 'none';"}
+}

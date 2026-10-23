@@ -7,7 +7,7 @@ import zipfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.1.0"
+VERSION = "0.2.0"
 RUNTIME_SHA256 = "2eab99848ebc07f8ab0cc448bf69af8c700b2fc7fcd1ff8794df743dcc58da51"
 FILES = [
     "BASLAT.cmd",
@@ -19,6 +19,11 @@ FILES = [
     "src/Panel.ahk",
     "scripts/package.py",
     "tests/windows-tests.ahk",
+    "tests/bridge-browser.mjs",
+    "livechat-kopru/manifest.json",
+    "livechat-kopru/editor.js",
+    "livechat-kopru/content.js",
+    "livechat-kopru/background.js",
     "vendor/AutoHotkey64.exe",
     "vendor/license.txt",
     "vendor/PROVENANCE.txt",
@@ -34,6 +39,10 @@ def validate():
             content = path.read_text(encoding="utf-8-sig")
             if re.search(r"gh[pousr]_[A-Za-z0-9]{30,}|AIza[A-Za-z0-9_-]{30,}|(?m:^-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----$)", content):
                 raise ValueError(f"Credential-like content found: {relative}")
+    import json
+    manifest = json.loads((ROOT / "livechat-kopru/manifest.json").read_text(encoding="utf-8"))
+    if manifest["version"] != VERSION or "clipboardRead" in manifest["permissions"]:
+        raise ValueError("Unexpected bridge version or clipboard read permission")
     digest = hashlib.sha256((ROOT / "vendor/AutoHotkey64.exe").read_bytes()).hexdigest()
     if digest != RUNTIME_SHA256:
         raise ValueError("Portable runtime SHA-256 mismatch")

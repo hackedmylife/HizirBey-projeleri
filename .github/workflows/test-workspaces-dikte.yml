@@ -14,7 +14,7 @@ permissions:
 jobs:
   windows:
     runs-on: windows-latest
-    timeout-minutes: 5
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
       - name: Verify portable runtime and package
@@ -40,6 +40,17 @@ jobs:
           if (-not $p.WaitForExit(10000)) { $p.Kill(); throw 'Entry smoke test timed out' }
           Get-Content "$env:RUNNER_TEMP/smoke-stdout.txt", "$env:RUNNER_TEMP/smoke-stderr.txt" -ErrorAction SilentlyContinue
           if ($p.ExitCode -ne 0) { throw 'Entry smoke test failed' }
+      - name: Chromium LiveChat adapter and no-send checks
+        shell: pwsh
+        run: |
+          $dependencies = Join-Path $env:RUNNER_TEMP 'hizir-bridge-test'
+          npm install --prefix $dependencies --no-audit --no-fund playwright@1.62.1
+          if ($LASTEXITCODE -ne 0) { throw 'Browser test dependency setup failed' }
+          $env:PLAYWRIGHT_MODULE = Join-Path $dependencies 'node_modules/playwright'
+          $env:CHROMIUM_PATH = 'C:\Program Files\Google\Chrome\Application\chrome.exe'
+          if (-not (Test-Path $env:CHROMIUM_PATH)) { throw 'Runner Chrome not found' }
+          node workspaces-dikte/tests/bridge-browser.mjs
+          if ($LASTEXITCODE -ne 0) { throw 'Bridge browser checks failed' }
       - uses: actions/upload-artifact@v4
         if: always()
         with:

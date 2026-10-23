@@ -34,6 +34,14 @@ try {
     Assert(!DikteCore.IsSettled(950, 0, 0), "Minimum finalization interval")
     Assert(!DikteCore.IsSettled(1200, 0, 900), "Late word delays finalization")
     Assert(DikteCore.IsSettled(1800, 0, 900), "Quiet final text accepted")
+    dock := DikteCore.DockBounds(0, 0, 1918, 878)
+    Assert(dock.w = 930 && dock.h = 100, "Strip fits the marked 930-by-104 area")
+    Assert(dock.x >= 520 && dock.x < 530 && dock.y >= 94 && dock.y < 100, "Strip aligns to marked search area")
+    Assert(DikteCore.DockBounds(-1920, 0, 1920, 1080).x < 0, "Negative monitor coordinates preserved")
+    ready := DikteCore.BridgeSignal("HB-DIKTE-2|READY|1234567890abcdef1234567890abcdef|armed")
+    Assert(ready.kind = "READY" && ready.detail = "armed", "Bridge signal parsed")
+    Assert(DikteCore.BridgeSignal("ordinary customer text").kind = "", "Plain text is not an acknowledgement")
+    Assert(DikteCore.BridgeSignal("HB-DIKTE-2|READY|invalid|armed").kind = "", "Malformed session rejected")
 
     app := DikteApp(true)
     app.ShowPanel()
@@ -42,6 +50,14 @@ try {
     Assert(!app.testMode, "Broad hotkey capture disabled by default")
     Assert(app.delayMs = 1000, "One-second clipboard propagation default")
     Assert(!app.CaptureTarget(app.window.Hwnd), "Panel cannot target itself")
+    A_Clipboard := "HB-DIKTE-2|READY|1234567890abcdef1234567890abcdef|armed"
+    Assert(app.WaitBridge("READY", "1234567890abcdef1234567890abcdef", true), "Native bridge accepts matching session")
+    A_Clipboard := "HB-DIKTE-2|READY|1234567890abcdef1234567890abcdef|prepared"
+    Assert(!app.WaitBridge("READY", "1234567890abcdef1234567890abcdef", true), "Unarmed composer cannot receive final text")
+    A_Clipboard := "HB-DIKTE-2|DONE|ffffffffffffffffffffffffffffffff|inserted"
+    Assert(!app.WaitBridge("DONE", "1234567890abcdef1234567890abcdef"), "Other conversation session rejected")
+    A_Clipboard := "no bridge response"
+    Assert(!app.WaitBridge("DONE", "1234567890abcdef1234567890abcdef"), "Missing bridge acknowledgement times out")
     app.editor.Value := "Ödeme, çekim, şifre: ığüşöç İĞÜŞÖÇ."
     app.CopyOnly()
     Assert(A_Clipboard = app.editor.Value, "Real Unicode clipboard copy")
@@ -92,8 +108,13 @@ try {
     app.editor.GetPos(&editX, &editY, &editW, &editH)
     app.transferButton.GetPos(&buttonX, &buttonY, &buttonW, &buttonH)
     app.footer.GetPos(&footerX, &footerY, &footerW, &footerH)
-    Assert(editY + editH <= buttonY, "Editor and buttons do not overlap")
+    Assert(buttonY + buttonH <= editY, "Compact editor and upper controls do not overlap")
     Assert(footerY + footerH <= clientHeight, "Footer stays inside client area")
+    Assert(clientHeight = 100, "Native strip is 100 pixels high")
+    for control in [app.transferButton, app.copyButton, app.hideButton, app.resumeButton, app.restoreButton, app.clearButton, app.editor, app.footer] {
+        control.GetPos(&cx, &cy, &cw, &ch)
+        Assert(cx >= 0 && cy >= 0 && cx + cw <= clientWidth && cy + ch <= clientHeight, "Compact control remains inside strip")
+    }
 
     app.window.Destroy()
     other.Destroy()
