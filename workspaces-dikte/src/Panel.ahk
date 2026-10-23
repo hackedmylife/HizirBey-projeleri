@@ -138,6 +138,15 @@ class DikteApp {
             return ""
     }
 
+    FocusEditor() {
+        if DllCall("GetFocus", "Ptr") = this.editor.Hwnd
+            return
+        start := Buffer(4, 0), finish := Buffer(4, 0)
+        SendMessage(0xB0, start.Ptr, finish.Ptr, this.editor.Hwnd)
+        this.editor.Focus()
+        SendMessage(0xB1, NumGet(start, 0, "UInt"), NumGet(finish, 0, "UInt"), this.editor.Hwnd)
+    }
+
     PanelHasFocus() {
         return this.panelOpen && WinActive("ahk_id " this.window.Hwnd)
     }
@@ -194,7 +203,7 @@ class DikteApp {
             this.window.Show(activate ? "" : "NA")
         this.panelOpen := true
         if activate
-            this.editor.Focus()
+            this.FocusEditor()
     }
 
     StartVoice() {
@@ -210,7 +219,7 @@ class DikteApp {
                 this.SetStatus("Paneli odaklayıp Başlat'a bas.")
                 return
             }
-            this.editor.Focus()
+            this.FocusEditor()
             Sleep(120)
             if !this.PanelHasFocus()
                 return
@@ -249,7 +258,7 @@ class DikteApp {
                 return
             if !WinWaitActive("ahk_id " this.window.Hwnd,, 2)
                 return
-            this.editor.Focus()
+            this.FocusEditor()
             this.RequestNativeStop()
             this.MarkStopped()
         } finally {
@@ -263,7 +272,7 @@ class DikteApp {
         if !DikteCore.HasText(text) {
             this.SetStatus("Kopyalanacak metin yok.")
             if this.PanelHasFocus() && DllCall("GetFocus", "Ptr") != this.editor.Hwnd
-                this.editor.Focus()
+                this.FocusEditor()
             return false
         }
         try {
@@ -278,7 +287,7 @@ class DikteApp {
             return false
         } finally {
             if this.PanelHasFocus() && DllCall("GetFocus", "Ptr") != this.editor.Hwnd
-                this.editor.Focus()
+                this.FocusEditor()
         }
     }
 

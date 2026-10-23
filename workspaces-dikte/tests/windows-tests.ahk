@@ -83,7 +83,7 @@ RunSuite() {
             App.toggleButton.GetPos(&bx, &by, &bw, &bh)
             Assert(ex + ew < bx && bw >= 160 && bh >= 40, "Large buttons do not overlap writing area")
         }
-        App.window.Show("w930 h100")
+        App.window.Show("w930 h100 x10 y50")
         App.editor.Focus()
         App.editor.Value := "İlk cümle korunacak."
         A_Clipboard := "old clipboard"
@@ -109,13 +109,16 @@ RunSuite() {
         Assert(A_Clipboard = App.editor.Value && App.voiceRequested, "Large copy button works during dictation")
         Assert(DllCall("GetFocus", "Ptr") = App.editor.Hwnd, "Copy button returns focus to writing box")
         expected := App.editor.Value
+        caretBeforeStop := SendMessage(0xB0, 0, 0, App.editor.Hwnd)
         copied := A_Clipboard
         ClickButton(App, App.toggleButton)
         Assert(App.stops = 1 && !App.voiceRequested && App.toggleButton.Text = "Başlat", "Large stop button stops without transfer")
         Assert(App.panelOpen && App.editor.Value = expected, "Stopped text remains visible and unchanged")
         Assert(A_Clipboard = copied, "Stop does not copy automatically")
+        Assert(SendMessage(0xB0, 0, 0, App.editor.Hwnd) = caretBeforeStop, "Stop preserves draft insertion position")
         Drive("toggle")
         Assert(App.starts = 2 && App.voiceRequested && App.editor.Value = expected, "Win+H resumes existing draft")
+        Assert(SendMessage(0xB0, 0, 0, App.editor.Hwnd) = caretBeforeStop, "Resume preserves draft insertion position")
         Drive("toggle")
         Assert(App.stops = 2 && !App.voiceRequested, "Second Win+H only stops local dictation")
         Assert(receiverEdit.Value = "Outside selected normal text.", "Start-stop-copy never pastes into another application")
