@@ -38,10 +38,15 @@ class DikteTheme {
     PrepareLogo() {
         ; Scale the existing brand asset with GDI+ rather than the legacy
         ; Picture control stretch mode. The PNG itself is not modified.
+        library := DllCall("kernel32\LoadLibraryW", "WStr", "gdiplus.dll", "Ptr")
+        if !library
+            return
         input := Buffer(24, 0), token := 0
         NumPut("UInt", 1, input)
-        if DllCall("gdiplus\GdiplusStartup", "UPtr*", &token, "Ptr", input, "Ptr", 0)
+        if DllCall("gdiplus\GdiplusStartup", "UPtr*", &token, "Ptr", input, "Ptr", 0) {
+            DllCall("kernel32\FreeLibrary", "Ptr", library)
             return
+        }
         image := 0, bitmap := 0, graphics := 0, handle := 0
         try {
             if DllCall("gdiplus\GdipLoadImageFromFile", "WStr", this.app.assetDir "\logo.png", "Ptr*", &image)
@@ -67,6 +72,7 @@ class DikteTheme {
             if image
                 DllCall("gdiplus\GdipDisposeImage", "Ptr", image)
             DllCall("gdiplus\GdiplusShutdown", "UPtr", token)
+            DllCall("kernel32\FreeLibrary", "Ptr", library)
         }
     }
 
