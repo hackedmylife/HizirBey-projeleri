@@ -1,16 +1,19 @@
-# Hızır Bey · Yerel Dikte 0.4.0
+# Hızır Bey · Yerel Dikte 0.4.1
 
-Sesli yazma kendi bilgisayarındaki metin kutusunda çalışır. Koyu zemin, altın vurgu ve mevcut Hızır Bey logosuyla kompakt yerel panel. İki büyük işlem düğmesi **Başlat / Durdur** ve **Kopyala**, üst sağda küçük bir **X** bulunur. X uygulamayı kendi AutoHotkey süreciyle birlikte tamamen kapatır; tekrar BASLAT.cmd ile açılabilir.
+Sesli yazma kendi bilgisayarındaki metin kutusunda çalışır. Koyu zemin, altın vurgu ve mevcut Hızır Bey logosuyla kompakt yerel panel. İki büyük işlem düğmesi **Başlat / Durdur** ve **Kopyala**, üst sağda küçük bir **X** bulunur. X uygulamayı kendi AutoHotkey süreciyle birlikte tamamen kapatır; aynı EXE çift tıklanarak yeniden açılabilir.
 
 ![Gerçek Windows paneli](https://raw.githubusercontent.com/hackedmylife/HizirBey-projeleri/main/workspaces-dikte/docs/preview.png)
 
 ## Kurulum / güncelleme
 
 1. Eski yerel Hızır Bey Dikte programını sağ alttaki simgesinden **Çıkış** ile kapat.
-2. ZIP'in tamamını kendi bilgisayarında bir klasöre çıkar. **BASLAT.cmd** çalıştır. Ayrı AutoHotkey kurulumu gerekmez.
-3. Önceki sürümün **Hızır Bey · LiveChat Aktarım Köprüsü** eklentisini WorkSpaces Chrome'da `chrome://extensions` üzerinden kaldır veya kapat; LiveChat sekmesini bir kez yenile. Bu yeni uygulamanın Chrome eklentisi yoktur.
+2. **Hizir-Bey-WorkSpaces-Dikte-0.4.1.exe** dosyasını kendi bilgisayarına indirip çift tıkla. Tek dosyadır; kurulum, yönetici yetkisi veya ayrı AutoHotkey gerekmez. Dosyayı istediğin klasöre koyabilirsin.
+3. Kaynak kodla çalışmak istersen ZIP'in tamamını çıkarıp **BASLAT.cmd** kullanabilirsin; EXE kullanırken bu ZIP'e gerek yoktur.
+4. Önceki sürümün **Hızır Bey · LiveChat Aktarım Köprüsü** eklentisini WorkSpaces Chrome'da `chrome://extensions` üzerinden kaldır veya kapat; LiveChat sekmesini bir kez yenile. Bu yeni uygulamanın Chrome eklentisi yoktur.
 
-[Paketin doğrudan adresi](https://github.com/hackedmylife/HizirBey-projeleri/raw/refs/heads/main/paketler/Hizir-Bey-WorkSpaces-Dikte-0.4.0.zip).
+[Kaynak paketinin doğrudan adresi](https://github.com/hackedmylife/HizirBey-projeleri/raw/refs/heads/main/paketler/Hizir-Bey-WorkSpaces-Dikte-0.4.1.zip).
+
+[Tek EXE indir](https://github.com/hackedmylife/HizirBey-projeleri/raw/refs/heads/main/paketler/Hizir-Bey-WorkSpaces-Dikte-0.4.1.exe).
 
 ## Kullanım
 
@@ -25,7 +28,7 @@ Sesli yazma kendi bilgisayarındaki metin kutusunda çalışır. Koyu zemin, alt
 
 ## Noktalama kapsamı
 
-Önceki 0.3.0 sürümü Windows'tan gelen metni aynen gösteriyordu; kendi noktalama işlemi yoktu. 0.4.0'ın yerel düzenlemesi:
+Önceki 0.3.0 sürümü Windows'tan gelen metni aynen gösteriyordu; kendi noktalama işlemi yoktu. 0.4.1'ın yerel düzenlemesi:
 
 - İlk harfi Türkçe **i → İ**, **ı → I** ayrımını koruyarak büyütür.
 - Çok kelimeli metnin ve yaygın selamların sonunda eksik noktayı tamamlar. Açık soru ekiyle biten `miyim`, `misiniz`, `mi` ve `nasılsınız` gibi örneklerde soru işareti kullanır.
@@ -46,12 +49,14 @@ Panel 100 fiziksel piksel yüksekliğinde kalır. Genişlik ilk yerleşimde 600�
 
 Windows 11 x64, çalışan yerel Win+H, mikrofon ve Windows sesli yazmasının gerektirdiği internet erişimi gerekir. Ses tanıma Windows / Microsoft hizmetine aittir; bu araç ses kaydetmez ve ayrıca bir sunucuya taslak göndermez. API anahtarı, Chrome eklentisi, LiveChat bağlantısı veya WorkSpaces'ten geri pano onayı gerekmez. Kullanıcının elle WorkSpaces'e yapıştırması için kurumun normal yerelden uzağa pano desteği kullanılabilir olmalıdır.
 
-Taslak bellekte tutulur. Yalnız panelin X/Y konumu `%LOCALAPPDATA%\HizirBey\WorkSpacesDikte\panel.ini` içine yazılır; eski sürümden gelen konum korunur. Metin ve ses bu dosyaya kaydedilmez. Boş kutuda kopyalama eski panoyu değiştirmez. **X**, pencereyi kapatma isteği ve sağ alttaki **Çıkış** uygulamanın tamamını kapatır. Onay penceresinde bekletmez; kapanınca bellekteki taslak silinir. Başka AutoHotkey makrolarının süreçlerine dokunulmaz. Kapatmadan önce gerekli metni kopyala.
+Taslak bellekte tutulur. Yalnız panelin X/Y konumu `%LOCALAPPDATA%\HizirBey\WorkSpacesDikte\panel.ini` içine yazılır; eski sürümden gelen konum korunur. Metin ve ses bu dosyaya kaydedilmez. EXE, içine gömülü iki marka görselini çalışma sırasında kendine ait geçici klasöre çıkarır; normal kapanışta bu klasörü temizler. EXE’nin yanına dosya yazmaz. Panel konumu eski sürümle aynı yerde tutulur. Boş kutuda kopyalama eski panoyu değiştirmez. **X**, pencereyi kapatma isteği ve sağ alttaki **Çıkış** uygulamanın tamamını kapatır. Onay penceresinde bekletmez; kapanınca bellekteki taslak silinir. Başka AutoHotkey makrolarının süreçlerine dokunulmaz. Kapatmadan önce gerekli metni kopyala.
 
 ## Geliştirme ve doğrulama
 
 `python scripts/package.py --check` resmi çalışma dosyasının SHA-256 değerini ve paket izin listesini denetler. `python scripts/package.py` ZIP oluşturur. Son kullanıcı için Python gerekmez.
 
-Windows kontrolleri: `vendor\AutoHotkey64.exe /ErrorStdOut tests\windows-tests.ahk results.txt`. Test, gerçek giriş betiğindeki kısayolları, gerçek Windows panosunu ve fare hareketlerini kullanır. Mikrofon başlatma / durdurma isteği sayaçlarla taklit edilir; gerçek Windows 11 mikrofon tanıması kullanıcı oturumunda denenmelidir. Ayrıntılar `TEST-RAPORU.md` içindedir.
+Tek EXE Windows üzerinde `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-exe.ps1` ile derlenir. Betik resmi Ahk2Exe 1.1.37.02a2 derleyicisini indirir; arşiv, derleyici ve AutoHotkey tabanının SHA-256 değerlerini doğrular. Derleyici sürümü v1 adını taşısa da resmi araç AHK v2 betiklerini destekler; uygulama tabanı AHK 2.0.30 x64 olarak sabitlenmiştir. Uygulama kodu ile logo / simge gömülür. EXE sıkıştırılmaz ve kod gizleme uygulanmaz. `LICENSE` kaynağına tam GPL lisansı eklenir. Derleme sonunda EXE yanında `.sha256` dosyası üretilir; çalıştırmak için bu dosya gerekmez. Resmi derleyici: https://github.com/AutoHotkey/Ahk2Exe/releases/tag/Ahk2Exe1.1.37.02a2 .
+
+Windows kontrolleri: `vendor\AutoHotkey64.exe /ErrorStdOut tests\windows-tests.ahk results.txt`. Test, gerçek giriş betiğindeki kısayolları, gerçek Windows panosunu ve fare hareketlerini kullanır. Mikrofon başlatma / durdurma isteği sayaçlarla taklit edilir; gerçek Windows 11 mikrofon tanıması kullanıcı oturumunda denenmelidir. Derlenen EXE ayrıca kaynak / runtime / asset bulunmayan, boşluk ve Türkçe karakter içeren bağımsız klasörde `tests/compiled-tests.ahk` ile denenir. X, native kapatma, yeniden açma, tek örnek, pano, noktalama ve geçici görsel temizliği denetlenir. Ayrıntılar `TEST-RAPORU.md` içindedir.
 
 Lisans GPL-2.0-or-later. Taşınabilir resmi AutoHotkey 2.0.30 x64 çalışma dosyası, lisansı ve kaynak bilgisi `vendor` klasöründedir.
