@@ -1,7 +1,7 @@
 #Requires AutoHotkey v2.0.30 64-bit
 #SingleInstance Off
 global Checks := 0, Report := "", ChildPid := 0
-global Exe := A_Args[1], Log := A_Args[2]
+global Exe := A_Args[1], ResultFile := A_Args[2]
 global TestDir := A_Temp "\Dikte Tek EXE Türkçe " A_TickCount
 
 Assert(value, label) {
@@ -96,12 +96,12 @@ try {
     Assert(!ProcessExist(ChildPid), "Compiled smoke entry starts and exits normally")
     Assert(AssetFolders(ChildPid).Length = 0, "Automatic exit cleans up temporary assets")
     Report .= "`n" Checks " standalone EXE checks passed. Microphone recognition is not automated.`n"
-    FileOpen(Log, "w", "UTF-8").Write(Report)
+    FileOpen(ResultFile, "w", "UTF-8").Write(Report)
     DirDelete(TestDir, true)
     ExitApp(0)
 } catch Error as err {
     Report .= "FAIL " err.Message "`n" err.File ":" err.Line "`n" err.Stack
-    FileOpen(Log, "w", "UTF-8").Write(Report)
+    FileOpen(ResultFile, "w", "UTF-8").Write(Report)
     if ChildPid && ProcessExist(ChildPid)
         try ProcessClose(ChildPid)
     try DirDelete(TestDir, true)
