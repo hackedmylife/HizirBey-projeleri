@@ -1,6 +1,6 @@
 ; SPDX-License-Identifier: GPL-2.0-or-later
 class DikteApp {
-    __New(testing := false) {
+    __New(testing := false, settingsPath := "") {
         this.testing := testing
         this.busy := false
         this.panelOpen := false
@@ -15,15 +15,21 @@ class DikteApp {
         this.changedAt := A_TickCount
         this.delayMs := 1000
         this.bridgeSession := ""
+        this.bridgePhase := ""
         this.bridgeTimeout := testing ? 150 : 6000
         this.dockTarget := -1
+        this.customPosition := false
+        this.settingsPath := settingsPath != "" ? settingsPath : (testing ? "" : EnvGet("LOCALAPPDATA") "\HizirBey\WorkSpacesDikte\panel.ini")
+        this.LoadPosition()
 
-        this.window := Gui("+AlwaysOnTop -Caption +ToolWindow +Border -DPIScale", "Hızır Bey · WorkSpaces Dikte 0.2.0")
+        this.window := Gui("+AlwaysOnTop -Caption +ToolWindow +Border -DPIScale", "Hızır Bey · WorkSpaces Dikte 0.2.1")
         this.window.BackColor := "F3F5FA"
-        this.window.SetFont("s9 w700 c27375C", "Segoe UI")
-        this.heading := this.window.AddText("x8 y7 w100 h18", "HIZIR BEY")
         this.window.SetFont("s8 w400 c3451B2", "Segoe UI")
-        this.status := this.window.AddText("x110 y7 w250 h18", "LiveChat'i seç ve Win+H'ye bas.")
+        this.dragHandle := this.window.AddText("x6 y4 w54 h23 Center Border +0x100 BackgroundE2E8FA", "↔ Taşı")
+        this.window.SetFont("s9 w700 c27375C", "Segoe UI")
+        this.heading := this.window.AddText("x68 y7 w86 h18 +0x100", "HIZIR BEY")
+        this.window.SetFont("s8 w400 c3451B2", "Segoe UI")
+        this.status := this.window.AddText("x160 y7 w250 h18 +0x100", "Win+H veya Başlat · Yerel dikte")
         this.window.SetFont("s10 c18233A", "Segoe UI")
         this.editor := this.window.AddEdit("x8 y31 w750 h42 Multi WantTab -WantReturn BackgroundFFFFFF")
         this.editor.OnEvent("Change", ObjBindMethod(this, "TextChanged"))
@@ -32,7 +38,7 @@ class DikteApp {
         this.transferButton.OnEvent("Click", (*) => this.Finish())
         this.copyButton := this.window.AddButton("x666 y3 w70 h25", "Kopyala")
         this.copyButton.OnEvent("Click", (*) => this.CopyOnly())
-        this.resumeButton := this.window.AddButton("x330 y77 w62 h21", "Devam")
+        this.resumeButton := this.window.AddButton("x330 y77 w62 h21", "Başlat")
         this.resumeButton.OnEvent("Click", (*) => this.StartVoice())
         this.hideButton := this.window.AddButton("x742 y3 w24 h25", "×")
         this.hideButton.OnEvent("Click", (*) => this.HidePanel())
@@ -44,6 +50,10 @@ class DikteApp {
         this.window.OnEvent("Size", ObjBindMethod(this, "Resize"))
         this.window.OnEvent("Close", (*) => this.HidePanel())
         this.window.OnEvent("Escape", (*) => this.HidePanel())
+        this.dragCallback := ObjBindMethod(this, "DragPanel")
+        this.moveCallback := ObjBindMethod(this, "MovedPanel")
+        OnMessage(0x0201, this.dragCallback)
+        OnMessage(0x0232, this.moveCallback)
         if !testing {
             A_IconTip := "Hızır Bey · WorkSpaces Dikte | Win+H"
             A_TrayMenu.Delete()
@@ -53,13 +63,13 @@ class DikteApp {
             A_TrayMenu.Add("Not Defteri vb. için deneme modu", (*) => this.ToggleTestMode())
             A_TrayMenu.Add("Kısayolları duraklat", (*) => this.TogglePause())
             A_TrayMenu.Add("Aktarım beklemesi: 1 saniye", (*) => this.CycleDelay())
+            A_TrayMenu.Add("Konumu sıfırla", (*) => this.ResetPosition())
             A_TrayMenu.Add()
             A_TrayMenu.Add("Çıkış", (*) => this.Quit())
             InstallKeybdHook(true, true)
             this.watchTimer := ObjBindMethod(this, "WatchForeground")
             SetTimer(this.watchTimer, 300)
             OnError(ObjBindMethod(this, "OnFailure"))
-            OnMessage(0x0201, ObjBindMethod(this, "DragPanel"))
             this.ShowPanel()
         }
     }
@@ -76,7 +86,7 @@ class DikteApp {
     Resize(guiObj, minMax, width, height) {
         if minMax = -1
             return
-        this.status.Move(,, Max(130, width - 330))
+        this.status.Move(,, Max(120, width - 380))
         this.editor.Move(,, width - 16, 42)
         this.transferButton.Move(width - 214, 3)
         this.copyButton.Move(width - 98, 3)
@@ -88,8 +98,70 @@ class DikteApp {
     }
 
     DragPanel(wParam, lParam, msg, hwnd) {
-        if hwnd = this.heading.Hwnd || hwnd = this.status.Hwnd
+        if hwnd = this.dragHandle.Hwnd || hwnd = this.heading.Hwnd || hwnd = this.status.Hwnd || hwnd = this.window.Hwnd {
+            DllCall("ReleaseCapture")
             PostMessage(0xA1, 2,,, "ahk_id " this.window.Hwnd)
+            return 0
+        }
+    }
+
+    MovedPanel(wParam, lParam, msg, hwnd) {
+        if hwnd != this.window.Hwnd
+            return
+        WinGetPos(&x, &y,,, "ahk_id " this.window.Hwnd)
+        this.savedX := x, this.savedY := y
+        this.customPosition := true
+        this.SavePosition()
+    }
+
+    LoadPosition() {
+        if this.settingsPath = "" || !FileExist(this.settingsPath)
+            return
+        try {
+            x := IniRead(this.settingsPath, "Panel", "X", "")
+            y := IniRead(this.settingsPath, "Panel", "Y", "")
+            if RegExMatch(x, "^-?\d+$") && RegExMatch(y, "^-?\d+$") {
+                this.savedX := Integer(x), this.savedY := Integer(y)
+                this.customPosition := true
+            }
+        }
+    }
+
+    SavePosition() {
+        if this.settingsPath = "" || !this.customPosition
+            return
+        try {
+            SplitPath(this.settingsPath,, &directory)
+            DirCreate(directory)
+            IniWrite(this.savedX, this.settingsPath, "Panel", "X")
+            IniWrite(this.savedY, this.settingsPath, "Panel", "Y")
+        }
+    }
+
+    PositionVisible(x, y, width, height) {
+        Loop MonitorGetCount() {
+            MonitorGetWorkArea(A_Index, &left, &top, &right, &bottom)
+            if Min(x + width, right) - Max(x, left) >= 100
+                && Min(y + height, bottom) - Max(y, top) >= 30
+                return true
+        }
+        return false
+    }
+
+    ResetPosition() {
+        this.customPosition := false
+        if this.settingsPath != "" && FileExist(this.settingsPath)
+            try IniDelete(this.settingsPath, "Panel")
+        this.dockTarget := -1
+        this.ShowPanel()
+    }
+
+    Dispose() {
+        OnMessage(0x0201, this.dragCallback, 0)
+        OnMessage(0x0232, this.moveCallback, 0)
+        if this.HasOwnProp("watchTimer")
+            SetTimer(this.watchTimer, 0)
+        this.window.Destroy()
     }
 
     CycleDelay() {
@@ -148,16 +220,37 @@ class DikteApp {
         }
     }
 
+    ResolveTarget(active := 0) {
+        if active && this.CaptureTarget(active)
+            return true
+        if this.TargetExists()
+            return true
+        if this.lastWorkspace && this.CaptureTarget(this.lastWorkspace)
+            return true
+        candidates := []
+        for hwnd in WinGetList() {
+            if !DikteCore.IsWorkspacesProcess(this.ProcessName(hwnd))
+                continue
+            try {
+                WinGetPos(,, &w, &h, "ahk_id " hwnd)
+                if w >= 320 && h >= 160
+                    candidates.Push(hwnd)
+            }
+        }
+        return candidates.Length = 1 && this.CaptureTarget(candidates[1])
+    }
+
     Toggle() {
         if this.busy
             return
         active := WinExist("A")
+        ; A hotkey from our empty panel must start local dictation even when the
+        ; external target is not yet known. Never treat this panel as that target.
+        this.ResolveTarget(active)
         if this.panelOpen && !this.pasteIssued && (this.voiceRequested || this.editor.Value != "") {
             this.Finish()
             return
         }
-        if !this.CaptureTarget(active)
-            return
         if this.pasteIssued {
             ; A separate recoverable copy survives the start of the next dictation.
             this.lastText := this.editor.Value
@@ -180,6 +273,8 @@ class DikteApp {
                 x := 0, y := 0, w := A_ScreenWidth, h := A_ScreenHeight
             }
             box := DikteCore.DockBounds(x, y, w, h)
+            if this.customPosition && this.PositionVisible(this.savedX, this.savedY, box.w, box.h)
+                box.x := this.savedX, box.y := this.savedY
             this.window.Show("w" box.w " h" box.h " x" box.x " y" box.y (activate ? "" : " NA"))
             this.dockTarget := this.target
         } else
@@ -194,17 +289,13 @@ class DikteApp {
             return
         this.busy := true
         try {
-            if !this.target && this.lastWorkspace
-                this.CaptureTarget(this.lastWorkspace)
+            this.ResolveTarget()
+            bridgeReady := true
             if this.RequiresBridge() && this.bridgeSession = "" {
                 if !this.WaitReleased()
                     return
                 WinActivate("ahk_id " this.target)
-                if !WinWaitActive("ahk_id " this.target,, 2) || !this.RequestBridge(false) {
-                    this.ShowPanel()
-                    this.SetStatus("Köprü hazır değil. WorkSpaces Chrome'unda köprüyü yükle / yenile.")
-                    return
-                }
+                bridgeReady := WinWaitActive("ahk_id " this.target,, 2) && this.RequestBridge(false, 1200)
             }
             this.ShowPanel()
             if !this.WaitReleased()
@@ -219,10 +310,9 @@ class DikteApp {
             if !this.PanelHasFocus()
                 return
             ; Hook hotkeys ignore this script's level-0 synthetic events.
-            SendLevel(0)
-            SendEvent("#h")
+            this.RequestNativeVoice()
             this.voiceRequested := true
-            this.SetStatus("Dinleniyor yazınca konuş · Bitir: Win+H / Ctrl+Enter")
+            this.SetStatus(bridgeReady ? "Dinleniyor yazınca konuş · Bitir: Win+H / Ctrl+Enter" : "Yerel dikte açık · Köprü aktarımda yeniden kontrol edilecek.")
         } finally {
             this.busy := false
         }
@@ -237,6 +327,11 @@ class DikteApp {
         SendEvent("{Escape}")
         this.voiceRequested := false
         return true
+    }
+
+    RequestNativeVoice() {
+        SendLevel(0)
+        SendEvent("#h")
     }
 
     Finish() {
@@ -266,6 +361,7 @@ class DikteApp {
                 return
             }
             this.lastText := this.editor.Value
+            this.ResolveTarget()
             if !this.TargetExists() {
                 this.PutClipboard(text)
                 this.SetStatus("Hedef pencere yok. Metin kopyalandı; doğru alana Ctrl+V ile yapıştır.")
@@ -280,7 +376,19 @@ class DikteApp {
                 return
             }
             bridge := this.RequiresBridge()
-            if bridge && (this.bridgeSession = "" || !this.RequestBridge(true)) {
+            if bridge && this.bridgeSession = "" {
+                if !this.RequestBridge(false) {
+                    this.ShowPanel()
+                    this.SetStatus("Köprü yanıt vermedi. Yerel metin korundu; Kopyala kullanabilirsin.")
+                    return
+                }
+                if this.bridgePhase = "prepared" {
+                    this.ShowPanel()
+                    this.SetStatus("LiveChat bağlantısı yeni kuruldu. Hedefi kontrol edip Bitir ve aktar'a bas.")
+                    return
+                }
+            }
+            if bridge && !this.RequestBridge(true) {
                 this.ShowPanel()
                 this.SetStatus("LiveChat hedefi doğrulanamadı. Taslak burada; köprüyü kontrol et.")
                 return
@@ -338,17 +446,18 @@ class DikteApp {
         return this.target && DikteCore.IsWorkspacesProcess(this.ProcessName(this.target))
     }
 
-    RequestBridge(arm := false) {
+    RequestBridge(arm := false, timeoutMs := 0) {
         if !this.PutClipboard("HB-DIKTE-WAIT-" A_TickCount)
             return false
         SendLevel(0)
         SendEvent("^+y")
-        return this.WaitBridge("READY", arm ? this.bridgeSession : "", arm)
+        return this.WaitBridge("READY", arm ? this.bridgeSession : "", arm, timeoutMs)
     }
 
-    WaitBridge(kind, expectedId := "", arm := false) {
+    WaitBridge(kind, expectedId := "", arm := false, timeoutMs := 0) {
         started := A_TickCount
-        while A_TickCount - started < this.bridgeTimeout {
+        limit := timeoutMs > 0 ? timeoutMs : this.bridgeTimeout
+        while A_TickCount - started < limit {
             Sleep(60)
             try signal := DikteCore.BridgeSignal(A_Clipboard)
             catch
@@ -363,6 +472,7 @@ class DikteApp {
                 if !InStr("|prepared|armed|", "|" signal.detail "|") || (arm && signal.detail != "armed")
                     return false
                 this.bridgeSession := signal.id
+                this.bridgePhase := signal.detail
             }
             return true
         }

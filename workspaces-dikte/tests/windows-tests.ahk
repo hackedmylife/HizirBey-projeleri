@@ -15,6 +15,34 @@ Assert(condition, label) {
     Results .= "PASS " label "`n"
 }
 
+class RouteProbe extends DikteApp {
+    starts := 0
+    finishes := 0
+    StartVoice() {
+        this.starts += 1
+        this.voiceRequested := true
+    }
+    Finish() {
+        this.finishes += 1
+        this.voiceRequested := false
+    }
+}
+
+class NativeProbe extends DikteApp {
+    requests := 0
+    attempts := 0
+    RequiresBridge() {
+        return true
+    }
+    RequestBridge(arm := false, timeoutMs := 0) {
+        this.attempts += 1
+        return false
+    }
+    RequestNativeVoice() {
+        this.requests += 1
+    }
+}
+
 try {
     Assert(DikteCore.IsWorkspacesProcess("workspaces.exe"), "WorkSpaces process")
     Assert(DikteCore.IsWorkspacesProcess("WorkSpacesClient.EXE"), "WorkSpaces process case")
@@ -111,12 +139,73 @@ try {
     Assert(buttonY + buttonH <= editY, "Compact editor and upper controls do not overlap")
     Assert(footerY + footerH <= clientHeight, "Footer stays inside client area")
     Assert(clientHeight = 100, "Native strip is 100 pixels high")
-    for control in [app.transferButton, app.copyButton, app.hideButton, app.resumeButton, app.restoreButton, app.clearButton, app.editor, app.footer] {
+    for control in [app.transferButton, app.copyButton, app.hideButton, app.resumeButton, app.restoreButton, app.clearButton, app.editor, app.footer, app.dragHandle] {
         control.GetPos(&cx, &cy, &cw, &ch)
         Assert(cx >= 0 && cy >= 0 && cx + cw <= clientWidth && cy + ch <= clientHeight, "Compact control remains inside strip")
     }
 
-    app.window.Destroy()
+    ; A real mouse driver exercises the explicit move handle, including native
+    ; move-loop exit and settings persistence. No microphone is started in CI.
+    configDir := A_Temp "\Hizir-Dikte-Position-Test-" A_TickCount
+    configFile := configDir "\panel.ini"
+    app.settingsPath := configFile
+    app.ShowPanel()
+    app.window.GetClientPos(&clientX, &clientY)
+    app.dragHandle.GetPos(&gripX, &gripY, &gripW, &gripH)
+    WinGetPos(&oldX, &oldY,,, "ahk_id " app.window.Hwnd)
+    driver := A_ScriptDir "\drag-driver.ahk"
+    command := Format('"{1}" /ErrorStdOut "{2}" {3} {4}', A_AhkPath, driver, Round(clientX + gripX + gripW / 2), Round(clientY + gripY + gripH / 2))
+    Assert(RunWait(command,, "Hide") = 0, "Real mouse drag helper completed")
+    Sleep(120)
+    WinGetPos(&movedX, &movedY,,, "ahk_id " app.window.Hwnd)
+    Assert(Abs(movedX - oldX - 60) <= 4 && Abs(movedY - oldY - 35) <= 4, "Visible grip moves native panel with mouse")
+    Assert(app.customPosition && FileExist(configFile), "User movement saves position")
+    Assert(Integer(IniRead(configFile, "Panel", "X")) = movedX, "Saved X matches actual window")
+    Assert(Integer(IniRead(configFile, "Panel", "Y")) = movedY, "Saved Y matches actual window")
+    restored := DikteApp(true, configFile)
+    restored.ShowPanel()
+    WinGetPos(&restoredX, &restoredY,,, "ahk_id " restored.window.Hwnd)
+    Assert(Abs(restoredX - movedX) <= 2 && Abs(restoredY - movedY) <= 2, "New app instance restores moved position")
+    restored.editor.Value := "Konum sıfırlansa da taslak korunur."
+    restored.ResetPosition()
+    Assert(!restored.customPosition && restored.editor.Value != "", "Position reset preserves draft")
+    restored.Dispose()
+    try DirDelete(configDir, true)
+
+    fixture := Gui(, "Hizir Bey HOTKEY TARGET")
+    fixture.AddEdit("w420 h90")
+    fixture.Show()
+    route := RouteProbe(true)
+    route.testMode := true
+    route.lastWorkspace := fixture.Hwnd
+    route.ShowPanel()
+    route.Toggle()
+    Assert(route.starts = 1 && route.finishes = 0, "First Win+H in empty local panel starts dictation")
+    Assert(route.target = fixture.Hwnd, "Panel start recovers external target")
+    route.editor.Value := "Tamamlanan cümle."
+    route.Toggle()
+    Assert(route.finishes = 1 && route.starts = 1, "Second Win+H finishes current dictation")
+    route.pasteIssued := true
+    route.Toggle()
+    Assert(route.starts = 2 && route.editor.Value = "", "Win+H from completed panel starts a fresh draft")
+    Assert(route.lastText = "Tamamlanan cümle.", "Starting next dictation keeps prior text recoverable")
+    route.target := 0, route.targetPid := 0, route.lastWorkspace := 0
+    route.testMode := false, route.voiceRequested := false, route.pasteIssued := false
+    route.Toggle()
+    Assert(route.starts = 3, "Local panel start remains available without an external target")
+    route.Dispose()
+
+    native := NativeProbe(true)
+    native.testMode := true
+    Assert(native.CaptureTarget(fixture.Hwnd), "Native-start regression fixture bound")
+    native.ShowPanel()
+    native.StartVoice()
+    Assert(native.attempts = 1 && native.requests = 1, "Missing bridge acknowledgement does not block native dictation request")
+    Assert(native.voiceRequested && !native.busy, "Local dictation remains active after bridge failure")
+    native.Dispose()
+    fixture.Destroy()
+
+    app.Dispose()
     other.Destroy()
     Results .= "`n" Passed " checks passed. WorkSpaces / Win+H audio requires a real Windows 11 session.`n"
     FileOpen(LogFile, "w", "UTF-8").Write(Results)
