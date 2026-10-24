@@ -20,7 +20,14 @@ SetWorkingDir(FilterEntryDirectory)
 global FilterAppMutex := DllCall("CreateMutexW", "Ptr", 0, "Int", 1, "WStr", "Local\HizirBeyFiltreliDikte0.1.0", "Ptr")
 if A_LastError = 183
     ExitApp(0)
-global App := FilteredDikteApp()
+try {
+    global App := FilteredDikteApp()
+} catch Error as err {
+    FileAppend("Startup failed: " err.Message " · " err.File ":" err.Line "`n", "**", "UTF-8")
+    if !A_Args.Length
+        MsgBox("Uygulama açılamadı: " err.Message, "Filtreli Dikte")
+    ExitApp(1)
+}
 if A_Args.Length && A_Args[1] = "--smoke"
     SetTimer(() => App.Quit(), -900)
 

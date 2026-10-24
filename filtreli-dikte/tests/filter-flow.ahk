@@ -67,6 +67,9 @@ RunFlow() {
         WriteState(manager, "warming")
         manager.Toggle()
         Assert(manager.pendingStart && App.starts = 0 && !App.voiceRequested, "Warming waits before starting native recognition")
+        WriteState(manager, "running")
+        manager.Poll()
+        Assert(App.starts = 0, "Stale running state cannot acknowledge a new start")
         WriteState(manager, "ready")
         manager.Poll()
         first := FileRead(directory "\command.txt")
@@ -107,7 +110,20 @@ RunFlow() {
         WriteState(manager, "warming")
         manager.Poll()
         Assert(!manager.Alive() && !manager.pendingStart, "Warmup timeout closes the service")
+        shell := EnvGet("SystemRoot") "\System32\WindowsPowerShell\v1.0\powershell.exe"
+        childFile := directory "\child-pid.txt"
+        fixture := directory "\owned-process.ps1"
+        FileOpen(fixture, "w", "UTF-8").Write('$child = Start-Process -FilePath "' shell '" -ArgumentList "-NoProfile -Command Start-Sleep -Seconds 60" -PassThru`n[IO.File]::WriteAllText("' childFile '", [string]$child.Id)`nStart-Sleep -Seconds 60')
+        manager.process := OwnedProcess('"' shell '" -NoProfile -ExecutionPolicy Bypass -File "' fixture '"', directory)
+        deadline := A_TickCount + 6000
+        while !FileExist(childFile) && A_TickCount < deadline
+            Sleep(50)
+        Assert(FileExist(childFile) && manager.Alive(), "Owned process starts a real nested worker")
+        nestedPid := Integer(FileRead(childFile))
+        Assert(ProcessExist(nestedPid), "Nested worker exists before app cleanup")
         App.Dispose()
+        ProcessWaitClose(nestedPid, 3)
+        Assert(!ProcessExist(nestedPid) && !manager.Alive(), "App cleanup kills its entire owned process group")
         DirDelete(directory, true)
         Results .= "`n" Checks " filter lifecycle checks passed. Native microphone calls were probes.`n"
         FileOpen(ResultFile, "w", "UTF-8").Write(Results)

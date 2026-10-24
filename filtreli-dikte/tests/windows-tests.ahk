@@ -24,6 +24,7 @@ Assert(condition, label) {
         throw Error(label)
     Passed += 1
     Results .= "PASS " label "`n"
+    FileOpen(LogFile, "w", "UTF-8").Write(Results)
 }
 
 Drive(action, x := 0, y := 0) {

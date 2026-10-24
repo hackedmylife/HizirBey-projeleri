@@ -192,7 +192,7 @@ class FilterManager {
             this.app.SetStatus("Mikrofon filtresi açılıyor…")
             this.pendingStart := "opening"
         }
-        if this.pendingStart && phase = "running" {
+        if this.pendingStart = "opening" && phase = "running" {
             this.pendingStart := false
             DikteApp.Prototype.Toggle.Call(this.app)
             if !this.app.voiceRequested {
