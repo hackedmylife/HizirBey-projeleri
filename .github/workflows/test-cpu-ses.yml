@@ -28,6 +28,26 @@ jobs:
           Get-Content "$env:RUNNER_TEMP/cpu-ahk-out.txt", "$env:RUNNER_TEMP/cpu-ahk-err.txt" -ErrorAction SilentlyContinue
           if (Test-Path $result) { Get-Content $result }
           if ($p.ExitCode -ne 0 -or -not (Test-Path $result)) { throw 'Native tests failed' }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Hizir-Bey-CPU-Ses-Testi-0.1.0-EXE
+          path: |
+            paketler/Hizir-Bey-CPU-Ses-Testi-0.1.0.exe
+            paketler/Hizir-Bey-CPU-Ses-Testi-0.1.0.exe.sha256
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: CPU-Voice-Test-Logs
+          path: |
+            ${{ runner.temp }}/cpu-*.txt
+            ${{ runner.temp }}/CPU Deneme Türkçe/status.txt
+            ${{ runner.temp }}/cpu-preview.png
+
+  cpu-model:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
       - name: Exact user bootstrap and CPU dependency setup
         shell: pwsh
         run: |
@@ -47,16 +67,9 @@ jobs:
           & $python ses-ayirma-deneme/tests/model_check.py $root
           if ($LASTEXITCODE -ne 0) { throw 'Actual CPU model check failed' }
       - uses: actions/upload-artifact@v4
-        with:
-          name: Hizir-Bey-CPU-Ses-Testi-0.1.0-EXE
-          path: |
-            paketler/Hizir-Bey-CPU-Ses-Testi-0.1.0.exe
-            paketler/Hizir-Bey-CPU-Ses-Testi-0.1.0.exe.sha256
-      - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: CPU-Voice-Test-Logs
+          name: CPU-Model-Test-Logs
           path: |
-            ${{ runner.temp }}/cpu-*.txt
-            ${{ runner.temp }}/CPU Deneme Türkçe/status.txt
             ${{ runner.temp }}/CPU Deneme Türkçe/*.log
+            ${{ runner.temp }}/CPU Deneme Türkçe/status.txt

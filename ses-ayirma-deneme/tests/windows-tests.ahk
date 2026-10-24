@@ -29,6 +29,10 @@ try {
         }
     }
     Assert(buttons.Length = 10 && prepareHwnd != 0, "All recording and comparison actions are visible")
+    SplitPath(ResultPath,, &resultDirectory)
+    preview := resultDirectory "\cpu-preview.png"
+    capture := Format('powershell.exe -NoProfile -ExecutionPolicy Bypass -File "{1}" -WindowHandle {2} -Output "{3}"', A_ScriptDir "\capture.ps1", window, preview)
+    Assert(RunWait(capture,, "Hide") = 0 && FileExist(preview), "Native test interface renders")
     ; Before setup, Extract must show an actionable status without spawning work.
     for control in buttons
         if ControlGetText(control) = "Ayır ve ölç"
@@ -73,6 +77,10 @@ try {
     FileOpen(ResultPath, "w", "UTF-8").Write(Report)
     ExitApp(0)
 } catch Error as err {
+    if AppPid && WinExist("ahk_pid " AppPid) {
+        for diagnostic in WinGetControlsHwnd("ahk_pid " AppPid)
+            Report .= "CONTROL " ControlGetText(diagnostic) "`n"
+    }
     Report .= "FAIL " err.Message "`n" err.File ":" err.Line "`n" err.Stack
     FileOpen(ResultPath, "w", "UTF-8").Write(Report)
     if AppPid && ProcessExist(AppPid)

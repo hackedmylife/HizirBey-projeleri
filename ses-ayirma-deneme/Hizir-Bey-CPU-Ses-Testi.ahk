@@ -208,7 +208,7 @@ class CpuVoiceTest {
         try {
             try FileDelete(this.root "\done.txt")
             try FileDelete(this.root "\status.txt")
-            command := 'powershell.exe -NoProfile -ExecutionPolicy Bypass -File "' this.root '\bootstrap.ps1" -Root "' this.root '" -Action ' action
+            command := '"' EnvGet("SystemRoot") '\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -ExecutionPolicy Bypass -File "' this.root '\bootstrap.ps1" -Root "' this.root '" -Action ' action
             if action = "extract"
                 command .= ' -Reference "' this.reference '" -Mixture "' this.mixture '" -Output "' this.pendingResult '"'
             this.process := OwnedProcess(command, this.root)
@@ -279,27 +279,30 @@ class OwnedProcess {
         this.job := DllCall("CreateJobObjectW", "Ptr", 0, "Ptr", 0, "Ptr")
         this.handle := 0
         if !this.job
-            throw Error("İşlem grubu oluşturulamadı.")
+            throw Error("İşlem grubu oluşturulamadı · " A_LastError)
         limits := Buffer(144, 0)
         NumPut("UInt", 0x2000, limits, 16)
         if !DllCall("SetInformationJobObject", "Ptr", this.job, "Int", 9, "Ptr", limits, "UInt", limits.Size) {
+            code := A_LastError
             this.Close()
-            throw Error("İşlem grubu ayarlanamadı.")
+            throw Error("İşlem grubu ayarlanamadı · " code)
         }
         startup := Buffer(104, 0), info := Buffer(24, 0)
         NumPut("UInt", 104, startup)
         commandBuffer := Buffer(StrPut(command, "UTF-16") * 2, 0)
         StrPut(command, commandBuffer, "UTF-16")
         if !DllCall("CreateProcessW", "Ptr", 0, "Ptr", commandBuffer, "Ptr", 0, "Ptr", 0, "Int", 0, "UInt", 0x08000004, "Ptr", 0, "WStr", directory, "Ptr", startup, "Ptr", info) {
+            code := A_LastError
             this.Close()
-            throw Error("Alt işlem açılamadı.")
+            throw Error("Alt işlem açılamadı · " code)
         }
         this.handle := NumGet(info, 0, "Ptr"), thread := NumGet(info, 8, "Ptr")
         if !DllCall("AssignProcessToJobObject", "Ptr", this.job, "Ptr", this.handle) {
+            code := A_LastError
             DllCall("TerminateProcess", "Ptr", this.handle, "UInt", 1)
             DllCall("CloseHandle", "Ptr", thread)
             this.Close()
-            throw Error("Alt işlem gruba atanamadı.")
+            throw Error("Alt işlem gruba atanamadı · " code)
         }
         DllCall("ResumeThread", "Ptr", thread)
         DllCall("CloseHandle", "Ptr", thread)
