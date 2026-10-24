@@ -5,6 +5,7 @@ Projelerin son erişilebilir kaynak sürümleri ve kurulum paketleri. Güncellem
 | Proje | Sürüm / durum | Dosyalar |
 |---|---|---|
 | Yerel Dikte | 0.4.1; tek taşınabilir EXE, koyu / altın panel, temel cümle sonu noktalaması ve tamamen kapatan X | [Kaynak ve kullanım](workspaces-dikte/) · [Tek EXE](paketler/Hizir-Bey-WorkSpaces-Dikte-0.4.1.exe) · [Kaynak ZIP](paketler/Hizir-Bey-WorkSpaces-Dikte-0.4.1.zip) |
+| CPU Ses Testi | 0.1.0; deneysel çevrimdışı ses ayırma + ses referansıyla kaynak seçimi, GPU gerektirmez | [Kullanım ve sınırlar](ses-ayirma-deneme/) · [Deneme EXE](paketler/Hizir-Bey-CPU-Ses-Testi-0.1.0.exe) · [Kaynak ZIP](paketler/Hizir-Bey-CPU-Ses-Testi-0.1.0-kaynak.zip) |
 | Sesli yazma | 0.2.0; Google / Chrome denemesi, sessizlikte devam, yalnız Space sonrası tek noktalama ve Enter ile gönderim | [Kaynak ve kurulum](sesli-yazma/) · [Paket](paketler/Hizir-Bey-Sesli-Yazma-0.2.0.zip) |
 | Sohbet asistanı | 0.3.3; 10 MB / 20.000 örnek hafızası, kapasite göstergesi, hızlı yerel örnek seçimi ve büyük JSON yedeği; 108 test geçti | [Kaynak ve güncelleme](sohbet-asistani/) · [Paket](paketler/Hizir-Bey-Sohbet-Asistani-0.3.3.zip) |
 | Yatırım / çekim hesaplayıcı | Logolu sürüm; alt düğme yerleşimi düzeltildi | [Kaynak ve EXE oluşturma](hesaplayici/) · [Paket](paketler/HizirBey_EXE_Olusturma.zip) |
