@@ -52,8 +52,8 @@ class FilterManager {
         this.pendingStart := false, this.pendingStop := false, this.wanted := false
         this.configured := false, this.lastMessage := "", this.closed := false
         this.Install()
-        this.poll := ObjBindMethod(this, "Poll")
-        SetTimer(this.poll, 200)
+        this.pollTimer := ObjBindMethod(this, "Poll")
+        SetTimer(this.pollTimer, 200)
     }
 
     Install() {
@@ -358,7 +358,7 @@ class FilterManager {
     Close() {
         this.CloseNativeSetup()
         this.closed := true
-        SetTimer(this.poll, 0)
+        SetTimer(this.pollTimer, 0)
         if IsObject(this.process)
             this.process.Close()
         if this.HasOwnProp("setup")

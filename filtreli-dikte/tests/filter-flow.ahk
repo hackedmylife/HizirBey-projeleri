@@ -58,7 +58,7 @@ RunFlow() {
         directory := A_Temp "\Filter Flow Türkçe " A_TickCount
         App.filter := FlowManager(App, directory, directory "\cache")
         manager := App.filter
-        SetTimer(manager.poll, 0)
+        SetTimer(manager.pollTimer, 0)
         manager.Toggle()
         Assert(manager.opened = 1 && App.starts = 0, "Unconfigured start opens settings without native voice")
         FileOpen(directory "\ready.txt", "w").Write("ready")
