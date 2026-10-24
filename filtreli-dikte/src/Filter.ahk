@@ -59,6 +59,12 @@ class FilterManager {
     Install() {
         DirCreate(this.root "\engine\resemblyzer")
         DirCreate(this.root "\licenses")
+        if !A_IsCompiled {
+            SplitPath(A_LineFile,, &source)
+            for path in ["bootstrap.ps1", "engine\worker.py", "engine\service.py", "engine\dsp.py", "engine\resemblyzer\__init__.py", "engine\resemblyzer\audio.py", "engine\resemblyzer\hparams.py", "engine\resemblyzer\voice_encoder.py", "licenses\Resemblyzer-APACHE.txt", "README.md", "NOTICE.txt"]
+                FileCopy(source "\..\" path, this.root "\" path, 1)
+            return
+        }
         FileInstall "bootstrap.ps1", this.root "\bootstrap.ps1", 1
         FileInstall "engine\worker.py", this.root "\engine\worker.py", 1
         FileInstall "engine\service.py", this.root "\engine\service.py", 1
