@@ -7,10 +7,20 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "engine"))
 from dsp import AudioRing, WindowedFilter, calibrate, resample
-from service import resolve_devices
+from service import read_settings, resolve_devices
 
 
 class StreamTests(unittest.TestCase):
+    def test_windows_ini_preserves_turkish_paths(self):
+        text = '[filter]\nreference=C:\\Kayıtlar\\Sesim %100.wav\ninput_name=Dahili mikrofon ığüşöç\n'
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            for encoding in ['utf-16', 'utf-8-sig', 'utf-8']:
+                (root / 'config.ini').write_text(text, encoding=encoding)
+                settings = read_settings(root)
+                self.assertEqual(settings['reference'], 'C:\\Kayıtlar\\Sesim %100.wav')
+                self.assertEqual(settings['input_name'], 'Dahili mikrofon ığüşöç')
+
     def test_scale_and_polarity_are_resolved_against_mixture(self):
         t = np.arange(48000) / 16000
         voice = .03 * np.sin(2 * np.pi * 200 * t)

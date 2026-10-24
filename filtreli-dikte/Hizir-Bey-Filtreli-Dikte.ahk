@@ -15,8 +15,6 @@
 #Include src\Process.ahk
 #Include src\Filter.ahk
 
-SplitPath(A_LineFile,, &FilterEntryDirectory)
-SetWorkingDir(FilterEntryDirectory)
 global FilterAppMutex := DllCall("CreateMutexW", "Ptr", 0, "Int", 1, "WStr", "Local\HizirBeyFiltreliDikte0.1.0", "Ptr")
 if A_LastError = 183
     ExitApp(0)

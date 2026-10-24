@@ -16,7 +16,7 @@ Win+H'nin kendi mikrofon seçimi dış uygulamadır; bu seçim program tarafınd
 
 **Başlat / Win+H:** CPU motoru ve ses profili hazırlanır. Aynı uygulama açıkken modeller hazır tutulur; sonraki cümlelerde yeniden yüklenmez. Mikrofon ile sanal çıkış başarıyla açılmadan Windows diktesi başlatılmaz. Windows'ta Dinleniyor yazısını bekleyip konuş. İşlenen ses yaklaşık 3–4 saniyelik pencere / işlem gecikmesiyle sanal mikrofona gider; Windows'un kendi tanıma gecikmesi buna eklenir. Bu süre bütün bilgisayarlarda ölçülmüş bir garanti değildir.
 
-**Durdur / ikinci Win+H:** Fiziksel giriş kapatılır; kuyruktaki son kelimeler işlenip aktarılır. **Bitiriliyor** sırasında bekle. Ses aktarımı bittikten sonra Windows diktesi kapatılır; temel cümle sonları kısa sakinleşme aralığından sonra tamamlanır. Son kelimeleri kaybetmemek için pencereyi kapatmak yerine Durdur kullan.
+**Durdur / ikinci Win+H:** Fiziksel giriş kapatılır; kuyruktaki son kelimeler işlenip aktarılır. **Bitiriliyor** sırasında bekle. Ses aktarımı ve kısa sessiz kuyruk bittikten sonra Windows diktesi kapatılır; temel cümle sonları kısa sakinleşme aralığından sonra tamamlanır. Son kelimeleri kaybetmemek için pencereyi kapatmak yerine Durdur kullan.
 
 **Kopyala / Ctrl+C:** O anda kutuda görünen taslağın tamamını anında panoya alır. Dinlemeyi durdurmaz, canlı kutuyu veya seçimi değiştirmez. Yalnız kopyalanan anlık metne temel ilk harf / cümle sonu düzenlemesi uygulanır. Yeni metin için Ctrl+A → Delete. Diğer uygulamalarda Ctrl+C normal davranır. LiveChat'te kendin doğru alana tıkla → Ctrl+V → kontrol et → gönder.
 
@@ -30,7 +30,7 @@ Ayırıcı 8 kHz / iki konuşmacı alanında eğitilmiştir. Referansın, ortam�
 
 ## Yerel veri ve gereksinimler
 
-Windows 11 x64, çalışan Win+H, gerçek mikrofon, VB-CABLE, CPU motoru ve kendi ses referansın gerekir. Windows sesli yazma kendi internet gereksinimini korur; ses ayırma kurulumdan sonra yereldir. Program sürekli kayıt dosyası oluşturmaz; canlı ses RAM'de işlenir ve yalnız seçilen sanal aygıta verilir. Eşleşme için ses referansı okunur; profil özeti özel klasörde saklanır. Başka sunucuya ses / taslak yükleme, telemetri, API anahtarı veya LiveChat bağlantısı yoktur.
+Windows 11 x64, çalışan Win+H, gerçek mikrofon, VB-CABLE, CPU motoru ve kendi ses referansın gerekir. Windows sesli yazma kendi internet gereksinimini korur; ses ayırma kurulumdan sonra yereldir. Program sürekli kayıt dosyası oluşturmaz; canlı ses RAM'de işlenir ve yalnız seçilen sanal aygıta verilir. Eşleşme için ses referansı okunur; profil özeti özel klasörde saklanır. Filtre motoru ses / taslak yüklemez; telemetri, API anahtarı veya LiveChat bağlantısı yoktur. Win+H ise seçilen sesi Microsoft çevrimiçi konuşma tanıma hizmetiyle metne çevirir; bu uygulama onu çevrimdışı yapmaz. [Microsoft açıklaması](https://support.microsoft.com/en-us/accessibility/windows/use-voice-typing-to-talk-instead-of-type-on-your-pc).
 
 Uygulama / ayarlar / profil: `%LOCALAPPDATA%\HizirBey\FiltreliDikte\0.1.0`. Önceki CPU motoru / modeller: `%LOCALAPPDATA%\HizirBey\CpuSesTesti\0.1.0`. Önceki ses kayıtları değiştirilmez. Panel konumu eski `%LOCALAPPDATA%\HizirBey\WorkSpacesDikte\panel.ini` içindedir. Bu özel dosyalar GitHub / kaynak paketi içinde yoktur. EXE program kodunu ve marka varlıklarını içerir; CPU paketleri ve modeller ilk hazırlıkta indirilir. VB-CABLE ayrı sürücüdür.
 

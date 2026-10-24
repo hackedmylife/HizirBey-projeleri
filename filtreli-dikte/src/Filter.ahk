@@ -339,7 +339,8 @@ class FilterManager {
         }
         input := this.inputRows[this.inputChoice.Value], output := this.outputRows[this.outputChoice.Value]
         text := "[filter]`nreference=" this.referenceEdit.Value "`ninput_name=" input[3] "`ninput_host=" input[4] "`noutput_name=" output[3] "`noutput_host=" output[4] "`nconfirmed=1`n"
-        FileOpen(this.root "\config.ini", "w", "UTF-8-RAW").Write(text)
+        ; IniRead uses the Windows INI API: UTF-16 BOM preserves Turkish paths.
+        FileOpen(this.root "\config.ini", "w", "UTF-16").Write(text)
         this.setup.Hide()
         this.CloseNativeSetup()
         this.app.SetStatus("Ayarlar kaydedildi · Başlat")

@@ -201,7 +201,8 @@ def run_audio(root, settings, selector, selected):
             if time.monotonic() > deadline or not speaker.active:
                 raise RuntimeError("Son ses aktarımı tamamlanamadı; dikte durduruldu.")
             time.sleep(0.02)
-        time.sleep(0.15)
+        # Keep the recognizer open through device latency and a short quiet tail.
+        time.sleep(1.0)
     state(root, "stopped", "Durduruldu · Metin kutuda")
 
 
