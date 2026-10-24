@@ -1,0 +1,8 @@
+Hızır Bey Hesaplayıcı — 24.10.2026
+
+Hesapla düğmesine basıldığında oluşturulan sonuç otomatik olarak panoya kopyalanır.
+Kopyalama tamamlandığında düğmede KOPYALANDI ✓ bilgisi görünür.
+Sonucu Kopyala düğmesi yeniden kopyalama için kullanılabilir.
+
+Doğrulama: Python sözdizimi; örnek yatırım/çekim sonucu, ardışık hesaplama ve hatalı veri durumunda panonun korunması kontrol edildi.
+Windows EXE, Build Hesaplayici Windows EXE iş akışıyla hazırlanır.

@@ -722,6 +722,7 @@ def hesapla():
         sonuc_metni = f"Toplam yatırımınız {tl(total_dep)} TL, çekiminiz {tl(total_wd)} TL ve net farkınız {tl(net)} TL'dir."
         sonuc_etiketi.config(text=sonuc_metni)
         detay_etiketi.config(text=f"({len(deposits)} yatırım, {len(withdraws)} çekim bulundu)")
+        kopyala()
     except Exception as e:
         messagebox.showerror("Hata", f"Bir sorun oluştu:\n{e}")
 
