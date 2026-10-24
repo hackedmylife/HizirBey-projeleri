@@ -1,5 +1,6 @@
 #Requires AutoHotkey v2.0.30 64-bit
 #SingleInstance Off
+CoordMode("Mouse", "Screen")
 global Passed := 0, Report := "", AppPid := 0
 global ExePath := A_Args[1], ResultPath := A_Args[2]
 Assert(value, label) {

@@ -4,6 +4,7 @@
 ;@Ahk2Exe-SetCompanyName Hızır Bey
 ;@Ahk2Exe-SetMainIcon assets\hizirbey.ico
 ;@Ahk2Exe-AddResource licenses\AutoHotkey-GPL.txt, LICENSE
+;@Ahk2Exe-AddResource licenses\GPL-3.0.txt, LICENSE_APP
 #Requires AutoHotkey v2.0.30 64-bit
 #SingleInstance Ignore
 
@@ -71,6 +72,7 @@ class CpuVoiceTest {
         FileInstall "engine\resemblyzer\hparams.py", this.root "\engine\resemblyzer\hparams.py", 1
         FileInstall "engine\resemblyzer\voice_encoder.py", this.root "\engine\resemblyzer\voice_encoder.py", 1
         FileInstall "licenses\Resemblyzer-APACHE.txt", this.root "\licenses\Resemblyzer-APACHE.txt", 1
+        FileInstall "licenses\GPL-3.0.txt", this.root "\licenses\GPL-3.0.txt", 1
         FileInstall "NOTICE.txt", this.root "\NOTICE.txt", 1
         FileInstall "README.md", this.root "\README.md", 1
     }

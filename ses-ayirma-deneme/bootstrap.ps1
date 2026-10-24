@@ -29,12 +29,13 @@ try {
     if ($Action -eq 'prepare') {
         Set-Status 'CPU paketleri hazirlaniyor. Ilk indirme birkac yuz MB olabilir; lutfen bekle...'
         New-Item -ItemType Directory -Path $pythonDir -Force | Out-Null
-        if (-not (Test-Path -LiteralPath $python)) {
+        if (-not (Test-Path -LiteralPath $python) -or -not (Test-Path (Join-Path $pythonDir 'runtime.complete'))) {
             $archive = Join-Path $rootPath 'python.download.zip'
             Invoke-WebRequest -UseBasicParsing -Uri 'https://www.python.org/ftp/python/3.11.9/python-3.11.9-embed-amd64.zip' -OutFile $archive
             if ((Get-FileHash $archive -Algorithm SHA256).Hash -ne '009D6BF7E3B2DDCA3D784FA09F90FE54336D5B60F0E0F305C37F400BF83CFD3B') { throw 'Python archive hash mismatch' }
             Expand-Archive -LiteralPath $archive -DestinationPath $pythonDir -Force
             Remove-Item -LiteralPath $archive -Force
+            [IO.File]::WriteAllText((Join-Path $pythonDir 'runtime.complete'), '3.11.9')
         }
         $site = Join-Path $pythonDir 'Lib/site-packages'
         New-Item -ItemType Directory -Path $site -Force | Out-Null
