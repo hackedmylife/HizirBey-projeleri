@@ -1,0 +1,62 @@
+name: CPU Voice Reference Test
+on:
+  push:
+    paths: ['ses-ayirma-deneme/**', '.github/workflows/test-cpu-ses.yml']
+  pull_request:
+    paths: ['ses-ayirma-deneme/**', '.github/workflows/test-cpu-ses.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile standalone launcher
+        shell: pwsh
+        run: ./ses-ayirma-deneme/scripts/build-exe.ps1
+      - name: Native GUI and complete process exit
+        shell: pwsh
+        run: |
+          $runtime = Resolve-Path workspaces-dikte/vendor/AutoHotkey64.exe
+          $script = Resolve-Path ses-ayirma-deneme/tests/windows-tests.ahk
+          $exe = Resolve-Path paketler/Hizir-Bey-CPU-Ses-Testi-0.1.0.exe
+          $result = Join-Path $env:RUNNER_TEMP 'cpu-native-tests.txt'
+          $p = Start-Process -FilePath $runtime -ArgumentList @('/ErrorStdOut', ('"' + $script + '"'), ('"' + $exe + '"'), ('"' + $result + '"')) -PassThru -RedirectStandardOutput "$env:RUNNER_TEMP/cpu-ahk-out.txt" -RedirectStandardError "$env:RUNNER_TEMP/cpu-ahk-err.txt"
+          if (-not $p.WaitForExit(45000)) { $p.Kill(); throw 'Native tests timeout' }
+          Get-Content "$env:RUNNER_TEMP/cpu-ahk-out.txt", "$env:RUNNER_TEMP/cpu-ahk-err.txt" -ErrorAction SilentlyContinue
+          if (Test-Path $result) { Get-Content $result }
+          if ($p.ExitCode -ne 0 -or -not (Test-Path $result)) { throw 'Native tests failed' }
+      - name: Exact user bootstrap and CPU dependency setup
+        shell: pwsh
+        run: |
+          $root = Join-Path $env:RUNNER_TEMP 'CPU Deneme Türkçe'
+          New-Item -ItemType Directory -Path $root -Force | Out-Null
+          Copy-Item ses-ayirma-deneme/engine $root -Recurse
+          powershell.exe -NoProfile -ExecutionPolicy Bypass -File ses-ayirma-deneme/bootstrap.ps1 -Root $root -Action prepare
+          if ($LASTEXITCODE -ne 0) { Get-Content (Join-Path $root '*.log'); throw 'User bootstrap failed' }
+          Get-Content (Join-Path $root 'status.txt'), (Join-Path $root 'worker.out.log'), (Join-Path $root 'worker.err.log')
+      - name: Worker checks and real CPU model inference
+        shell: pwsh
+        run: |
+          $root = Join-Path $env:RUNNER_TEMP 'CPU Deneme Türkçe'
+          $python = Join-Path $root 'python/python.exe'
+          & $python ses-ayirma-deneme/tests/test_worker.py
+          if ($LASTEXITCODE -ne 0) { throw 'Worker unit checks failed' }
+          & $python ses-ayirma-deneme/tests/model_check.py $root
+          if ($LASTEXITCODE -ne 0) { throw 'Actual CPU model check failed' }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Hizir-Bey-CPU-Ses-Testi-0.1.0-EXE
+          path: |
+            paketler/Hizir-Bey-CPU-Ses-Testi-0.1.0.exe
+            paketler/Hizir-Bey-CPU-Ses-Testi-0.1.0.exe.sha256
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: CPU-Voice-Test-Logs
+          path: |
+            ${{ runner.temp }}/cpu-*.txt
+            ${{ runner.temp }}/CPU Deneme Türkçe/status.txt
+            ${{ runner.temp }}/CPU Deneme Türkçe/*.log

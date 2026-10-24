@@ -1,0 +1,33 @@
+Hizir Bey CPU Ses Testi 0.1.0 — experimental offline separation benchmark.
+Project-specific source: GPL-3.0-or-later.
+Source: https://github.com/hackedmylife/HizirBey-projeleri/tree/main/ses-ayirma-deneme
+
+Resemblyzer: Copyright 2019 Resemble.AI, Apache-2.0.
+https://github.com/resemble-ai/Resemblyzer
+Vendored audio.py, hparams.py, voice_encoder.py from commit
+15d828edebe06bc72b9cabc8ef8ca5ab2cb457ce.
+Modification: voice_encoder.py uses torch.load(weights_only=True).
+See licenses/Resemblyzer-APACHE.txt. Weights downloaded from the same commit.
+
+PyTorch / TorchAudio: BSD-style license in installed packages.
+https://github.com/pytorch/pytorch/blob/v2.5.1/LICENSE
+https://github.com/pytorch/audio/blob/v2.5.1/LICENSE
+ConvTasNet model: TorchAudio CONVTASNET_BASE_LIBRI2MIX, trained on Libri2Mix.
+https://docs.pytorch.org/audio/2.5.0/generated/torchaudio.pipelines.CONVTASNET_BASE_LIBRI2MIX.html
+LibriMix: Joris Cosentino et al.; based on LibriSpeech by Vassil Panayotov et al.
+https://github.com/JorisCos/LibriMix
+https://www.openslr.org/12
+Model weights are fetched directly from their publisher, not bundled here.
+
+Python: Python Software Foundation License; LICENSE.txt in downloaded runtime.
+https://www.python.org/ftp/python/3.11.9/
+Other installed dependencies retain their package license metadata.
+
+AutoHotkey 2.0.30: GPL-2.0-or-later, original runtime incorporated by Ahk2Exe.
+https://github.com/AutoHotkey/AutoHotkey/tree/v2.0.30
+Full license embedded in EXE as LICENSE and copied to the source package.
+Ahk2Exe 1.1.37.02a2: official compiler, build-only dependency.
+https://github.com/AutoHotkey/Ahk2Exe
+
+Brand icon reused from the user's existing public Hizir Bey projects.
+No SpeakerBeam proprietary source, weights or adaptations are included.
