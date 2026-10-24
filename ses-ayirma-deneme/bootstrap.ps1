@@ -21,8 +21,11 @@ function Run-Python([string[]]$Arguments, [string]$Name) {
     $stdout = Join-Path $rootPath ($Name + '.out.log')
     $stderr = Join-Path $rootPath ($Name + '.err.log')
     $p = Start-Process -FilePath $python -ArgumentList $quoted -NoNewWindow -PassThru -RedirectStandardOutput $stdout -RedirectStandardError $stderr
+    $null = $p.Handle # retain the process handle before exit (Windows PowerShell 5.1)
     if (-not $p.WaitForExit(900000)) { $p.Kill(); throw 'Python operation timed out' }
-    return $p.ExitCode
+    $p.Refresh()
+    if ($null -eq $p.ExitCode) { throw 'Cannot read Python exit code' }
+    return [int]$p.ExitCode
 }
 
 try {
