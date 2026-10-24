@@ -110,6 +110,15 @@ RunFlow() {
         WriteState(manager, "warming")
         manager.Poll()
         Assert(!manager.Alive() && !manager.pendingStart, "Warmup timeout closes the service")
+        FileOpen(directory "\devices.txt", "w", "UTF-8-RAW").Write("input`t2`tDahili mikrofon ığüşöç`tWindows WASAPI`noutput`t4`tCABLE Input (VB-Audio Virtual Cable)`tWindows WASAPI")
+        reference := directory "\Kendi sesim ığüşöç.wav"
+        FileOpen(reference, "w").Write("fixture only")
+        FilterManager.Prototype.Settings.Call(manager)
+        manager.referenceEdit.Value := reference
+        manager.confirmed.Value := 1
+        manager.Save()
+        Assert(IniRead(directory "\config.ini", "filter", "reference") = reference, "Saved Windows INI preserves the Turkish reference path")
+        Assert(IniRead(directory "\config.ini", "filter", "input_name") = "Dahili mikrofon ığüşöç", "Saved physical microphone name survives Windows INI reading")
         shell := EnvGet("SystemRoot") "\System32\WindowsPowerShell\v1.0\powershell.exe"
         childFile := directory "\child-pid.txt"
         fixture := directory "\owned-process.ps1"
