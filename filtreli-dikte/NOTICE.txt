@@ -1,0 +1,34 @@
+Hizir Bey Filtreli Dikte 0.1.0 — experimental CPU speaker-selected microphone route.
+New source: GPL-3.0-or-later. See licenses/GPL-3.0.txt.
+Base panel/Core/Theme/Assets: previous public Hizir Bey local dictation project,
+GPL-2.0-or-later. AutoHotkey runtime also GPL-2.0-or-later.
+Source: https://github.com/hackedmylife/HizirBey-projeleri/tree/main/filtreli-dikte
+
+Resemblyzer Copyright 2019 Resemble.AI, Apache-2.0.
+https://github.com/resemble-ai/Resemblyzer
+Source commit: 15d828edebe06bc72b9cabc8ef8ca5ab2cb457ce.
+Vendored files retain the original API; torch.load uses weights_only=True;
+whitespace normalized. See licenses/Resemblyzer-APACHE.txt.
+
+PyTorch/TorchAudio 2.5.1 CPU: BSD-style licenses in the installed packages.
+https://github.com/pytorch/pytorch/blob/v2.5.1/LICENSE
+https://github.com/pytorch/audio/blob/v2.5.1/LICENSE
+ConvTasNet CONVTASNET_BASE_LIBRI2MIX weights are fetched from the publisher.
+https://docs.pytorch.org/audio/2.5.0/generated/torchaudio.pipelines.CONVTASNET_BASE_LIBRI2MIX.html
+LibriMix: Joris Cosentino et al.; LibriSpeech: Vassil Panayotov et al.
+https://github.com/JorisCos/LibriMix — https://www.openslr.org/12
+
+python-sounddevice 0.5.1: MIT license, Matthias Geier and contributors.
+https://github.com/spatialaudio/python-sounddevice/tree/0.5.1
+PortAudio: MIT-style license distributed with sounddevice Windows package.
+https://www.portaudio.com/license.html
+Python runtime: PSF license, LICENSE.txt in the downloaded runtime.
+Other installed packages retain their own license metadata.
+
+VB-CABLE is a separate third-party driver with its publisher's license.
+It is NOT bundled, silently installed or redistributed by this application.
+https://vb-audio.com/Cable/
+
+Brand visuals reused from the user's prior public Hizir Bey projects.
+No user audio, profile, device list, transcript, token or API key is bundled.
+No SpeakerBeam proprietary source or weights are used.

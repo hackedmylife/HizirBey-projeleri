@@ -1,0 +1,83 @@
+name: Filtered Dikte CPU and Windows checks
+on:
+  push:
+    paths: ['filtreli-dikte/**', '.github/workflows/test-filtreli-dikte.yml']
+  pull_request:
+    paths: ['filtreli-dikte/**', '.github/workflows/test-filtreli-dikte.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile standalone filtered launcher
+        shell: pwsh
+        run: ./filtreli-dikte/scripts/build-exe.ps1
+      - name: Native panel, filter lifecycle and isolated EXE checks
+        shell: pwsh
+        run: |
+          $runtime = Resolve-Path workspaces-dikte/vendor/AutoHotkey64.exe
+          $exe = Resolve-Path paketler/Hizir-Bey-Filtreli-Dikte-0.1.0.exe
+          foreach ($test in @('windows-tests', 'filter-flow', 'compiled-tests')) {
+            $script = Resolve-Path "filtreli-dikte/tests/$test.ahk"
+            $result = Join-Path $env:RUNNER_TEMP "filtered-$test.txt"
+            $arguments = @('/ErrorStdOut', ('"' + $script + '"'))
+            if ($test -eq 'compiled-tests') { $arguments += ('"' + $exe + '"') }
+            $arguments += ('"' + $result + '"')
+            $p = Start-Process -FilePath $runtime -ArgumentList $arguments -PassThru -RedirectStandardOutput "$env:RUNNER_TEMP/filtered-$test-out.txt" -RedirectStandardError "$env:RUNNER_TEMP/filtered-$test-err.txt"
+            $null = $p.Handle
+            if (-not $p.WaitForExit(45000)) { $p.Kill(); throw "$test timeout" }
+            $p.Refresh()
+            Get-Content "$env:RUNNER_TEMP/filtered-$test-out.txt", "$env:RUNNER_TEMP/filtered-$test-err.txt" -ErrorAction SilentlyContinue
+            if (Test-Path $result) { Get-Content $result }
+            if ($p.ExitCode -ne 0 -or -not (Test-Path $result)) { throw "$test failed" }
+          }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Hizir-Bey-Filtreli-Dikte-0.1.0-EXE
+          path: |
+            paketler/Hizir-Bey-Filtreli-Dikte-0.1.0.exe
+            paketler/Hizir-Bey-Filtreli-Dikte-0.1.0.exe.sha256
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Filtered-Dikte-Windows-Logs
+          path: |
+            ${{ runner.temp }}/filtered-*.txt
+            ${{ runner.temp }}/dikte-preview.png
+            ${{ runner.temp }}/filtered-setup.png
+  cpu-model:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Exact Windows PowerShell bootstrap with CPU packages
+        shell: pwsh
+        run: |
+          $root = Join-Path $env:RUNNER_TEMP 'Live CPU Türkçe'
+          $cache = Join-Path $env:RUNNER_TEMP 'CPU Cache Türkçe'
+          New-Item -ItemType Directory -Path $root -Force | Out-Null
+          Copy-Item filtreli-dikte/engine $root -Recurse
+          powershell.exe -NoProfile -ExecutionPolicy Bypass -File filtreli-dikte/bootstrap.ps1 -Root $root -CacheRoot $cache -Action prepare
+          if ($LASTEXITCODE -ne 0) { Get-Content (Join-Path $root '*.log'); throw 'User bootstrap failed' }
+          Get-Content (Join-Path $root 'state.txt'), (Join-Path $root 'worker.out.log'), (Join-Path $root 'worker.err.log')
+      - name: Stream units and actual CPU model inference
+        shell: pwsh
+        run: |
+          $root = Join-Path $env:RUNNER_TEMP 'Live CPU Türkçe'
+          $cache = Join-Path $env:RUNNER_TEMP 'CPU Cache Türkçe'
+          $python = Join-Path $cache 'python/python.exe'
+          & $python filtreli-dikte/tests/test_stream.py
+          if ($LASTEXITCODE -ne 0) { throw 'Stream unit checks failed' }
+          & $python filtreli-dikte/tests/model_stream.py $root $cache
+          if ($LASTEXITCODE -ne 0) { throw 'Real CPU model check failed' }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Filtered-Dikte-CPU-Logs
+          path: |
+            ${{ runner.temp }}/Live CPU Türkçe/*.log
+            ${{ runner.temp }}/Live CPU Türkçe/state.txt
