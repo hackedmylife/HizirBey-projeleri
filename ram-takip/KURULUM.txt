@@ -1,8 +1,8 @@
-HIZIR BEY RAM TAKİP — 2.0.2 — SÜREÇ RAM ÖLÇÜMÜ
+HIZIR BEY RAM TAKİP — 2.0.3 — SÜREÇ RAM ÖLÇÜMÜ
 
 BU SÜRÜM NEYİ DÜZELTİR?
 Önceki sürümler yalnızca yaklaşık kullanılan JavaScript belleğini ölçüyordu. Bu sürüm chrome.processes API'sinin privateMemory alanını okur: sekmenin ana renderer sürecinin özel bellek ayak izi. JavaScript belleğine sessizce geri dönmez.
-Eşik: 750.000.000 bayt, yani 750 MB. Kontrol yaklaşık 30 saniyede bir.
+Eşik: 500.000.000 bayt, yani 500 MB. Kontrol yaklaşık 30 saniyede bir.
 
 KURULUM / GÜNCELLEME
 1. Önceki eklentide Tümünü durdur düğmesine basın.
@@ -19,7 +19,7 @@ Chrome'u bu .cmd dosyasıyla başlatın. Alternatif: Chrome kısayolunun Hedef a
 
 KAPSAM / DAVRANIŞ
 Tüm pencerelerdeki mevcut ve yeni HTTP/HTTPS sekmeleri izlenir. Tek sekme ve aynı site sekmelerini topluca ekleme düğmeleri de vardır. Başlıklar yalnızca listede gösterilir; seçim sekme kimliğiyle yapılır.
-750 MB eşiğinde mevcut URL yeni sekmede açılır. Yeni sekmenin Chrome yükleme durumu complete olunca eski sekme kapatılır. Aktif eski sekmeyse yeni sekmeye geçilir.
+500 MB eşiğinde mevcut URL yeni sekmede açılır. Yeni sekmenin Chrome yükleme durumu complete olunca eski sekme kapatılır. Aktif eski sekmeyse yeni sekmeye geçilir.
 Yeni sekme 90 saniyede yüklenmezse veya başka origin'e yönlenirse eski sekme korunur, o izleme durur. Yeni sekmenin açılması giriş veya görüşme bağlantısının hazır olduğunu garanti etmez. Taslaklar, kaydedilmemiş formlar, seçili görüşme ve kaydırma konumu taşınmaz.
 Her geçişten sonra sekme ve kaynak süreç için beş dakika beklenir. Aynı süreçteki birden çok sekmenin birlikte sürekli yeniden açılmasını önlemek için kaynak süreç bekleme süresi paylaşılır.
 Bir sekmeyi durdurmak onu otomatik tekrar eklemez; hatalı sekmeler kendiliğinden yeniden denenmez. Tümünü durdur otomatik eklemeyi de kapatır.
@@ -40,3 +40,5 @@ Kaynak kod, --enable-experimental-extension-apis bayrağı olduğunda kanal kıs
 2.0.2: Eklenti adı Hızır Bey RAM Takip olarak değiştirildi. Gönderilen logo araç çubuğu, uzantı listesi ve açılır panel için eklendi. RAM takibi ve sekme geçiş davranışı aynıdır.
 
 2.0.2: Süreç RAM sınırı 750 MB (750.000.000 bayt) olarak güncellendi. Kontrol aralığı ve sekme geçiş davranışı aynı kaldı.
+
+2.0.3: Süreç RAM sınırı 500 MB (500.000.000 bayt) olarak güncellendi. Chrome sekme önizlemesinin bellek değeriyle aynı ölçüm değildir. Kontrol yaklaşık 30 saniyede bir sürer.
