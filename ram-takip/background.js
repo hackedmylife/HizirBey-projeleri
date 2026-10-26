@@ -1,4 +1,4 @@
-const LIMIT = 1_000_000_000;
+const LIMIT = 750_000_000;
 function requireMemoryAPI() {
   if (!chrome.processes?.getProcessIdForTab || !chrome.processes?.getProcessInfo) {
     throw new Error('Gerçek RAM erişimi kapalı. Chrome’u tamamen kapatıp Chrome-RAM-Modu.cmd ile açın; eklentiyi yeniden yükleyin.');
