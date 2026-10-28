@@ -158,6 +158,7 @@ RunSuite() {
         Assert(SendMessage(0xB0, 0, 0, App.editor.Hwnd) = 0, "Next dictation begins at the empty draft start")
         Drive("toggle")
         Assert(App.stops = 2 && !App.voiceRequested, "Second Win+H only stops local dictation")
+        Assert(!App.finalizePending, "Stopping an empty draft never schedules a later copy or clear")
         Assert(receiverEdit.Value = "Outside selected normal text.", "Start-stop-copy never pastes into another application")
 
         App.editor.Value := " `r`n `t"

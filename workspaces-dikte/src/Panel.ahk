@@ -272,11 +272,12 @@ class DikteApp {
         this.voiceRequested := false
         this.toggleButton.Text := "Başlat"
         if wasListening {
-            this.finalizePending := true
+            ; An empty stop must not schedule a future clear of a new draft.
+            this.finalizePending := DikteCore.HasText(this.editor.Value)
             this.stoppedAt := A_TickCount
-            SetTimer(this.finalizeCallback, -120)
+            SetTimer(this.finalizeCallback, this.finalizePending ? -120 : 0)
         }
-        this.SetStatus(wasListening ? "Durduruldu · Kopya hazırlanıyor" : "Durduruldu · Metin burada")
+        this.SetStatus(this.finalizePending ? "Durduruldu · Kopya hazırlanıyor" : "Durduruldu · Metin burada")
     }
 
     FinalizeStoppedText() {
