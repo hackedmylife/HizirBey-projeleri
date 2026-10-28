@@ -1,6 +1,6 @@
 ;@Ahk2Exe-SetName Hızır Bey Yerel Dikte
 ;@Ahk2Exe-SetDescription Hızır Bey Yerel Dikte
-;@Ahk2Exe-SetVersion 0.4.1.0
+;@Ahk2Exe-SetVersion 0.4.2.0
 ;@Ahk2Exe-SetCompanyName Hızır Bey
 ;@Ahk2Exe-SetMainIcon assets\hizirbey.ico
 ;@Ahk2Exe-AddResource vendor\license.txt, LICENSE
@@ -14,7 +14,7 @@
 #Include src\Theme.ahk
 #Include src\Panel.ahk
 
-; Speech stays in this local edit box. Copy happens only on user request.
+; Speech stays in this local edit box. Stop copies the completed text; Ctrl+C and Copy also take a snapshot.
 ; No credentials, audio recording, telemetry, registry changes or startup changes.
 ; Native Windows voice typing retains its own Microsoft network requirements.
 global App := DikteApp()

@@ -1,14 +1,16 @@
-HIZIR BEY YEREL DIKTE 0.4.1
+HIZIR BEY YEREL DIKTE 0.4.2
 
 KOYU / ALTIN GORUNUM. IKI BUYUK DUGME VE UST SAGDA X.
 
 Eski surumu sag alttaki kendi simgesinden Cikis ile kapat.
-Hizir-Bey-WorkSpaces-Dikte-0.4.1.exe dosyasina cift tikla.
+Hizir-Bey-WorkSpaces-Dikte-0.4.2.exe dosyasina cift tikla.
 Tek EXE yeterlidir; AutoHotkey veya baska bir program kurman gerekmez.
 Kaynak ZIP ile calisiyorsan tamamini cikar ve BASLAT.cmd calistir.
 
 Baslat / Win+H: yerel Windows diktesini ac. Dinleniyor yazisini bekle.
-Durdur / ikinci Win+H: dikteyi durdur; temel cumle sonu duzenlemesi yapilir.
+Durdur / ikinci Win+H: dikteyi durdur; son kelimeler ve noktalama tamamlaninca
+metin otomatik panoya kopyalanir. Kopyalandi yazisini bekle, sonra Ctrl+V kullan.
+Metin kutuda da kalir. Bos metin eski panoyu degistirmez.
 Kopyala / Ctrl+C: kutunun tamamini, temel cumle sonlariyla panoya al.
 Yazarken Ctrl+C, dinlemeyi durdurmaz ve canli kutuyu degistirmez.
 Durdurma sonrasi duzenlemeyi Ctrl+Z ile geri alabilirsin.

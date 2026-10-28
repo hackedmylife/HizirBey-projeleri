@@ -16,7 +16,7 @@ class DikteApp {
         this.LoadPosition()
         this.assetDir := DikteAssets.GetDir()
 
-        this.window := Gui("+AlwaysOnTop -Caption +ToolWindow -Border -DPIScale", "Hızır Bey · Yerel Dikte 0.4.1")
+        this.window := Gui("+AlwaysOnTop -Caption +ToolWindow -Border -DPIScale", "Hızır Bey · Yerel Dikte 0.4.2")
         this.window.BackColor := "101217"
         this.logo := this.window.AddPicture("x10 y12 w56 h-1 +0x100", this.assetDir "\logo.png")
         this.window.SetFont("s7 w500 c9AA4B5", "Segoe UI")
@@ -276,7 +276,7 @@ class DikteApp {
             this.stoppedAt := A_TickCount
             SetTimer(this.finalizeCallback, -120)
         }
-        this.SetStatus("Durduruldu · Metin burada")
+        this.SetStatus(wasListening ? "Durduruldu · Kopya hazırlanıyor" : "Durduruldu · Metin burada")
     }
 
     FinalizeStoppedText() {
@@ -304,7 +304,9 @@ class DikteApp {
             if this.lastCopiedText == raw
                 this.lastCopiedText := text
         }
-        this.SetStatus("Hazır · Cümle sonları tamamlandı")
+        ; Copy only after late recognition updates and punctuation have settled.
+        ; CopyOnly preserves the draft and reports clipboard failures without pasting.
+        this.CopyOnly()
     }
 
     StopVoice() {

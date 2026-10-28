@@ -22,7 +22,7 @@ try {
     if ((Get-FileHash $runtime -Algorithm SHA256).Hash -ne '2EAB99848EBC07F8AB0CC448BF69AF8C700B2FC7FCD1FF8794DF743DCC58DA51') {
         throw 'Official AutoHotkey runtime SHA-256 mismatch'
     }
-    $output = Join-Path $destination 'Hizir-Bey-WorkSpaces-Dikte-0.4.1.exe'
+    $output = Join-Path $destination 'Hizir-Bey-WorkSpaces-Dikte-0.4.2.exe'
     $source = Join-Path $project 'Hizir-Bey-WorkSpaces-Dikte.ahk'
     $arguments = @('/in', ('"' + $source + '"'), '/out', ('"' + $output + '"'), '/base', ('"' + $runtime + '"'), '/compress', '0', '/silent', 'verbose')
     $process = Start-Process -FilePath $compiler -ArgumentList $arguments -WorkingDirectory $project -PassThru -RedirectStandardOutput (Join-Path $build 'stdout.txt') -RedirectStandardError (Join-Path $build 'stderr.txt')

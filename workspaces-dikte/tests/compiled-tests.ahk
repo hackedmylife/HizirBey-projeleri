@@ -34,9 +34,9 @@ try {
     Loop Files TestDir "\*", "FD"
         count += 1
     Assert(count = 1, "Isolated Unicode and space directory contains only one EXE")
-    Assert(FileGetVersion(standalone) = "0.4.1.0", "Compiled file has correct version metadata")
+    Assert(FileGetVersion(standalone) = "0.4.2.0", "Compiled file has correct version metadata")
     Run('"' standalone '"', TestDir,, &ChildPid)
-    window := WinWait("Hızır Bey · Yerel Dikte 0.4.1 ahk_pid " ChildPid,, 5)
+    window := WinWait("Hızır Bey · Yerel Dikte 0.4.2 ahk_pid " ChildPid,, 5)
     Assert(window != 0, "Standalone EXE opens without source, runtime or external assets")
     Assert(WinGetProcessPath("ahk_id " window) = standalone, "Window belongs to the standalone EXE process")
     WinGetClientPos(,,, &height, "ahk_id " window)
@@ -83,7 +83,7 @@ try {
     Assert(!ProcessExist(ChildPid) && !WinExist("ahk_id " window), "Compiled X exits the entire process and window")
     Assert(!DirExist(folders[1]), "X cleans up the process asset directory")
     Run('"' standalone '"', TestDir,, &ChildPid)
-    reopened := WinWait("Hızır Bey · Yerel Dikte 0.4.1 ahk_pid " ChildPid,, 5)
+    reopened := WinWait("Hızır Bey · Yerel Dikte 0.4.2 ahk_pid " ChildPid,, 5)
     Assert(reopened != 0, "Standalone EXE can reopen immediately after X")
     folders := AssetFolders(ChildPid)
     Assert(folders.Length = 1, "Reopened process has its own fresh assets")
