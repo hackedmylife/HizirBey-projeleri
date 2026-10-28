@@ -2,6 +2,9 @@
 
 Eş için ayrı sürüm. Yerel Dikte 0.4.2'nin sesli yazma, noktalama, durdurunca otomatik kopyalama ve kısayol akışı korunur. Görünür pencere yalnız **212 × 100 piksel**: iki **160 × 40** düğme, üst sağda X ve altında durum noktası. Logo, başlık, durum satırı ve görünür metin alanı yoktur.
 
+![Durdurulmuş mini panel](docs/preview.png)
+![Dinleme açık mini panel](docs/listening.png)
+
 ## Kullanım
 
 1. Önceki Dikte programını X ile kapat; aynı bilgisayarda iki sürümün kısayolları çakışabilir.

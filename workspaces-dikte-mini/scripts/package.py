@@ -20,6 +20,8 @@ FILES = [
     "src/Panel.ahk",
     "src/Theme.ahk",
     "assets/hizirbey.ico",
+    "docs/preview.png",
+    "docs/listening.png",
     "scripts/package.py",
     "scripts/build-exe.ps1",
     "tests/windows-tests.ahk",
