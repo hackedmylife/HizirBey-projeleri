@@ -4,7 +4,7 @@ Projelerin son erişilebilir kaynak sürümleri ve kurulum paketleri. Güncellem
 
 | Proje | Sürüm / durum | Dosyalar |
 |---|---|---|
-| Yerel Dikte | 0.4.2; tek taşınabilir EXE, koyu / altın panel, durdurunca otomatik kopyalama, temel noktalama ve tamamen kapatan X | [Kaynak ve kullanım](workspaces-dikte/) · [Tek EXE](paketler/Hizir-Bey-WorkSpaces-Dikte-0.4.2.exe) · [Kaynak ZIP](paketler/Hizir-Bey-WorkSpaces-Dikte-0.4.2.zip) |
+| Yerel Dikte | 0.4.3; tek taşınabilir EXE, koyu / altın panel, durdurunca otomatik kopyalama ve kutuyu temizleme, temel noktalama ve tamamen kapatan X | [Kaynak ve kullanım](workspaces-dikte/) · [Tek EXE](paketler/Hizir-Bey-WorkSpaces-Dikte-0.4.3.exe) · [Kaynak ZIP](paketler/Hizir-Bey-WorkSpaces-Dikte-0.4.3.zip) |
 | Mini Dikte | 0.1.0; 212 × 100 piksel, iki düğme, kırmızı/yeşil durum noktası ve durdurunca otomatik kopyalama | [Kaynak ve kullanım](workspaces-dikte-mini/) · [Tek EXE](paketler/Hizir-Bey-WorkSpaces-Dikte-Mini-0.1.0.exe) |
 | Filtreli Dikte | 0.1.0; deneysel CPU ses profili filtresi + yerel Win+H paneli; VB-CABLE bir kez ayrı kurulur | [Kurulum ve sınırlar](filtreli-dikte/) · [Tek EXE](paketler/Hizir-Bey-Filtreli-Dikte-0.1.0.exe) · [Kaynak ZIP](paketler/Hizir-Bey-Filtreli-Dikte-0.1.0-kaynak.zip) |
 | CPU Ses Testi | 0.1.0; deneysel çevrimdışı ses ayırma + ses referansıyla kaynak seçimi, GPU gerektirmez | [Kullanım ve sınırlar](ses-ayirma-deneme/) · [Deneme EXE](paketler/Hizir-Bey-CPU-Ses-Testi-0.1.0.exe) · [Kaynak ZIP](paketler/Hizir-Bey-CPU-Ses-Testi-0.1.0-kaynak.zip) |

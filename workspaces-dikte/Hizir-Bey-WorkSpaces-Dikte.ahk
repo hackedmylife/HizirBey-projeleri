@@ -1,6 +1,6 @@
 ;@Ahk2Exe-SetName Hızır Bey Yerel Dikte
 ;@Ahk2Exe-SetDescription Hızır Bey Yerel Dikte
-;@Ahk2Exe-SetVersion 0.4.2.0
+;@Ahk2Exe-SetVersion 0.4.3.0
 ;@Ahk2Exe-SetCompanyName Hızır Bey
 ;@Ahk2Exe-SetMainIcon assets\hizirbey.ico
 ;@Ahk2Exe-AddResource vendor\license.txt, LICENSE

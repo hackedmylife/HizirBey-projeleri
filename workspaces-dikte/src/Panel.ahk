@@ -16,7 +16,7 @@ class DikteApp {
         this.LoadPosition()
         this.assetDir := DikteAssets.GetDir()
 
-        this.window := Gui("+AlwaysOnTop -Caption +ToolWindow -Border -DPIScale", "Hızır Bey · Yerel Dikte 0.4.2")
+        this.window := Gui("+AlwaysOnTop -Caption +ToolWindow -Border -DPIScale", "Hızır Bey · Yerel Dikte 0.4.3")
         this.window.BackColor := "101217"
         this.logo := this.window.AddPicture("x10 y12 w56 h-1 +0x100", this.assetDir "\logo.png")
         this.window.SetFont("s7 w500 c9AA4B5", "Segoe UI")
@@ -305,8 +305,8 @@ class DikteApp {
                 this.lastCopiedText := text
         }
         ; Copy only after late recognition updates and punctuation have settled.
-        ; CopyOnly preserves the draft and reports clipboard failures without pasting.
-        this.CopyOnly()
+        ; Clear only the successfully copied, unchanged stopped draft.
+        this.CopyOnly(true)
     }
 
     StopVoice() {
@@ -327,7 +327,7 @@ class DikteApp {
         }
     }
 
-    CopyOnly() {
+    CopyOnly(clearAfterCopy := false) {
         ; Snapshot immediately; no stop, wait for silence, or selection change.
         raw := this.editor.Value
         text := DikteCore.FinalizeText(raw)
@@ -338,11 +338,14 @@ class DikteApp {
             return false
         }
         try {
-            A_Clipboard := text
-            if !ClipWait(1) || !(A_Clipboard == text)
-                throw Error("clipboard")
+            this.WriteClipboard(text)
             this.lastCopiedText := raw
-            this.SetStatus(this.voiceRequested ? "Kopyalandı · Dikte sürüyor" : "Kopyalandı · Metin burada")
+            if clearAfterCopy && !this.voiceRequested && this.editor.Value == raw {
+                this.editor.Value := ""
+                this.lastCopiedText := ""
+                this.SetStatus("Kopyalandı · Yeni dikteye hazır")
+            } else
+                this.SetStatus(this.voiceRequested ? "Kopyalandı · Dikte sürüyor" : "Kopyalandı · Metin burada")
             return true
         } catch {
             this.SetStatus("Panoya erişilemedi. Metin burada; yeniden Kopyala'ya bas.")
@@ -351,6 +354,12 @@ class DikteApp {
             if this.PanelHasFocus() && DllCall("GetFocus", "Ptr") != this.editor.Hwnd
                 this.FocusEditor()
         }
+    }
+
+    WriteClipboard(text) {
+        A_Clipboard := text
+        if !ClipWait(1) || !(A_Clipboard == text)
+            throw Error("clipboard")
     }
 
     WatchForeground() {

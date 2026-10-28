@@ -1,4 +1,4 @@
-# Hızır Bey · Yerel Dikte 0.4.2
+# Hızır Bey · Yerel Dikte 0.4.3
 
 Sesli yazma kendi bilgisayarındaki metin kutusunda çalışır. Koyu zemin, altın vurgu ve mevcut Hızır Bey logosuyla kompakt yerel panel. İki büyük işlem düğmesi **Başlat / Durdur** ve **Kopyala**, üst sağda küçük bir **X** bulunur. X uygulamayı kendi AutoHotkey süreciyle birlikte tamamen kapatır; aynı EXE çift tıklanarak yeniden açılabilir.
 
@@ -7,28 +7,28 @@ Sesli yazma kendi bilgisayarındaki metin kutusunda çalışır. Koyu zemin, alt
 ## Kurulum / güncelleme
 
 1. Eski yerel Hızır Bey Dikte programını sağ alttaki simgesinden **Çıkış** ile kapat.
-2. **Hizir-Bey-WorkSpaces-Dikte-0.4.2.exe** dosyasını kendi bilgisayarına indirip çift tıkla. Tek dosyadır; kurulum, yönetici yetkisi veya ayrı AutoHotkey gerekmez. Dosyayı istediğin klasöre koyabilirsin.
+2. **Hizir-Bey-WorkSpaces-Dikte-0.4.3.exe** dosyasını kendi bilgisayarına indirip çift tıkla. Tek dosyadır; kurulum, yönetici yetkisi veya ayrı AutoHotkey gerekmez. Dosyayı istediğin klasöre koyabilirsin.
 3. Kaynak kodla çalışmak istersen ZIP'in tamamını çıkarıp **BASLAT.cmd** kullanabilirsin; EXE kullanırken bu ZIP'e gerek yoktur.
 4. Önceki sürümün **Hızır Bey · LiveChat Aktarım Köprüsü** eklentisini WorkSpaces Chrome'da `chrome://extensions` üzerinden kaldır veya kapat; LiveChat sekmesini bir kez yenile. Bu yeni uygulamanın Chrome eklentisi yoktur.
 
-[Kaynak paketinin doğrudan adresi](https://github.com/hackedmylife/HizirBey-projeleri/raw/refs/heads/main/paketler/Hizir-Bey-WorkSpaces-Dikte-0.4.2.zip).
+[Kaynak paketinin doğrudan adresi](https://github.com/hackedmylife/HizirBey-projeleri/raw/refs/heads/main/paketler/Hizir-Bey-WorkSpaces-Dikte-0.4.3.zip).
 
-[Tek EXE indir](https://github.com/hackedmylife/HizirBey-projeleri/raw/refs/heads/main/paketler/Hizir-Bey-WorkSpaces-Dikte-0.4.2.exe).
+[Tek EXE indir](https://github.com/hackedmylife/HizirBey-projeleri/raw/refs/heads/main/paketler/Hizir-Bey-WorkSpaces-Dikte-0.4.3.exe).
 
 ## Kullanım
 
 - **Başlat** veya **Win+H** Windows sesli yazmasını yerel kutuda açar. Windows'ta **Dinleniyor** yazısını bekle, sonra konuş. Yedek kısayol **Ctrl+Alt+H**.
-- Aynı düğme **Durdur** olur. Düğme veya ikinci **Win+H** dikteyi durdurur. Son kelimeler için kısa bir sakinleşme aralığından sonra temel cümle sonları tamamlanır ve metin otomatik panoya kopyalanır. Metin kutuda da kalır; durum satırında **Kopyalandı** görünce Ctrl+V kullanabilirsin.
+- Aynı düğme **Durdur** olur. Düğme veya ikinci **Win+H** dikteyi durdurur. Son kelimeler için kısa bir sakinleşme aralığından sonra temel cümle sonları tamamlanır ve metin otomatik panoya kopyalanır. Başarılı kopyalamanın ardından kutu otomatik temizlenir; durum satırında **Kopyalandı · Yeni dikteye hazır** görünce Ctrl+V kullanabilirsin. Sonraki dikte boş kutuda başlar. Kopyalama başarısızsa veya kopyalama sırasında yeni metin geldiyse kutudaki metin korunur.
 - **Kopyala**, kutudaki metnin tamamını seçmeye gerek kalmadan panoya alır. Kopyalanan son metne temel cümle sonu düzenlemesi uygulanır. Satırlar ve mevcut işaretler korunur; kelimeler yeniden yazılmaz.
 - Yerel panelde yazarken **Ctrl+C** de aynı işi anında yapar. Kısmi metin seçili olsa bile kutunun tamamı kopyalanır. Dikte durdurulmaz; canlı kutu ve seçimin / imlecin yeri değiştirilmez. Yalnız kopyalanan anlık metin düzenlenir.
 - Kopyalama, o anda kutuda görünen metnin bir kopyasını alır. Durdurunca son kelimeler ve noktalama tamamlandıktan sonra pano otomatik güncellenir; konuşma sürerken anlık kopya için yeniden **Kopyala** veya **Ctrl+C** kullan.
 - LiveChat'e yapıştırmak için kendin doğru yazı alanına tıklayıp **Ctrl+V** kullan. Uygulama başka bir alana otomatik yapıştırmaz veya mesaj göndermez.
-- Yeni bir metin için kutuda **Ctrl+A → Delete** kullan. Başlatma ve kopyalama taslağı silmez. Durdurma yalnız aşağıdaki temel noktalama düzenlemesini yapar; **Ctrl+Z** ile geri alınabilir.
+- Yeni bir metin için kutuda **Ctrl+A → Delete** kullan. Başlatma, **Kopyala** düğmesi ve **Ctrl+C** taslağı silmez. Yalnız **Durdur / ikinci Win+H** işleminin başarılı otomatik kopyasından sonra kutu temizlenir. Kopyalanmış metin panoda kalır; kutuyu temizleyen bu işlem geri alma geçmişini de sıfırlar.
 - Diğer uygulamalarda **Ctrl+C** normal seçili metin kopyalama işini sürdürür. Dikte kısayolları yalnız bu panel, açık dikte araç çubuğu ve WorkSpaces içindeyken yakalanır.
 
 ## Noktalama kapsamı
 
-Önceki 0.3.0 sürümü Windows'tan gelen metni aynen gösteriyordu; kendi noktalama işlemi yoktu. 0.4.2'ın yerel düzenlemesi:
+Önceki 0.3.0 sürümü Windows'tan gelen metni aynen gösteriyordu; kendi noktalama işlemi yoktu. 0.4.3'ın yerel düzenlemesi:
 
 - İlk harfi Türkçe **i → İ**, **ı → I** ayrımını koruyarak büyütür.
 - Çok kelimeli metnin ve yaygın selamların sonunda eksik noktayı tamamlar. Açık soru ekiyle biten `miyim`, `misiniz`, `mi` ve `nasılsınız` gibi örneklerde soru işareti kullanır.

@@ -10,6 +10,15 @@ SetTimer(RunSuite, -100)
 class NativeProbe extends DikteApp {
     starts := 0
     stops := 0
+    failClipboard := false
+    editAfterCopy := false
+    WriteClipboard(text) {
+        if this.failClipboard
+            throw Error("Simulated clipboard unavailable")
+        super.WriteClipboard(text)
+        if this.editAfterCopy
+            this.editor.Value .= " Yeni kelime."
+    }
     RequestNativeVoice() {
         this.starts += 1
     }
@@ -143,10 +152,10 @@ RunSuite() {
         Assert(App.panelOpen && App.editor.Value = expected, "Stopped text remains visible and unchanged")
         Sleep(1100)
         Assert(A_Clipboard = expected, "Stop button automatically copies the completed draft")
-        Assert(SendMessage(0xB0, 0, 0, App.editor.Hwnd) = caretBeforeStop, "Stop preserves draft insertion position")
+        Assert(App.editor.Value = "", "Successful stop copy clears the editor")
         Drive("toggle")
-        Assert(App.starts = 2 && App.voiceRequested && App.editor.Value = expected, "Win+H resumes existing draft")
-        Assert(SendMessage(0xB0, 0, 0, App.editor.Hwnd) = caretBeforeStop, "Resume preserves draft insertion position")
+        Assert(App.starts = 2 && App.voiceRequested && App.editor.Value = "", "Next Win+H starts with a clean draft")
+        Assert(SendMessage(0xB0, 0, 0, App.editor.Hwnd) = 0, "Next dictation begins at the empty draft start")
         Drive("toggle")
         Assert(App.stops = 2 && !App.voiceRequested, "Second Win+H only stops local dictation")
         Assert(receiverEdit.Value = "Outside selected normal text.", "Start-stop-copy never pastes into another application")
@@ -174,16 +183,14 @@ RunSuite() {
         A_Clipboard := "waiting for stop copy"
         Drive("toggle")
         Sleep(1100)
-        Assert(App.editor.Value == "Merhaba işleminizi kontrol ediyorum.", "Stopped dictation receives final punctuation after quiet interval")
+        Assert(App.editor.Value == "", "Win+H stop clears draft only after completed copy")
         Assert(!App.finalizePending && !App.voiceRequested, "Finalization completes without restarting dictation")
         Assert(A_Clipboard == "Merhaba işleminizi kontrol ediyorum.", "Win+H stop automatically copies final punctuation")
-        Drive("undo")
-        Assert(App.editor.Value = "merhaba işleminizi kontrol ediyorum", "Native Ctrl+Z undoes stopped-text punctuation")
         Drive("toggle")
         App.editor.Value := "merhaba."
         Drive("toggle")
         Sleep(1100)
-        Assert(App.editor.Value == "Merhaba.", "Stopped finalization also applies casing-only corrections")
+        Assert(A_Clipboard == "Merhaba." && App.editor.Value = "", "Stop copies casing-only correction before clearing")
         ; Late recognition must be included; do not copy the partial phrase.
         Drive("toggle")
         App.editor.Value := "işleminizi kontrol"
@@ -194,7 +201,7 @@ RunSuite() {
         Assert(A_Clipboard = "waiting for final words", "Stop waits before taking its final snapshot")
         Sleep(1100)
         Assert(A_Clipboard == "İşleminizi kontrol ediyorum.", "Automatic copy includes final recognition updates")
-        Assert(App.editor.Value == A_Clipboard, "Automatic copy keeps the completed draft visible")
+        Assert(App.editor.Value = "", "Late recognition is copied before draft is cleared")
         Assert(!App.voiceRequested && !App.finalizePending, "Automatic copy leaves dictation stopped")
         Drive("toggle")
         App.editor.Value := " `r`n `t"
@@ -211,6 +218,26 @@ RunSuite() {
         Assert(A_Clipboard = "restart sentinel" && App.voiceRequested, "Immediate restart cancels pending stop copy")
         App.MarkStopped()
         Sleep(1100)
+        Drive("toggle")
+        App.editor.Value := "kopyalanamayan metin"
+        App.failClipboard := true
+        A_Clipboard := "clipboard failure sentinel"
+        Drive("toggle")
+        Sleep(1100)
+        Assert(App.editor.Value == "Kopyalanamayan metin.", "Clipboard failure preserves completed draft")
+        Assert(A_Clipboard = "clipboard failure sentinel", "Failed clipboard copy does not replace previous clipboard")
+        Assert(InStr(App.status.Text, "erişilemedi"), "Clipboard failure is shown to the user")
+        App.failClipboard := false
+        ClickButton(App, App.copyButton)
+        Assert(App.editor.Value == "Kopyalanamayan metin." && A_Clipboard == App.editor.Value, "Manual retry copies without deleting draft")
+        App.editor.Value := "kopyalama sırasında gelen"
+        App.editAfterCopy := true
+        Drive("toggle")
+        Drive("toggle")
+        Sleep(1100)
+        Assert(A_Clipboard == "Kopyalama sırasında gelen.", "Copy uses the completed snapshot")
+        Assert(App.editor.Value == "Kopyalama sırasında gelen. Yeni kelime.", "Text arriving during clipboard copy is never cleared")
+        App.editAfterCopy := false
         App.editor.Value := "Merhaba, işleminizi kontrol ediyorum."
         App.SetStatus("Hazır · Cümle sonları tamamlandı")
         App.window.Show("w930 h100 x10 y50")
@@ -251,7 +278,7 @@ RunSuite() {
         ; A separate real app process must terminate, then open normally again.
         launch := Format('"{1}" /ErrorStdOut "{2}"', A_AhkPath, A_ScriptDir "\..\Hizir-Bey-WorkSpaces-Dikte.ahk")
         Run(launch,, "Hide", &childPid)
-        childWindow := WinWait("Hızır Bey · Yerel Dikte 0.4.2 ahk_pid " childPid,, 4)
+        childWindow := WinWait("Hızır Bey · Yerel Dikte 0.4.3 ahk_pid " childPid,, 4)
         Assert(childWindow != 0, "Real app opens for close lifecycle test")
         closeHwnd := 0
         for control in WinGetControlsHwnd("ahk_id " childWindow)
@@ -266,7 +293,7 @@ RunSuite() {
         Assert(!ProcessExist(childPid), "X terminates its own AutoHotkey process")
         Assert(!WinExist("ahk_id " childWindow), "X removes the native window")
         Run(launch,, "Hide", &reopenedPid)
-        reopened := WinWait("Hızır Bey · Yerel Dikte 0.4.2 ahk_pid " reopenedPid,, 4)
+        reopened := WinWait("Hızır Bey · Yerel Dikte 0.4.3 ahk_pid " reopenedPid,, 4)
         Assert(reopened != 0 && ProcessExist(reopenedPid), "Same application can be reopened after X")
         WinClose("ahk_id " reopened)
         ProcessWaitClose(reopenedPid, 3)
