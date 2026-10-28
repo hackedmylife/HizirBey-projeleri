@@ -1,0 +1,10 @@
+Unmodified official AutoHotkey v2.0.30, Windows x64 portable runtime.
+Upstream: https://github.com/AutoHotkey/AutoHotkey
+Release: https://github.com/AutoHotkey/AutoHotkey/releases/tag/v2.0.30
+Archive: https://github.com/AutoHotkey/AutoHotkey/releases/download/v2.0.30/AutoHotkey_2.0.30.zip
+Verified upstream archive SHA-256:
+1e0ece7ecb2d5646e55758150472677996a57f9db5c83d2996d8b47b9e2f31a4
+Included files: AutoHotkey64.exe, license.txt.
+Corresponding source: https://github.com/AutoHotkey/AutoHotkey/tree/v2.0.30
+License: GNU GPL version 2 or later, see license.txt.
+No installer, UX updater, external packages, or modified runtime included.

@@ -1,0 +1,17 @@
+HIZIR BEY MINI DIKTE 0.1.0
+
+Tek EXE'ye cift tikla. Eski Dikte surumunu once kapat.
+212 x 100 piksel: Baslat/Durdur, Kopyala, X ve durum noktasi.
+Kirmizi: dikte acik. Yesil: durduruldu.
+Nokta uygulama durumudur; Windows'un Dinleniyor bilgisini de kontrol et.
+Baslat / Win+H (yedek Ctrl+Alt+H): yerel sesli yazma.
+Durdur / ikinci Win+H: son kelimeleri bekle, noktalama yap, otomatik kopyala.
+Yaklasik bir saniye bekle, dogru alana Ctrl+V ile kendin yapistir.
+Kopyala / Ctrl+C: tum metni aninda kopyala; dinlemeyi durdurmaz.
+Metin gorunmez ama bellekte korunur. Yeni metin icin panele tikla,
+Ctrl+A -> Delete kullan. Devam edersen onceki taslaga eklenir.
+Sag bos seritten surukle; konum hatirlanir.
+X tum uygulamayi kapatir. Taslak kapaninca silinir.
+Kopru, otomatik yapistirma ve mesaj gonderme yoktur.
+Kurulum veya ayri AutoHotkey gerekmez. Kaynak ZIP icin BASLAT.cmd kullan.
+Sinirlar ve ayrintilar README.md ile TEST-RAPORU.md icindedir.

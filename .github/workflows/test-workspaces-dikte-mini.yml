@@ -1,0 +1,74 @@
+name: Mini Dikte Windows checks
+on:
+  push:
+    paths:
+      - 'workspaces-dikte-mini/**'
+      - '.github/workflows/test-workspaces-dikte-mini.yml'
+  pull_request:
+    paths:
+      - 'workspaces-dikte-mini/**'
+      - '.github/workflows/test-workspaces-dikte-mini.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify portable runtime and package
+        shell: pwsh
+        run: python workspaces-dikte-mini/scripts/package.py --check
+      - name: Actual hotkeys, local clipboard, start-stop, drag and layout tests
+        shell: pwsh
+        run: |
+          $runtime = Resolve-Path workspaces-dikte-mini/vendor/AutoHotkey64.exe
+          $script = Resolve-Path workspaces-dikte-mini/tests/windows-tests.ahk
+          $result = Join-Path $env:RUNNER_TEMP 'workspaces-tests.txt'
+          $p = Start-Process -FilePath $runtime -ArgumentList @('/ErrorStdOut', ('"' + $script + '"'), ('"' + $result + '"')) -PassThru -RedirectStandardOutput "$env:RUNNER_TEMP/ahk-stdout.txt" -RedirectStandardError "$env:RUNNER_TEMP/ahk-stderr.txt"
+          if (-not $p.WaitForExit(45000)) { $p.Kill(); throw 'AHK tests timed out' }
+          Get-Content "$env:RUNNER_TEMP/ahk-stdout.txt", "$env:RUNNER_TEMP/ahk-stderr.txt" -ErrorAction SilentlyContinue
+          if (Test-Path $result) { Get-Content $result }
+          if (Test-Path "$env:RUNNER_TEMP/dikte-preview.png.b64") { Get-Content "$env:RUNNER_TEMP/dikte-preview.png.b64" }
+          if ($p.ExitCode -ne 0 -or -not (Test-Path $result)) { throw 'AHK tests failed' }
+      - name: Check actual entry script starts and exits
+        shell: pwsh
+        run: |
+          $runtime = Resolve-Path workspaces-dikte-mini/vendor/AutoHotkey64.exe
+          $script = Resolve-Path workspaces-dikte-mini/Hizir-Bey-WorkSpaces-Dikte-Mini.ahk
+          $p = Start-Process -FilePath $runtime -ArgumentList @('/ErrorStdOut', ('"' + $script + '"'), '--smoke') -PassThru -RedirectStandardOutput "$env:RUNNER_TEMP/smoke-stdout.txt" -RedirectStandardError "$env:RUNNER_TEMP/smoke-stderr.txt"
+          if (-not $p.WaitForExit(10000)) { $p.Kill(); throw 'Entry smoke test timed out' }
+          Get-Content "$env:RUNNER_TEMP/smoke-stdout.txt", "$env:RUNNER_TEMP/smoke-stderr.txt" -ErrorAction SilentlyContinue
+          if ($p.ExitCode -ne 0) { throw 'Entry smoke test failed' }
+      - name: Compile the single portable EXE
+        shell: pwsh
+        run: ./workspaces-dikte-mini/scripts/build-exe.ps1
+      - name: Test the isolated compiled EXE and complete exit
+        shell: pwsh
+        run: |
+          $runtime = Resolve-Path workspaces-dikte-mini/vendor/AutoHotkey64.exe
+          $script = Resolve-Path workspaces-dikte-mini/tests/compiled-tests.ahk
+          $exe = Resolve-Path paketler/Hizir-Bey-WorkSpaces-Dikte-Mini-0.1.0.exe
+          $result = Join-Path $env:RUNNER_TEMP 'compiled-tests.txt'
+          $p = Start-Process -FilePath $runtime -ArgumentList @('/ErrorStdOut', ('"' + $script + '"'), ('"' + $exe + '"'), ('"' + $result + '"')) -PassThru -RedirectStandardOutput "$env:RUNNER_TEMP/compiled-stdout.txt" -RedirectStandardError "$env:RUNNER_TEMP/compiled-stderr.txt"
+          if (-not $p.WaitForExit(45000)) { $p.Kill(); throw 'Compiled EXE tests timed out' }
+          Get-Content "$env:RUNNER_TEMP/compiled-stdout.txt", "$env:RUNNER_TEMP/compiled-stderr.txt" -ErrorAction SilentlyContinue
+          if (Test-Path $result) { Get-Content $result }
+          if ($p.ExitCode -ne 0 -or -not (Test-Path $result)) { throw 'Compiled EXE tests failed' }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: WorkSpaces-Dikte-Mini-0.1.0-EXE
+          path: |
+            paketler/Hizir-Bey-WorkSpaces-Dikte-Mini-0.1.0.exe
+            paketler/Hizir-Bey-WorkSpaces-Dikte-Mini-0.1.0.exe.sha256
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: WorkSpaces-Dikte-Mini-Windows-Test-Results
+          path: |
+            ${{ runner.temp }}/workspaces-tests.txt
+            ${{ runner.temp }}/ahk-*.txt
+            ${{ runner.temp }}/smoke-*.txt
+            ${{ runner.temp }}/dikte-*.png
+            ${{ runner.temp }}/compiled-*.txt
