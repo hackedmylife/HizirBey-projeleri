@@ -1,17 +1,19 @@
-HIZIR BEY MINI DIKTE 0.1.0
+HIZIR BEY MINI DIKTE 0.1.1
 
-Tek EXE'ye cift tikla. Eski Dikte surumunu once kapat.
+Once eski mini dikteyi X ile tamamen kapat. Yeni EXE'ye cift tikla.
 212 x 100 piksel: Baslat/Durdur, Kopyala, X ve durum noktasi.
 Kirmizi: dikte acik. Yesil: durduruldu.
-Nokta uygulama durumudur; Windows'un Dinleniyor bilgisini de kontrol et.
-Baslat / Win+H (yedek Ctrl+Alt+H): yerel sesli yazma.
-Durdur / ikinci Win+H: son kelimeleri bekle, noktalama yap, otomatik kopyala.
-Yaklasik bir saniye bekle, dogru alana Ctrl+V ile kendin yapistir.
-Kopyala / Ctrl+C: tum metni aninda kopyala; dinlemeyi durdurmaz.
-Metin gorunmez ama bellekte korunur. Yeni metin icin panele tikla,
-Ctrl+A -> Delete kullan. Devam edersen onceki taslaga eklenir.
-Sag bos seritten surukle; konum hatirlanir.
-X tum uygulamayi kapatir. Taslak kapaninca silinir.
-Kopru, otomatik yapistirma ve mesaj gonderme yoktur.
-Kurulum veya ayri AutoHotkey gerekmez. Kaynak ZIP icin BASLAT.cmd kullan.
-Sinirlar ve ayrintilar README.md ile TEST-RAPORU.md icindedir.
+Baslat / Win+H (yedek Ctrl+Alt+H): yerel Windows sesli yazma.
+Durdur / ikinci Win+H: son kelimeleri bekle, noktalama yap, panoya kopyala
+ve basarili kopyadan sonra gizli kutuyu temizle. Yeni dikte bos baslar.
+Yaklasik bir saniye sonra dogru alana Ctrl+V ile kendin yapistir.
+Cok hizli yeniden baslatirsan once kopyalama/temizleme tamamlanir,
+ardindan yeni dikte kendiliginden acilir.
+Kopyala / Ctrl+C dinleme sirasinda taslagi kopyalar; dinlemeyi veya metni silmez.
+Pano hatasinda metin korunur. Kopyala veya Baslat ile yeniden dene.
+Bos metin onceki panoyu silmez. Temizlenen onceki metin Undo ile geri gelmez.
+Sag bos seritten surukle; mevcut konum ayari korunur.
+X uygulamayi tamamen kapatir. Baska AutoHotkey makrolari kapatilmaz.
+Kopru, otomatik yapistirma, mesaj gonderme, token veya API key dosyasi yoktur.
+Windows'un kendi Dinleniyor bilgisini esas al; nokta yalniz uygulama durumudur.
+Ayrintilar README.md ve TEST-RAPORU.md icindedir.

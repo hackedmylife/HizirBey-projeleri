@@ -10,13 +10,16 @@ class DikteApp {
         this.customPosition := false
         this.lastCopiedText := ""
         this.finalizePending := false
+        this.stopCopyPending := false
+        this.restartPending := false
         this.changedAt := A_TickCount
         this.finalizeCallback := ObjBindMethod(this, "FinalizeStoppedText")
+        this.restartCallback := ObjBindMethod(this, "ResumeAfterCopy")
         this.settingsPath := settingsPath != "" ? settingsPath : (testing ? "" : EnvGet("LOCALAPPDATA") "\HizirBey\WorkSpacesDikteMini\panel.ini")
         this.LoadPosition()
         this.assetDir := DikteAssets.GetDir()
 
-        this.window := Gui("+AlwaysOnTop -Caption +ToolWindow -Border -DPIScale", "Hızır Bey · Mini Dikte 0.1.0")
+        this.window := Gui("+AlwaysOnTop -Caption +ToolWindow -Border -DPIScale", "Hızır Bey · Mini Dikte 0.1.1")
         this.window.BackColor := "101217"
         ; Keep a real visible/enabled/focusable EDIT for Windows text services.
         ; Its one-pixel viewport and matching ink/background hide the draft UI.
@@ -137,6 +140,7 @@ class DikteApp {
 
     Dispose() {
         SetTimer(this.finalizeCallback, 0)
+        SetTimer(this.restartCallback, 0)
         this.theme.Dispose()
         OnMessage(0x0201, this.dragCallback, 0)
         OnMessage(0x0232, this.moveCallback, 0)
@@ -226,6 +230,18 @@ class DikteApp {
     StartVoice() {
         if this.busy || this.voiceRequested
             return
+        ; A quick Stop -> Start must finish copying and clearing the previous
+        ; session, rather than cancelling its pending snapshot.
+        if this.finalizePending || this.stopCopyPending {
+            this.restartPending := true
+            if !this.finalizePending {
+                this.finalizePending := true
+                this.stoppedAt := A_TickCount
+                SetTimer(this.finalizeCallback, -120)
+            }
+            this.SetStatus("Önceki metin kopyalanıyor · Yeni dikte bekliyor")
+            return
+        }
         this.busy := true
         try {
             this.finalizePending := false
@@ -265,11 +281,25 @@ class DikteApp {
         this.changedAt := A_TickCount
     }
 
+    ResumeAfterCopy() {
+        if !this.restartPending || this.voiceRequested
+            return
+        if this.busy || this.finalizePending {
+            SetTimer(this.restartCallback, -50)
+            return
+        }
+        this.restartPending := false
+        if !this.stopCopyPending
+            this.StartVoice()
+    }
+
     MarkStopped() {
         wasListening := this.voiceRequested
         this.voiceRequested := false
         this.toggleButton.Text := "Başlat"
         if wasListening {
+            this.stopCopyPending := true
+            this.restartPending := false
             this.finalizePending := true
             this.stoppedAt := A_TickCount
             SetTimer(this.finalizeCallback, -120)
@@ -280,11 +310,9 @@ class DikteApp {
     FinalizeStoppedText() {
         if !this.finalizePending || this.voiceRequested
             return
-        if A_TickCount - this.stoppedAt < 700 || A_TickCount - this.changedAt < 450 {
-            if A_TickCount - this.stoppedAt < 4000
-                SetTimer(this.finalizeCallback, -120)
-            else
-                this.finalizePending := false
+        if (A_TickCount - this.stoppedAt < 700 || A_TickCount - this.changedAt < 450)
+            && A_TickCount - this.stoppedAt < 4000 {
+            SetTimer(this.finalizeCallback, -120)
             return
         }
         this.finalizePending := false
@@ -302,9 +330,22 @@ class DikteApp {
             if this.lastCopiedText == raw
                 this.lastCopiedText := text
         }
-        ; Copy only after late recognition updates and punctuation have settled.
-        ; CopyOnly preserves the draft and reports clipboard failures without pasting.
-        this.CopyOnly()
+        ; Clear only after a verified clipboard write. Failed copies keep the
+        ; draft and stop an automatically queued restart from consuming it.
+        copied := this.CopyOnly(true)
+        if !copied && DikteCore.HasText(this.editor.Value) {
+            this.restartPending := false
+            return
+        }
+        if this.stopCopyPending {
+            ; Recognition changed the draft while the snapshot was copied.
+            ; Take a fresh snapshot instead of clearing newer words.
+            this.finalizePending := true
+            SetTimer(this.finalizeCallback, -120)
+            return
+        }
+        if this.restartPending
+            SetTimer(this.restartCallback, -50)
     }
 
     StopVoice() {
@@ -325,22 +366,29 @@ class DikteApp {
         }
     }
 
-    CopyOnly() {
+    CopyOnly(clearAfterCopy := false) {
         ; Snapshot immediately; no stop, wait for silence, or selection change.
         raw := this.editor.Value
         text := DikteCore.FinalizeText(raw)
         if !DikteCore.HasText(text) {
+            if clearAfterCopy && !this.voiceRequested {
+                this.ClearCopiedDraft()
+                this.SetStatus("Metin yok · Yeni dikteye hazır")
+                return false
+            }
             this.SetStatus("Kopyalanacak metin yok.")
             if this.PanelHasFocus() && DllCall("GetFocus", "Ptr") != this.editor.Hwnd
                 this.FocusEditor()
             return false
         }
         try {
-            A_Clipboard := text
-            if !ClipWait(1) || !(A_Clipboard == text)
-                throw Error("clipboard")
+            this.WriteClipboard(text)
             this.lastCopiedText := raw
-            this.SetStatus(this.voiceRequested ? "Kopyalandı · Dikte sürüyor" : "Kopyalandı · Metin burada")
+            if clearAfterCopy && !this.voiceRequested && this.editor.Value == raw {
+                this.ClearCopiedDraft()
+                this.SetStatus("Kopyalandı · Yeni dikteye hazır")
+            } else
+                this.SetStatus(this.voiceRequested ? "Kopyalandı · Dikte sürüyor" : "Kopyalandı · Metin burada")
             return true
         } catch {
             this.SetStatus("Panoya erişilemedi. Metin burada; yeniden Kopyala'ya bas.")
@@ -349,6 +397,21 @@ class DikteApp {
             if this.PanelHasFocus() && DllCall("GetFocus", "Ptr") != this.editor.Hwnd
                 this.FocusEditor()
         }
+    }
+
+    WriteClipboard(text) {
+        A_Clipboard := text
+        if !ClipWait(1) || !(A_Clipboard == text)
+            throw Error("clipboard")
+    }
+
+    ClearCopiedDraft() {
+        this.editor.Value := ""
+        ; Prevent Undo from resurrecting the preceding hidden session.
+        SendMessage(0xCD, 0, 0, this.editor.Hwnd)
+        SendMessage(0xB1, 0, 0, this.editor.Hwnd)
+        this.lastCopiedText := ""
+        this.stopCopyPending := false
     }
 
     WatchForeground() {
@@ -380,6 +443,7 @@ class DikteApp {
 
     OnFailure(err, mode) {
         this.busy := false
+        this.restartPending := false
         try this.ShowPanel()
         try this.SetStatus("İşlem tamamlanamadı. Metin kutuda korunuyor.")
         return true

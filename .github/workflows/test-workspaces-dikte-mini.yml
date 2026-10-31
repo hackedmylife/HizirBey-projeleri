@@ -10,7 +10,7 @@ on:
       - '.github/workflows/test-workspaces-dikte-mini.yml'
   workflow_dispatch:
 permissions:
-  contents: read
+  contents: write
 jobs:
   windows:
     runs-on: windows-latest
@@ -27,7 +27,7 @@ jobs:
           $script = Resolve-Path workspaces-dikte-mini/tests/windows-tests.ahk
           $result = Join-Path $env:RUNNER_TEMP 'workspaces-tests.txt'
           $p = Start-Process -FilePath $runtime -ArgumentList @('/ErrorStdOut', ('"' + $script + '"'), ('"' + $result + '"')) -PassThru -RedirectStandardOutput "$env:RUNNER_TEMP/ahk-stdout.txt" -RedirectStandardError "$env:RUNNER_TEMP/ahk-stderr.txt"
-          if (-not $p.WaitForExit(45000)) { $p.Kill(); throw 'AHK tests timed out' }
+          if (-not $p.WaitForExit(65000)) { $p.Kill(); throw 'AHK tests timed out' }
           Get-Content "$env:RUNNER_TEMP/ahk-stdout.txt", "$env:RUNNER_TEMP/ahk-stderr.txt" -ErrorAction SilentlyContinue
           if (Test-Path $result) { Get-Content $result }
           if (Test-Path "$env:RUNNER_TEMP/dikte-preview.png.b64") { Get-Content "$env:RUNNER_TEMP/dikte-preview.png.b64" }
@@ -49,19 +49,19 @@ jobs:
         run: |
           $runtime = Resolve-Path workspaces-dikte-mini/vendor/AutoHotkey64.exe
           $script = Resolve-Path workspaces-dikte-mini/tests/compiled-tests.ahk
-          $exe = Resolve-Path paketler/Hizir-Bey-WorkSpaces-Dikte-Mini-0.1.0.exe
+          $exe = Resolve-Path paketler/Hizir-Bey-WorkSpaces-Dikte-Mini-0.1.1.exe
           $result = Join-Path $env:RUNNER_TEMP 'compiled-tests.txt'
           $p = Start-Process -FilePath $runtime -ArgumentList @('/ErrorStdOut', ('"' + $script + '"'), ('"' + $exe + '"'), ('"' + $result + '"')) -PassThru -RedirectStandardOutput "$env:RUNNER_TEMP/compiled-stdout.txt" -RedirectStandardError "$env:RUNNER_TEMP/compiled-stderr.txt"
-          if (-not $p.WaitForExit(45000)) { $p.Kill(); throw 'Compiled EXE tests timed out' }
+          if (-not $p.WaitForExit(65000)) { $p.Kill(); throw 'Compiled EXE tests timed out' }
           Get-Content "$env:RUNNER_TEMP/compiled-stdout.txt", "$env:RUNNER_TEMP/compiled-stderr.txt" -ErrorAction SilentlyContinue
           if (Test-Path $result) { Get-Content $result }
           if ($p.ExitCode -ne 0 -or -not (Test-Path $result)) { throw 'Compiled EXE tests failed' }
       - uses: actions/upload-artifact@v4
         with:
-          name: WorkSpaces-Dikte-Mini-0.1.0-EXE
+          name: WorkSpaces-Dikte-Mini-0.1.1-EXE
           path: |
-            paketler/Hizir-Bey-WorkSpaces-Dikte-Mini-0.1.0.exe
-            paketler/Hizir-Bey-WorkSpaces-Dikte-Mini-0.1.0.exe.sha256
+            paketler/Hizir-Bey-WorkSpaces-Dikte-Mini-0.1.1.exe
+            paketler/Hizir-Bey-WorkSpaces-Dikte-Mini-0.1.1.exe.sha256
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -72,3 +72,20 @@ jobs:
             ${{ runner.temp }}/smoke-*.txt
             ${{ runner.temp }}/dikte-*.png
             ${{ runner.temp }}/compiled-*.txt
+      - name: Back up the tested release binaries
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        shell: pwsh
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- paketler/Hizir-Bey-WorkSpaces-Dikte-Mini-0.1.1.exe paketler/Hizir-Bey-WorkSpaces-Dikte-Mini-0.1.1.exe.sha256
+          git diff --cached --quiet
+          if ($LASTEXITCODE -eq 1) {
+            git commit -m "Back up tested Mini Dikte 0.1.1 EXE [skip ci]"
+            if ($LASTEXITCODE -ne 0) { throw 'Release commit failed' }
+            git fetch origin main
+            git rebase origin/main
+            if ($LASTEXITCODE -ne 0) { throw 'Release rebase failed' }
+            git push origin HEAD:main
+            if ($LASTEXITCODE -ne 0) { throw 'Release push failed' }
+          }

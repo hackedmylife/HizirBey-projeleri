@@ -1,6 +1,6 @@
 ;@Ahk2Exe-SetName Hızır Bey Mini Dikte
 ;@Ahk2Exe-SetDescription Hızır Bey Mini Dikte
-;@Ahk2Exe-SetVersion 0.1.0.0
+;@Ahk2Exe-SetVersion 0.1.1.0
 ;@Ahk2Exe-SetCompanyName Hızır Bey
 ;@Ahk2Exe-SetMainIcon assets\hizirbey.ico
 ;@Ahk2Exe-AddResource vendor\license.txt, LICENSE
