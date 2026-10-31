@@ -1,0 +1,147 @@
+PASS WorkSpaces Win+H scope
+PASS WorkSpaces process case
+PASS No substring process match
+PASS Normal Chrome keeps native Win+H
+PASS Turkish text accepted
+PASS Whitespace is not a draft
+PASS Punctuation, Turkish casing or protected-data case
+PASS Punctuation is idempotent
+PASS Punctuation, Turkish casing or protected-data case
+PASS Punctuation is idempotent
+PASS Punctuation, Turkish casing or protected-data case
+PASS Punctuation is idempotent
+PASS Punctuation, Turkish casing or protected-data case
+PASS Punctuation is idempotent
+PASS Punctuation, Turkish casing or protected-data case
+PASS Punctuation is idempotent
+PASS Punctuation, Turkish casing or protected-data case
+PASS Punctuation is idempotent
+PASS Punctuation, Turkish casing or protected-data case
+PASS Punctuation is idempotent
+PASS Punctuation, Turkish casing or protected-data case
+PASS Punctuation is idempotent
+PASS Punctuation, Turkish casing or protected-data case
+PASS Punctuation is idempotent
+PASS Punctuation, Turkish casing or protected-data case
+PASS Punctuation is idempotent
+PASS Punctuation, Turkish casing or protected-data case
+PASS Punctuation is idempotent
+PASS Punctuation, Turkish casing or protected-data case
+PASS Punctuation is idempotent
+PASS Punctuation, Turkish casing or protected-data case
+PASS Punctuation is idempotent
+PASS Punctuation, Turkish casing or protected-data case
+PASS Punctuation is idempotent
+PASS Punctuation, Turkish casing or protected-data case
+PASS Punctuation is idempotent
+PASS Punctuation, Turkish casing or protected-data case
+PASS Punctuation is idempotent
+PASS Original compact strip dimensions retained
+PASS Secondary monitor coordinates supported
+PASS Local panel owns dictation and copy hotkeys
+PASS Two large actions plus a window close button
+PASS Start-stop, copy and accessible close labels
+PASS Mini panel matches reference action region
+PASS Mini control stays inside compact panel
+PASS Mini control stays inside compact panel
+PASS Mini control stays inside compact panel
+PASS Mini control stays inside compact panel
+PASS No logo, title or status text surface
+PASS Draft has no visible text area
+PASS Native input target remains visible and enabled for Windows text services
+PASS Large button dimensions preserved
+PASS Idle dot is green
+PASS Real typing reaches the visually hidden native edit
+PASS Ctrl+A/Delete clears the internal draft
+PASS Listening dot is red
+PASS Actual Win+H starts local dictation
+PASS Start does not erase existing text
+PASS Start does not touch clipboard
+PASS Actual Ctrl+C copies entire draft instead of selected fragment
+PASS Ctrl+C does not stop dictation
+PASS Copy does not alter draft or paragraphs
+PASS Copy preserves text selection and caret
+PASS Later words do not change copied snapshot automatically
+PASS Next Ctrl+C copies latest words
+PASS Live copy snapshot gets terminal punctuation
+PASS Live editor remains raw and listening during punctuated copy
+PASS Large copy button works during dictation
+PASS Copy button returns focus to writing box
+PASS Stopped dot returns to green
+PASS Large stop button stops without transfer
+PASS Stopped draft is retained unchanged
+PASS Stop button automatically copies the completed draft
+PASS Stop clears the copied hidden draft
+PASS Cleared draft caret is at the beginning
+PASS Win+H starts a fresh empty draft
+PASS Fresh dictation has no previous selection
+PASS Second Win+H only stops local dictation
+PASS Start-stop-copy never pastes into another application
+PASS Empty draft does not overwrite clipboard
+PASS Copy shortcut remains immediate during another local operation
+PASS Other applications retain their shortcuts
+PASS Ctrl+C outside panel uses native selected text
+PASS External copying leaves local draft intact
+PASS Stopped dictation clears after its punctuated copy
+PASS Finalization completes without restarting dictation
+PASS Win+H stop automatically copies final punctuation
+PASS Ctrl+Z cannot restore the copied previous session
+PASS Casing-only correction is copied before the draft clears
+PASS Stop waits before taking its final snapshot
+PASS Automatic copy includes final recognition updates
+PASS Automatic copy clears the completed hidden draft
+PASS Automatic copy leaves dictation stopped
+PASS Empty stopped draft preserves existing clipboard
+PASS Immediate restart waits for the previous stop copy
+PASS Immediate restart begins with a cleared hidden draft
+PASS Clipboard failure prevents queued restart
+PASS Failed copy preserves the hidden draft
+PASS Failed copy preserves the previous clipboard
+PASS Retry copies and clears preserved draft before starting
+PASS Late draft update is recopied before clearing
+PASS Late-update copy finishes in a clean idle state
+PASS Native buttons actually use custom drawing
+PASS Premium button style survives interaction
+PASS Premium button style survives interaction
+PASS Premium button style survives interaction
+PASS Native premium panel preview rendered
+PASS Red listening dot rendered in native panel
+PASS Mouse drag driver completed
+PASS Right gutter moves the mini panel by mouse
+PASS Moved position saved
+PASS INI position matches actual window
+PASS Only coordinates are written to settings
+PASS Saved position restored by new instance
+PASS Reset position retains draft
+PASS Real app opens for close lifecycle test
+PASS Real app exposes top-right close button
+PASS X terminates its own AutoHotkey process
+PASS X removes the native window
+PASS Same application can be reopened after X
+PASS Native close request also terminates process
+PASS Isolated Unicode and space directory contains only one EXE
+PASS Compiled file has correct version metadata
+PASS Standalone EXE opens without source, runtime or external assets
+PASS Window belongs to the standalone EXE process
+PASS Compiled panel retains compact height
+PASS Compiled app exposes editor, copy and X controls
+PASS Compiled mini has no logo control
+PASS Compiled mini has no visible writing viewport
+PASS Embedded assets extract into a unique process directory
+PASS Only packaged brand assets are available at runtime
+PASS Compiled native edit accepts real keyboard text
+PASS Compiled Ctrl+C copies full draft with Turkish punctuation
+PASS Compiled copy preserves the editor draft
+PASS Compiled copy button uses the same punctuation
+PASS Second launch keeps one instance without replacing the draft
+PASS Ignored second launch preserves existing text
+PASS Compiled X exits the entire process and window
+PASS X cleans up the process asset directory
+PASS Standalone EXE can reopen immediately after X
+PASS Reopened process has its own fresh assets
+PASS Compiled native close exits the whole process
+PASS Native closeHwnd also removes temporary assets
+PASS Compiled smoke entry starts and exits normally
+PASS Automatic exit cleans up temporary assets
+
+145 checks passed. Actual microphone recognition and full-screen WorkSpaces were not automated.
