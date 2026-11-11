@@ -183,6 +183,8 @@ class EmbeddedSpeech implements AutoCloseable {
         if(context==0){long loaded=NativeWhisper.create(modelFile(model).getAbsolutePath());synchronized(nativeLock){context=loaded;loadedModel=model;}}
         synchronized(nativeLock){NativeWhisper.reset(context);}
         if(generation.get()!=job)return "";
+        NativeWhisper.configureVad(context,modelFile("ggml-silero-v5.1.2.bin").getAbsolutePath());
+        if(generation.get()!=job)return "";
         byte[] bytes=NativeWhisper.transcribe(context,spoken,language,Math.min(4,Runtime.getRuntime().availableProcessors()));
         return new String(bytes==null?new byte[0]:bytes,StandardCharsets.UTF_8).trim();
     }

@@ -66,7 +66,7 @@ public class MainActivity extends Activity {
     private LinearLayout root, body;
     private LinearLayout translatedPanel;
     private ScrollView mainScroll;
-    private Button firstTalk, secondTalk, stopButton, favoriteButton;
+    private Button firstTalk, secondTalk, stopButton, finishButton, favoriteButton;
     private Runnable afterSpeech;
     private String utteranceId="";
     private Bitmap photoPreview;
@@ -161,7 +161,7 @@ public class MainActivity extends Activity {
     private void render() {
         building=true;uiSerial++;
         input=null;output=null;originalLabel=null;translatedLabel=null;
-        firstTalk=null;secondTalk=null;stopButton=null;favoriteButton=null;
+        firstTalk=null;secondTalk=null;stopButton=null;finishButton=null;favoriteButton=null;
         root=vertical();root.setBackgroundColor(BG);root.setPadding(dp(20),dp(16),dp(20),dp(12));
         root.setFocusableInTouchMode(true);
         root.setFitsSystemWindows(true);setContentView(root);
@@ -185,8 +185,12 @@ public class MainActivity extends Activity {
         if(mode==3) renderHistory(); else renderTranslator();
         if(mode==0)renderConversationControls();
         if(mode!=3){
-            gap(root,8);stopButton=button("Durdur",false,this::finishOrCancel);
-            stopButton.setMinHeight(dp(40));full(root,stopButton);
+            gap(root,8);stopButton=button("Durdur",false,this::stopByUser);
+            stopButton.setContentDescription("Dinlemeyi, çeviriyi ve seslendirmeyi durdur");stopButton.setMinHeight(dp(40));
+            if(mode==0){
+                LinearLayout controls=horizontal();finishButton=button("Bitir ve çevir",true,this::finishCurrentCapture);
+                finishButton.setMinHeight(dp(40));finishButton.setEnabled(microphoneActive);finishButton.setAlpha(microphoneActive?1f:0.45f);rowItem(controls,finishButton);rowItem(controls,stopButton);full(root,controls);
+            }else full(root,stopButton);
         }
         gap(root,6);status=text(mode==0?"Mikrofon kapalı · Başlatmak için dil düğmesine dokun.":"Hazır · Bir dil ve işlem seç.",12,MUTED,false);
         status.setPadding(dp(2),dp(6),dp(2),dp(4));status.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);full(root,status);
@@ -295,14 +299,16 @@ public class MainActivity extends Activity {
         rememberInput();stopSession();source=from;target=to;saveLanguages();render();
         if(resume&&!source.equals(target))startVoice(0);
     }
-    private void finishOrCancel(){
-        if(microphoneActive&&sessionActive){
-            embeddedSpeech.finishCapture();updateMicrophone(false);setStatus("Alınan konuşma metne çevrilecek…");
-        }else{stopSession();setStatus("İşlem iptal edildi. Yeni bir çeviri başlatabilirsin.");}
+    private void finishCurrentCapture(){
+        if(!microphoneActive||!sessionActive)return;
+        embeddedSpeech.finishCapture();updateMicrophone(false);setStatus("Alınan konuşma metne çevrilecek…");
+    }
+    private void stopByUser(){
+        rememberInput();stopSession();setStatus("Durduruldu · Yeniden başlatmak için dil düğmesine dokun.");
     }
     private void updateMicrophone(boolean active){
         microphoneActive=active;
-        if(stopButton!=null)stopButton.setText(active?"Bitir ve çevir":sessionActive?"İptal":"Durdur");
+        if(finishButton!=null){finishButton.setEnabled(active);finishButton.setAlpha(active?1f:0.45f);}
         if(firstTalk!=null){firstTalk.setText((active&&activeSide==0?"● ":"")+LanguageCatalog.name(source)+" dinle");firstTalk.setBackground(shape(active&&activeSide==0?ACCENT:CARD2,18));firstTalk.setTextColor(active&&activeSide==0?BG:TEXT);}
         if(secondTalk!=null){secondTalk.setText((active&&activeSide==1?"● ":"")+LanguageCatalog.name(target)+" dinle");secondTalk.setBackground(shape(active&&activeSide==1?ACCENT:CARD2,18));secondTalk.setTextColor(active&&activeSide==1?BG:TEXT);}
         if(!active&&microphoneLevel!=null)microphoneLevel.setProgress(0);
@@ -688,7 +694,7 @@ public class MainActivity extends Activity {
         full(content,button("Telefon ve ses desteğini kontrol et",false,this::diagnostics));gap(content,8);
         full(content,button("Seslendirme ayarları",false,()->openSystem("com.android.settings.TTS_SETTINGS",null)));gap(content,8);
         full(content,button("Çeviri hakkında",false,()->openSystem(Intent.ACTION_VIEW,Uri.parse("https://cloud.google.com/translate/"))));gap(content,12);
-        full(content,text("Metin çevirisi, fotoğraftan okuma ve yerel konuşma modeli cihazda çalışır. Konuşma kaydı ve çözümlemesi için Google ses hizmeti kullanılmaz. İlk çeviri paketi indirmesi internet gerektirir. API anahtarı veya abonelik gerekmez.\n\nHızır Bey Tercüman 0.4.0 · Test sürümü\nYerel ses: Whisper / whisper.cpp (MIT). Çok dilli sesli okuma: ayrı ve isteğe bağlı eSpeak NG uygulaması (GPL-3.0+). Google Translate modelleri ile otomatik çeviri (Google ML Kit). Fotoğraftan okuma: Google ML Kit.\n\nÇeviriler otomatik oluşturulur. Google; çevirilerin doğruluğu, güvenilirliği, ticari elverişliliği, belirli bir amaca uygunluğu ve hak ihlali içermemesi konusunda açık veya örtülü garanti vermez.",12,MUTED,false));
+        full(content,text("Metin çevirisi, fotoğraftan okuma ve yerel konuşma modeli cihazda çalışır. Konuşma kaydı ve çözümlemesi için Google ses hizmeti kullanılmaz. İlk çeviri paketi indirmesi internet gerektirir. API anahtarı veya abonelik gerekmez.\n\nHızır Bey Tercüman 0.4.1 · Test sürümü\nYerel ses: Whisper / whisper.cpp (MIT). Çok dilli sesli okuma: ayrı ve isteğe bağlı eSpeak NG uygulaması (GPL-3.0+). Google Translate modelleri ile otomatik çeviri (Google ML Kit). Fotoğraftan okuma: Google ML Kit.\n\nÇeviriler otomatik oluşturulur. Google; çevirilerin doğruluğu, güvenilirliği, ticari elverişliliği, belirli bir amaca uygunluğu ve hak ihlali içermemesi konusunda açık veya örtülü garanti vermez.",12,MUTED,false));
         ScrollView scroll=new ScrollView(this);scroll.addView(content);
         new AlertDialog.Builder(this).setTitle("Tercihler").setView(scroll).setPositiveButton("Tamam",(d,w)->render()).show();
     }
@@ -710,7 +716,7 @@ public class MainActivity extends Activity {
             device+=LanguageCatalog.name(code)+" seslendirme: "+(support>=0?"Destekleniyor":"Paket eksik / desteklenmiyor")+"\n";
         }}
         device+="\nMetin çevirisi: "+languages.size()+" dil\nFotoğraf alfabeleri: Latin, Makedonca, Çince, Japonca, Korece, Devanagari\n\nSes tanıma ve seslendirme dil listeleri metin çevirisi listesinden farklı olabilir.";
-        device+="\n\nUygulama: 0.4.0\nSon paket hatası: "+(lastPreparationError.isEmpty()?"Yok":lastPreparationError);
+        device+="\n\nUygulama: 0.4.1\nSon paket hatası: "+(lastPreparationError.isEmpty()?"Yok":lastPreparationError);
         final String summary=device;
         AlertDialog d=new AlertDialog.Builder(this).setTitle("Telefon desteği").setMessage(device)
             .setNeutralButton("Kopyala",(dialog,w)->copy(summary)).setPositiveButton("Tamam",null).create();d.show();

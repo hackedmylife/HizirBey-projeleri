@@ -1,4 +1,5 @@
-Version: 0.4.0
-Tests: 59
+Version: 0.4.1
+Tests: 67
 Failures: 0
 Errors: 0
+Robolectric Android API 28 and 33; mocked speech/translation in UI flow tests.

@@ -1,0 +1,22 @@
+Hızır Bey Tercüman 0.4.1 — doğrulama, 11 Kasım 2026
+Paket: com.hizirbey.tercuman, versionCode 7; minSdk 26 / targetSdk 34.
+APK boyutu: 167550156 bayt.
+APK SHA-256: ac66706593b1b5cb7c53bb549a41cdf1560b5820d84023bacd45ccae86d07ffb
+ABI: arm64-v8a, armeabi-v7a.
+İmza SHA-256: d47ad32e1ed0241f879cedeae27ac8520105b94c3e83bb4b415eb2043b5190c3
+Önceki sürümle aynı imza; APK imzası ve zipalign kontrolü başarılı.
+
+assembleDebug testDebugUnitTest lintDebug: BUILD SUCCESSFUL.
+67 test, 0 başarısız, 0 hata. Lint: 0 hata, 17 uyarı.
+API 28 ve 33 Robolectric: Bitir ve Durdur ayrı; Durdur mikrofonu ve TTS'yi durdurur, geç gelen sonuç ve bekleyen otomatik tekrarı reddeder. Geçerli 'you' metni korunur. Bu akış testlerinde konuşma/çeviri motorları sahtedir.
+Dört modun yerleşimi Robolectric'te oluşturuldu. Konuşma ekranında ayrı düğmeler görsel olarak kontrol edildi.
+
+Gerçek native motor kontrolü (Linux CPU/JVM, Android cihaz testi değil):
+- 3 saniye sessizlik -> boş sonuç.
+- 4 saniye deterministik gürültü ve kısa tıklama -> boş sonuç.
+- Gerçek JFK konuşması + 2 saniye sessiz son -> geçerli 'you' içeren doğru metin, sonda fazladan kelime yok.
+- Aynı önbellekli modelde konuşmadan sonra gürültü -> boş sonuç.
+Kod, log ve girdilerin tarifi verification/VadRegressionCheck.java ve vad-host-jni-0.4.1.txt içinde.
+Silero v5.1.2 modeli APK'ya gömülü; 885098 bayt; SHA-256 29940d98d42b91fbd05ce489f3ecf7c72f0a42f027e4875919a28fb4c04ea2cf.
+
+Sınır: Kullanıcının özgün ses kaydı verilmedi; ekrandaki fazla 'you' tam olarak yeniden üretilemedi. Gürültüde kusursuz tanıma garanti edilmez. Bu sürüm Samsung S20 FE/Redmi Note 10 Pro üzerinde fiziksel olarak denenmedi. Host süreleri telefona genellenemez. Yeni Android native emülatör testi yapılmadı; eski emülatör raporları tarihseldir.

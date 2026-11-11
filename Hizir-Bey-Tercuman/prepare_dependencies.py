@@ -18,6 +18,7 @@ def main():
     fetch('https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base-q5_1.bin',ROOT/'app/src/main/assets/models/ggml-base-q5_1.bin','422f1ae452ade6f30a004d7e5c6a43195e4433bc370bf23fac9cc591f01a8898')
     fetch('https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.en-q5_1.bin',ROOT/'app/src/main/assets/models/ggml-tiny.en-q5_1.bin','c77c5766f1cef09b6b7d47f21b546cbddd4157886b3b5d6d4f709e91e66c7c2b')
     fetch('https://raw.githubusercontent.com/tesseract-ocr/tessdata_fast/main/mkd.traineddata',ROOT/'app/src/main/assets/tessdata/mkd.traineddata','58622bf154830fa62103359938564aeb8112b929759e22a48224f3ecfaac34c6')
+    fetch('https://huggingface.co/ggml-org/whisper-vad/resolve/main/ggml-silero-v5.1.2.bin',ROOT/'app/src/main/assets/models/ggml-silero-v5.1.2.bin','29940d98d42b91fbd05ce489f3ecf7c72f0a42f027e4875919a28fb4c04ea2cf')
     if not (ROOT/'vendor/include/whisper.h').exists():
         with tempfile.TemporaryDirectory() as directory:
             archive=Path(directory)/'whisper.tar.gz'

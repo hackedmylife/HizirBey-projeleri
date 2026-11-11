@@ -59,9 +59,9 @@ public class OfflineFlowTest {
         ActivityController<MainActivity> c=Robolectric.buildActivity(MainActivity.class).setup();MainActivity a=c.get();SpeechRepairTest.FakeSpeech local=inject(a);
         ReflectionHelpers.callInstanceMethod(a,"startVoice",ReflectionHelpers.ClassParameter.from(int.class,0));
         SessionGate gate=ReflectionHelpers.getField(a,"gate");long token=gate.current();
-        local.listener.recording(true);Button button=ReflectionHelpers.getField(a,"stopButton");assertEquals("Bitir ve çevir",button.getText().toString());
+        local.listener.recording(true);Button button=ReflectionHelpers.getField(a,"finishButton");assertEquals("Bitir ve çevir",button.getText().toString());
         button.performClick();assertEquals(1,local.finishes);assertEquals(token,gate.current());assertTrue((boolean)ReflectionHelpers.getField(a,"sessionActive"));
-        assertEquals("İptal",button.getText().toString());local.listener.result("Merhaba");
+        assertFalse(button.isEnabled());assertEquals("Durdur",((Button)ReflectionHelpers.getField(a,"stopButton")).getText().toString());local.listener.result("Merhaba");
         AppBehaviorTest.FakeEngine engine=ReflectionHelpers.getField(a,"engine");assertNotNull(engine.ready);engine.ready.success(null);assertEquals("Merhaba",engine.input);
         c.pause().stop().destroy();
     }

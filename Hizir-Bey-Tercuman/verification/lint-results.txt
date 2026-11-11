@@ -20,7 +20,7 @@
 
    https://developer.android.com/distribute/best-practices/develop/target-sdk.html
 
-/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:692: Warning: Use SwitchCompat from AppCompat or SwitchMaterial from Material library [UseSwitchCompatOrMaterialCode from androidx.appcompat]
+/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:702: Warning: Use SwitchCompat from AppCompat or SwitchMaterial from Material library [UseSwitchCompatOrMaterialCode from androidx.appcompat]
         Switch s=new Switch(this);s.setText(label);s.setTextSize(14);s.setTextColor(TEXT);s.setPadding(0,dp(8),0,dp(8));
         ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -56,36 +56,42 @@
 
    https://developer.android.com/ndk/guides/abis
 
-/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:306: Warning: Do not concatenate text displayed with setText. Use resource string with placeholders. [SetTextI18n]
+/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:312: Warning: Do not concatenate text displayed with setText. Use resource string with placeholders. [SetTextI18n]
         if(firstTalk!=null){firstTalk.setText((active&&activeSide==0?"● ":"")+LanguageCatalog.name(source)+" dinle");firstTalk.setBackground(shape(active&&activeSide==0?ACCENT:CARD2,18));firstTalk.setTextColor(active&&activeSide==0?BG:TEXT);}
                                               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:306: Warning: String literal in setText can not be translated. Use Android resources instead. [SetTextI18n]
+/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:312: Warning: String literal in setText can not be translated. Use Android resources instead. [SetTextI18n]
         if(firstTalk!=null){firstTalk.setText((active&&activeSide==0?"● ":"")+LanguageCatalog.name(source)+" dinle");firstTalk.setBackground(shape(active&&activeSide==0?ACCENT:CARD2,18));firstTalk.setTextColor(active&&activeSide==0?BG:TEXT);}
                                                                                                            ~~~~~~~~
-/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:307: Warning: Do not concatenate text displayed with setText. Use resource string with placeholders. [SetTextI18n]
+/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:313: Warning: Do not concatenate text displayed with setText. Use resource string with placeholders. [SetTextI18n]
         if(secondTalk!=null){secondTalk.setText((active&&activeSide==1?"● ":"")+LanguageCatalog.name(target)+" dinle");secondTalk.setBackground(shape(active&&activeSide==1?ACCENT:CARD2,18));secondTalk.setTextColor(active&&activeSide==1?BG:TEXT);}
                                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:307: Warning: String literal in setText can not be translated. Use Android resources instead. [SetTextI18n]
+/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:313: Warning: String literal in setText can not be translated. Use Android resources instead. [SetTextI18n]
         if(secondTalk!=null){secondTalk.setText((active&&activeSide==1?"● ":"")+LanguageCatalog.name(target)+" dinle");secondTalk.setBackground(shape(active&&activeSide==1?ACCENT:CARD2,18));secondTalk.setTextColor(active&&activeSide==1?BG:TEXT);}
                                                                                                              ~~~~~~~~
-/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:427: Warning: String literal in setText can not be translated. Use Android resources instead. [SetTextI18n]
+/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:433: Warning: String literal in setText can not be translated. Use Android resources instead. [SetTextI18n]
         if(stopButton!=null)stopButton.setText("Durdur");
                                                ~~~~~~~~
-/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:492: Warning: Do not concatenate text displayed with setText. Use resource string with placeholders. [SetTextI18n]
+/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:498: Warning: Do not concatenate text displayed with setText. Use resource string with placeholders. [SetTextI18n]
                 if(translatedLabel!=null)translatedLabel.setText("ÇEVİRİ · "+LanguageCatalog.name(to));
                                                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:492: Warning: String literal in setText can not be translated. Use Android resources instead. [SetTextI18n]
+/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:498: Warning: String literal in setText can not be translated. Use Android resources instead. [SetTextI18n]
                 if(translatedLabel!=null)translatedLabel.setText("ÇEVİRİ · "+LanguageCatalog.name(to));
                                                                  ~~~~~~~~~~~
-/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:493: Warning: Do not concatenate text displayed with setText. Use resource string with placeholders. [SetTextI18n]
+/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:499: Warning: Do not concatenate text displayed with setText. Use resource string with placeholders. [SetTextI18n]
                 if(originalLabel!=null)originalLabel.setText("ORİJİNAL · "+LanguageCatalog.name(from));
                                                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:493: Warning: String literal in setText can not be translated. Use Android resources instead. [SetTextI18n]
+/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:499: Warning: String literal in setText can not be translated. Use Android resources instead. [SetTextI18n]
                 if(originalLabel!=null)originalLabel.setText("ORİJİNAL · "+LanguageCatalog.name(from));
                                                              ~~~~~~~~~~~~~
-/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:495: Warning: String literal in setText can not be translated. Use Android resources instead. [SetTextI18n]
+/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:501: Warning: String literal in setText can not be translated. Use Android resources instead. [SetTextI18n]
                 if(favoriteButton!=null)favoriteButton.setText("☆ Kaydet");
                                                                ~~~~~~~~~~
+/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:546: Warning: Do not concatenate text displayed with setText. Use resource string with placeholders. [SetTextI18n]
+                if(input!=null)input.setText(draft);if(originalLabel!=null)originalLabel.setText("DUYULAN · "+LanguageCatalog.name(from));
+                                                                                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:546: Warning: String literal in setText can not be translated. Use Android resources instead. [SetTextI18n]
+                if(input!=null)input.setText(draft);if(originalLabel!=null)originalLabel.setText("DUYULAN · "+LanguageCatalog.name(from));
+                                                                                                 ~~~~~~~~~~~~
 /workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/PackSetup.java:64: Warning: String literal in setText can not be translated. Use Android resources instead. [SetTextI18n]
         CheckBox voices=new CheckBox(activity);voices.setText("Çok dilli ücretsiz ses motorunu da kur (yaklaşık 10 MB)");voices.setChecked(true);content.addView(voices);
                                                               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -103,4 +109,4 @@
 
    https://developer.android.com/guide/topics/resources/localization.html
 
-0 errors, 15 warnings
+0 errors, 17 warnings
