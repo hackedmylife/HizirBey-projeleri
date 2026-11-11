@@ -1,0 +1,1 @@
+0.3.1: unit-summary, lint-results ve bounded-host-jni-0.3.1 günceldir. device-results, voice-results, host-jni-result ve OfflineNativeCheck, 0.3.0 doğrulamalarına aittir. Yeni fiziksel telefon/emülatör doğrulaması yapılmadı.

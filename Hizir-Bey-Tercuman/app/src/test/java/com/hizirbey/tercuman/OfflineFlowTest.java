@@ -55,5 +55,15 @@ public class OfflineFlowTest {
         ReflectionHelpers.callInstanceMethod(a,"stopSession");assertFalse((boolean)ReflectionHelpers.getField(a,"microphoneActive"));
         assertFalse(((Button)ReflectionHelpers.getField(a,"firstTalk")).getText().toString().startsWith("●"));c.pause().stop().destroy();
     }
+    @Test public void finishButtonKeepsTheSessionSoTheCapturedWordsCanReachTranslation(){
+        ActivityController<MainActivity> c=Robolectric.buildActivity(MainActivity.class).setup();MainActivity a=c.get();SpeechRepairTest.FakeSpeech local=inject(a);
+        ReflectionHelpers.callInstanceMethod(a,"startVoice",ReflectionHelpers.ClassParameter.from(int.class,0));
+        SessionGate gate=ReflectionHelpers.getField(a,"gate");long token=gate.current();
+        local.listener.recording(true);Button button=ReflectionHelpers.getField(a,"stopButton");assertEquals("Bitir ve çevir",button.getText().toString());
+        button.performClick();assertEquals(1,local.finishes);assertEquals(token,gate.current());assertTrue((boolean)ReflectionHelpers.getField(a,"sessionActive"));
+        assertEquals("İptal",button.getText().toString());local.listener.result("Merhaba");
+        AppBehaviorTest.FakeEngine engine=ReflectionHelpers.getField(a,"engine");assertNotNull(engine.ready);engine.ready.success(null);assertEquals("Merhaba",engine.input);
+        c.pause().stop().destroy();
+    }
     private Spinner findSpinner(View view){if(view instanceof Spinner)return (Spinner)view;if(view instanceof ViewGroup){ViewGroup group=(ViewGroup)view;for(int i=0;i<group.getChildCount();i++){Spinner result=findSpinner(group.getChildAt(i));if(result!=null)return result;}}return null;}
 }

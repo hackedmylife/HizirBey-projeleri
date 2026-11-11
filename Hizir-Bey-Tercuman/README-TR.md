@@ -1,8 +1,17 @@
-# Hızır Bey Tercüman 0.3.0
+# Hızır Bey Tercüman 0.3.1
 
-Ücretsiz Android çevirmeni. Android 8.0+, ARM64/ARMv7. Samsung S20 FE ve Redmi Note 10 Pro üzerinde fiziksel test henüz yapılmadı. Gerçek doğrulama kapsamı DOGRULAMA-0.3.0.txt dosyasında yazılıdır.
+Ücretsiz Android çevirmeni. Android 8.0+, ARM64/ARMv7. Samsung S20 FE ve Redmi Note 10 Pro üzerinde fiziksel test henüz yapılmadı. Gerçek doğrulama kapsamı DOGRULAMA-0.3.1.txt dosyasında yazılıdır.
 
 ## Bu sürümde
+
+0.3.1, ses alındığı halde metne geçişin gecikmesini ele alır:
+- Sabit ortam sesi için ilk 240 ms'deki en düşük ses seviyesi taban alınır. Bu basit enerji kapısıdır; insan sesi/müzik sınıflandırıcısı değildir.
+- Yaklaşık 0,7 saniyelik duraklamada veya en geç 6 saniyelik kayıt sonunda çözümleme başlar.
+- **Bitir ve çevir**, kayıt parçasını silmeden hemen çözümlemeye gönderir. Çözümleme aşamasındaki **İptal** işlemi sonucu iptal eder.
+- Dinleme sırasında alınan ses süresi, çözümleme sırasında geçen süre gösterilir. Yerel çözümleme 45 saniyeyi aşarsa açık zaman aşımı mesajı verilir.
+- Bu motor kelime kelime canlı dikte göstermez. Yazı, alınan kısa parçanın çözümlemesi tamamlandığında ekrana gelir.
+
+Önceki sürümden korunan özellikler:
 
 - Konuşma tanıma artık desteklenen dillerde her zaman APK içindeki Whisper motorunu kullanır. Android/Google ses tanıma hizmetine yönlendirme yoktur.
 - Dil seçimi veya ⇄ ile dil değiştirildiğinde, başlatılmış konuşma yeni kaynak dilde yeniden dinlenir. Eski ekranın gecikmiş seçim olayı ve iptal edilmiş ses sonucu reddedilir.
@@ -19,7 +28,7 @@
 2. İlk açılışta **Tüm dil ve ses desteğini hazırla → Tümünü hazırla** seçilebilir. Daha önce bu soruyu geçtiysen Ayarlar'dan aynı ekranı aç.
 3. Metin çevirisi 59 dili destekler. İngilizce ortak dil olduğu için 58 paket indirilir. Tüm paketler yaklaşık 2 GB boş alan/internet gerektirebilir; boyut değişir. Kurulum sırasında internet gerekir. Uygulama açıkken sıra sürer; sonraki açılışta eksikler tamamlanır.
 4. İsteğe bağlı ücretsiz eSpeak NG tüm seslerini ayrı bir uygulamada getirir. Android'in uygulama yükleme onayı gerekir; kurulumdan sonra otomatik açılan ses verisi hazırlama ekranı kapanana kadar bekle. İlk kurulumda bütün diller birlikte hazırlanır. Doğal seslere göre daha robotiktir.
-5. Mikrofon iznini ver. Konuşan kişinin dil düğmesine dokun. Ses seviyesi çubuğu hareket etmeli. Kısa bir cümle söyle, ardından yaklaşık bir saniye durakla. En çok 20 saniyelik parçalar alınır; çevrilip seslendirilir.
+5. Mikrofon iznini ver. Konuşan kişinin dil düğmesine dokun. Ses seviyesi çubuğu hareket etmeli. Kısa bir cümle söyle, ardından yaklaşık bir saniye durakla. En çok 6 saniyelik parçalar alınır. **Bitir ve çevir** ile kaydı daha erken tamamlayabilirsin; sonuç çözümleme bitince görünür.
 6. Varsayılan olarak çeviriden sonra aynı yönde dinleme yeniden başlar. Ayarlar'dan kapatılabilir. İstersen sırayla iki dile geçiş açılabilir; bu, otomatik konuşma dili tespiti değildir.
 7. Fotoğraf sekmesinde kaynak dili seçip Kamera veya Fotoğraf seç kullan. Okunan metni kontrol ettikten sonra **Google ile çevir** düğmesine dokun. Bu düğme cihazdaki ML Kit motorunu çalıştırır.
 

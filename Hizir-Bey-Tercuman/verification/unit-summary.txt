@@ -1,3 +1,4 @@
-Tests: 47
+Version: 0.3.1
+Tests: 55
 Failures: 0
 Errors: 0

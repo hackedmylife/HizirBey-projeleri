@@ -185,7 +185,7 @@ public class MainActivity extends Activity {
         if(mode==3) renderHistory(); else renderTranslator();
         if(mode==0)renderConversationControls();
         if(mode!=3){
-            gap(root,8);stopButton=button("Durdur",false,()->{stopSession();setStatus("İşlem durduruldu. Yeni bir çeviri başlatabilirsin.");});
+            gap(root,8);stopButton=button("Durdur",false,this::finishOrCancel);
             stopButton.setMinHeight(dp(40));full(root,stopButton);
         }
         gap(root,6);status=text(mode==0?"Mikrofon kapalı · Başlatmak için dil düğmesine dokun.":"Hazır · Bir dil ve işlem seç.",12,MUTED,false);
@@ -222,7 +222,7 @@ public class MainActivity extends Activity {
         setLanguageListener(sourceSpinner,true);setLanguageListener(targetSpinner,false);
         if(mode==0) {
             full(body,text("Konuş, anlaş.",23,TEXT,true));gap(body,5);
-            full(body,text("Konuşanın diline dokun. Ses telefonda çözümlenir; indirilmiş çeviri paketleriyle internet gerekmez.",13,MUTED,false));
+            full(body,text("Konuşanın diline dokun. Kısa bir cümle söyle; Bitir ve çevir ile beklemeden kaydı tamamla. Yazı, ses çözümlemesi bitince görünür.",13,MUTED,false));
             if(prefs.getBoolean("repeat",true)){
                 gap(body,5);full(body,text(prefs.getBoolean("alternate",false)?"● Sırayla iki dilde dinleme açık":"● Seçili yönde yeniden dinleme açık",11,GREEN,false));
             }
@@ -295,8 +295,14 @@ public class MainActivity extends Activity {
         rememberInput();stopSession();source=from;target=to;saveLanguages();render();
         if(resume&&!source.equals(target))startVoice(0);
     }
+    private void finishOrCancel(){
+        if(microphoneActive&&sessionActive){
+            embeddedSpeech.finishCapture();updateMicrophone(false);setStatus("Alınan konuşma metne çevrilecek…");
+        }else{stopSession();setStatus("İşlem iptal edildi. Yeni bir çeviri başlatabilirsin.");}
+    }
     private void updateMicrophone(boolean active){
         microphoneActive=active;
+        if(stopButton!=null)stopButton.setText(active?"Bitir ve çevir":sessionActive?"İptal":"Durdur");
         if(firstTalk!=null){firstTalk.setText((active&&activeSide==0?"● ":"")+LanguageCatalog.name(source)+" dinle");firstTalk.setBackground(shape(active&&activeSide==0?ACCENT:CARD2,18));firstTalk.setTextColor(active&&activeSide==0?BG:TEXT);}
         if(secondTalk!=null){secondTalk.setText((active&&activeSide==1?"● ":"")+LanguageCatalog.name(target)+" dinle");secondTalk.setBackground(shape(active&&activeSide==1?ACCENT:CARD2,18));secondTalk.setTextColor(active&&activeSide==1?BG:TEXT);}
         if(!active&&microphoneLevel!=null)microphoneLevel.setProgress(0);
@@ -526,7 +532,7 @@ public class MainActivity extends Activity {
         releaseSpeech();embeddedThisTurn=true;
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         embeddedSpeech.listen(from,new EmbeddedSpeech.Listener(){
-            public void state(String message){if(alive(token)){setStatus(message);if(stopButton!=null)stopButton.setText("Yerel ses · Durdur");}}
+            public void state(String message){if(alive(token))setStatus(message);}
             public void recording(boolean active){if(alive(token))updateMicrophone(active);}
             public void level(float value){if(alive(token)&&microphoneLevel!=null)microphoneLevel.setProgress(Math.round(value*100));}
             public void result(String value){
@@ -671,14 +677,14 @@ public class MainActivity extends Activity {
         settingSwitch(content,"Yeniden dinlerken sırayla iki dile geç","alternate",false);
         full(content,text("İki dile sırayla geçiş her çeviriden sonra yönü değiştirir; konuşulan dili kendiliğinden algılamaz. İlk konuşmacının düğmesine bir kez dokunarak başlat.",12,MUTED,false));gap(content,6);
         settingSwitch(content,"Paketleri yalnızca Wi-Fi ile indir","wifiOnly",true);
-        full(content,text("İngilizce ve Makedonca dahil yerel konuşma modeli uygulamaya dahildir. Desteklenen dillerde her zaman bu yerel motor kullanılır. Kısa cümlelerden sonra durakla; çözümleme telefona göre birkaç saniye sürebilir.",12,MUTED,false));gap(content,8);
+        full(content,text("İngilizce ve Makedonca dahil yerel konuşma modeli uygulamaya dahildir. Desteklenen dillerde her zaman bu yerel motor kullanılır. Konuşma en çok 6 saniyelik parçalarla alınır. Bitir ve çevir kaydı hemen tamamlar; İptal sonucu siler. Yazı, çözümleme tamamlanınca görünür; işlem süresi ekranda gösterilir.",12,MUTED,false));gap(content,8);
         full(content,button("Tüm dil ve ses desteğini hazırla",false,()->packSetup.showOffer()));gap(content,8);
         full(content,text("Yerel konuşma motoru Esperanto ve İrlandaca hariç metin çevirisi dillerini destekler. Sesli okuma ayrı bir motordur; çok dilli ses kurulumu için Android onayı gerekebilir.",12,MUTED,false));gap(content,6);
         settingSwitch(content,"Çevirileri geçmişe kaydet","saveHistory",true);gap(content,12);
         full(content,button("Telefon ve ses desteğini kontrol et",false,this::diagnostics));gap(content,8);
         full(content,button("Seslendirme ayarları",false,()->openSystem("com.android.settings.TTS_SETTINGS",null)));gap(content,8);
         full(content,button("Çeviri hakkında",false,()->openSystem(Intent.ACTION_VIEW,Uri.parse("https://cloud.google.com/translate/"))));gap(content,12);
-        full(content,text("Metin çevirisi, fotoğraftan okuma ve yerel konuşma modeli cihazda çalışır. Konuşma kaydı ve çözümlemesi için Google ses hizmeti kullanılmaz. İlk çeviri paketi indirmesi internet gerektirir. API anahtarı veya abonelik gerekmez.\n\nHızır Bey Tercüman 0.3.0 · Test sürümü\nYerel ses: Whisper / whisper.cpp (MIT). Çok dilli sesli okuma: ayrı ve isteğe bağlı eSpeak NG uygulaması (GPL-3.0+). Google Translate modelleri ile otomatik çeviri (Google ML Kit). Fotoğraftan okuma: Google ML Kit.\n\nÇeviriler otomatik oluşturulur. Google; çevirilerin doğruluğu, güvenilirliği, ticari elverişliliği, belirli bir amaca uygunluğu ve hak ihlali içermemesi konusunda açık veya örtülü garanti vermez.",12,MUTED,false));
+        full(content,text("Metin çevirisi, fotoğraftan okuma ve yerel konuşma modeli cihazda çalışır. Konuşma kaydı ve çözümlemesi için Google ses hizmeti kullanılmaz. İlk çeviri paketi indirmesi internet gerektirir. API anahtarı veya abonelik gerekmez.\n\nHızır Bey Tercüman 0.3.1 · Test sürümü\nYerel ses: Whisper / whisper.cpp (MIT). Çok dilli sesli okuma: ayrı ve isteğe bağlı eSpeak NG uygulaması (GPL-3.0+). Google Translate modelleri ile otomatik çeviri (Google ML Kit). Fotoğraftan okuma: Google ML Kit.\n\nÇeviriler otomatik oluşturulur. Google; çevirilerin doğruluğu, güvenilirliği, ticari elverişliliği, belirli bir amaca uygunluğu ve hak ihlali içermemesi konusunda açık veya örtülü garanti vermez.",12,MUTED,false));
         ScrollView scroll=new ScrollView(this);scroll.addView(content);
         new AlertDialog.Builder(this).setTitle("Tercihler").setView(scroll).setPositiveButton("Tamam",(d,w)->render()).show();
     }
@@ -700,7 +706,7 @@ public class MainActivity extends Activity {
             device+=LanguageCatalog.name(code)+" seslendirme: "+(support>=0?"Destekleniyor":"Paket eksik / desteklenmiyor")+"\n";
         }}
         device+="\nMetin çevirisi: "+languages.size()+" dil\nFotoğraf alfabeleri: Latin, Makedonca, Çince, Japonca, Korece, Devanagari\n\nSes tanıma ve seslendirme dil listeleri metin çevirisi listesinden farklı olabilir.";
-        device+="\n\nUygulama: 0.3.0\nSon paket hatası: "+(lastPreparationError.isEmpty()?"Yok":lastPreparationError);
+        device+="\n\nUygulama: 0.3.1\nSon paket hatası: "+(lastPreparationError.isEmpty()?"Yok":lastPreparationError);
         final String summary=device;
         AlertDialog d=new AlertDialog.Builder(this).setTitle("Telefon desteği").setMessage(device)
             .setNeutralButton("Kopyala",(dialog,w)->copy(summary)).setPositiveButton("Tamam",null).create();d.show();

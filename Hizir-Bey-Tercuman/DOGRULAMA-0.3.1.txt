@@ -1,0 +1,36 @@
+Hızır Bey Tercüman 0.3.1 — Test sürümü, 11 Kasım 2026
+
+versionCode=5; Android 8.0+; ARM64/ARMv7; APK bytes=166729670
+APK SHA-256=1a52b572583b37a5c881c0f2ad467cfe8b96e8df30fa6cbf5943bf5c83a2d0b5
+Önceki sürümle aynı test sertifikası:
+d47ad32e1ed0241f879cedeae27ac8520105b94c3e83bb4b415eb2043b5190c3
+İmza ve ZIP hizalaması doğrulandı. Lint: 0 hata, 15 uyarı.
+
+55 birim/Robolectric testi geçti; 0 hata/0 başarısızlık.
+Yeni regresyonlar:
+- Sabit ortam gürültüsü tek başına konuşma sayılmaz.
+- Konuşma sonrası ortam gürültüsü kaydı açık tutmaz.
+- Kesintisiz giriş en çok 6 saniyede çözümlemeye geçer.
+- Bitir, oturumu iptal etmeden yakalanan PCM'i çözücüye iletir.
+- İptal, yakalanan sesi siler ve çözücüyü çağırmaz.
+- UI Bitir düğmesi oturum kimliğini korur; gelen metin çeviri motoruna ulaşır.
+Akış testlerinde mikrofon/çözücü taklitleri kullanılır; bunlar fiziksel mikrofon
+ve gerçek konuşma tanıma kalitesi ölçümü değildir.
+
+Ayrı Linux/JVM CPU testinde aynı SpeechBoundary ve JNI kaynak kodu kullanıldı.
+Gerçek JFK kaydına sabit sentetik ortam tonu eklendi; ilk konuşma parçası
+2,8 saniyede otomatik tamamlandı. Aynı paketli İngilizce tiny.en modeli metin
+üretti; "fellow Americans" ifadesi korundu. Model açılışı + çözümleme 0,816 sn.
+Tam cümlede kelime hatası da oluştu; bu bir doğruluk benchmarkı değildir.
+Bu masaüstü sonucu telefon performansı değildir.
+
+Bu sürüm için fiziksel Samsung S20 FE/Redmi Note 10 Pro testi veya yeni
+Android emülatör testi yapılmadı. 0.3.0'a ait önceki Android kontrolleri ve
+İngilizce çözümlemenin yazılım emülatöründeki süre aşımı DOGRULAMA-0.3.0.txt
+ve verification/device-results.txt içinde tarihsel kayıt olarak korunur.
+Telefon hızı, gerçek ortam gürültüsü, aksan ve uçtan uca çeviri sonucu
+kullanıcının cihazında doğrulanmalıdır.
+
+Ses tanıma, metin çevirisi ve sesli okuma ayrı bileşenlerdir. İndirilen çeviri
+paketleri ve ses motorları korunur; bu güncelleme için uygulamayı kaldırmak
+gerekmez. İlk paket indirmeleri dışında yerel ses çözümlemesi ağ gerektirmez.

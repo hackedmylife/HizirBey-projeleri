@@ -21,20 +21,24 @@ class EmbeddedSpeech implements AutoCloseable {
         int sampleRate(); int read(short[] buffer,int offset,int count); void close();
     }
     interface CaptureFactory { Capture open() throws Exception; }
+    interface Decoder { String decode(float[] samples,String language) throws Exception; }
     private final Context app;
     private final Handler main=new Handler(Looper.getMainLooper());
     private final ExecutorService worker=Executors.newSingleThreadExecutor();
     private final AtomicLong generation=new AtomicLong();
+    private final AtomicLong finishRequested=new AtomicLong(-1);
     private final AtomicBoolean closed=new AtomicBoolean();
     private final Object nativeLock=new Object();
     private final CaptureFactory captureFactory;
+    private final Decoder decoder;
     private volatile Capture recorder;
     private volatile String diagnostics="Henüz dinleme başlatılmadı.";
     private long context;
     private String loadedModel="";
     EmbeddedSpeech(Context app){this(app,null);}
-    EmbeddedSpeech(Context app,CaptureFactory factory){
-        this.app=app.getApplicationContext();captureFactory=factory==null?this::openPlatformCapture:factory;
+    EmbeddedSpeech(Context app,CaptureFactory factory){this(app,factory,null);}
+    EmbeddedSpeech(Context app,CaptureFactory factory,Decoder decoder){
+        this.app=app.getApplicationContext();captureFactory=factory==null?this::openPlatformCapture:factory;this.decoder=decoder;
     }
     String diagnostics(){return diagnostics;}
     private void post(long job,Runnable task){main.post(()->{if(!closed.get()&&generation.get()==job)task.run();});}
@@ -75,7 +79,7 @@ class EmbeddedSpeech implements AutoCloseable {
         if(closed.get())return;
         cancel();long job=generation.get();
         worker.execute(()->{
-            Capture record=null;Runnable deadline=null;int packets=0;float peak=0;
+            Capture record=null;Runnable deadline=null,heartbeat=null;int packets=0;float peak=0;final AtomicBoolean decoding=new AtomicBoolean();
             try{
                 if(app.checkSelfPermission(Manifest.permission.RECORD_AUDIO)!=PackageManager.PERMISSION_GRANTED)throw new IllegalStateException("Mikrofon izni gerekli.");
                 post(job,()->listener.state("Mikrofon hazırlanıyor…"));
@@ -84,12 +88,12 @@ class EmbeddedSpeech implements AutoCloseable {
                 if(generation.get()!=job)return;
                 int rate=record.sampleRate();if(rate<16000||rate%50!=0)throw new IllegalStateException("Mikrofon örnek hızı desteklenmiyor: "+rate);
                 post(job,()->{listener.recording(true);listener.state("● Çevrimdışı dinleme · "+LanguageCatalog.name(language));});
-                SpeechBoundary boundary=new SpeechBoundary();float[] audio=new float[320000];short[] source=new short[rate/50];int used=0,filled=0;
-                long started=SystemClock.elapsedRealtime(),lastData=started,lastLevel=0;
+                SpeechBoundary boundary=new SpeechBoundary();float[] audio=new float[SpeechBoundary.MAX_SAMPLES];short[] source=new short[rate/50];int used=0,filled=0;
+                long started=SystemClock.elapsedRealtime(),lastData=started,lastLevel=0,lastSecond=-1;
                 diagnostics="Mikrofon açık · "+rate+" Hz";
-                while(generation.get()==job&&used+320<=audio.length&&!boundary.finished()){
+                while(generation.get()==job&&finishRequested.get()!=job&&used+320<=audio.length&&!boundary.finished()){
                     long now=SystemClock.elapsedRealtime();
-                    if(now-started>22000)break;
+                    if(now-started>6500)break;
                     int count=record.read(source,filled,source.length-filled);
                     if(generation.get()!=job)return;
                     if(count<0)throw new IllegalStateException("Mikrofondan ses alınamadı ("+count+"). Diğer sesli uygulamaları kapatıp tekrar dene.");
@@ -98,6 +102,8 @@ class EmbeddedSpeech implements AutoCloseable {
                     short[] frame=rate==16000?source:resample(source,rate);double energy=0;
                     for(int i=0;i<320;i++){float value=frame[i]/32768f;audio[used+i]=value;energy+=value*value;}
                     float rms=(float)Math.sqrt(energy/320);peak=Math.max(peak,rms);used+=320;boundary.accept(frame,320);
+                    long seconds=used/16000;
+                    if(seconds!=lastSecond){lastSecond=seconds;final long elapsed=seconds;post(job,()->listener.state("● Ses alınıyor · "+LanguageCatalog.name(language)+" · "+elapsed+" / 6 sn"));}
                     if(now-lastLevel>=150){lastLevel=now;final float level=Math.min(1,rms*12);post(job,()->listener.level(level));}
                 }
                 record.close();if(recorder==record)recorder=null;record=null;
@@ -106,27 +112,43 @@ class EmbeddedSpeech implements AutoCloseable {
                 if(generation.get()!=job)return;
                 if(!boundary.hasSpeech()){post(job,()->listener.error("Konuşma duyulmadı. Dil düğmesine dokunup mikrofona yakın konuş."));return;}
                 float[] spoken=Arrays.copyOfRange(audio,boundary.startSample(),boundary.endSample(used));
-                post(job,()->listener.state("Konuşma telefonda çözümleniyor · "+LanguageCatalog.name(language)));
+                decoding.set(true);final long decodingStarted=SystemClock.elapsedRealtime();
+                heartbeat=new Runnable(){public void run(){
+                    if(generation.get()!=job||closed.get()||!decoding.get())return;
+                    listener.state("Ses metne çevriliyor · "+LanguageCatalog.name(language)+" · "+((SystemClock.elapsedRealtime()-decodingStarted)/1000)+" sn");
+                    main.postDelayed(this,1000);
+                }};
+                main.post(heartbeat);
                 deadline=()->{if(generation.get()==job&&!closed.get()){cancel();listener.error("Yerel ses çözümleme zaman aşımına uğradı. Daha kısa bir cümleyle tekrar dene.");}};
-                main.postDelayed(deadline,180000);
-                String model=language.equals("en")?"ggml-tiny.en-q5_1.bin":"ggml-base-q5_1.bin";
-                if(context!=0&&!loadedModel.equals(model)){synchronized(nativeLock){NativeWhisper.destroy(context);context=0;}}
-                if(context==0){long loaded=NativeWhisper.create(modelFile(model).getAbsolutePath());synchronized(nativeLock){context=loaded;loadedModel=model;}}
-                synchronized(nativeLock){NativeWhisper.reset(context);}
+                main.postDelayed(deadline,45000);
+                String text;
+                if(decoder!=null)text=decoder.decode(spoken,language);
+                else text=decodeNative(spoken,language,job);
                 if(generation.get()!=job)return;
-                byte[] bytes=NativeWhisper.transcribe(context,spoken,language,Math.min(4,Runtime.getRuntime().availableProcessors()));
-                String text=new String(bytes==null?new byte[0]:bytes,StandardCharsets.UTF_8).trim();
                 diagnostics+=" · çözümleme tamamlandı";
                 post(job,()->{if(text.isEmpty())listener.error("Konuşma çözümlenemedi. Daha net ve kısa bir cümleyle tekrar dene.");else listener.result(text);});
             }catch(Exception|LinkageError|OutOfMemoryError e){
                 diagnostics="Ses hatası · "+e.getClass().getSimpleName()+": "+e.getMessage();
                 post(job,()->{listener.recording(false);listener.level(0);listener.error(e.getMessage()==null?"Yerel ses motoru çalıştırılamadı.":e.getMessage());});
             }finally{
+                decoding.set(false);
                 if(deadline!=null)main.removeCallbacks(deadline);
+                if(heartbeat!=null)main.removeCallbacks(heartbeat);
                 if(record!=null){record.close();if(recorder==record)recorder=null;}
             }
         });
     }
+    private String decodeNative(float[] spoken,String language,long job)throws IOException{
+        String model=language.equals("en")?"ggml-tiny.en-q5_1.bin":"ggml-base-q5_1.bin";
+        if(context!=0&&!loadedModel.equals(model)){synchronized(nativeLock){NativeWhisper.destroy(context);context=0;}}
+        if(context==0){long loaded=NativeWhisper.create(modelFile(model).getAbsolutePath());synchronized(nativeLock){context=loaded;loadedModel=model;}}
+        synchronized(nativeLock){NativeWhisper.reset(context);}
+        if(generation.get()!=job)return "";
+        byte[] bytes=NativeWhisper.transcribe(context,spoken,language,Math.min(4,Runtime.getRuntime().availableProcessors()));
+        return new String(bytes==null?new byte[0]:bytes,StandardCharsets.UTF_8).trim();
+    }
+    /** Finish the current utterance without cancelling its recognition or translation. */
+    void finishCapture(){finishRequested.set(generation.get());}
     private File modelFile(String name)throws IOException{
         File dir=new File(app.getNoBackupFilesDir(),"speech");if(!dir.exists()&&!dir.mkdirs())throw new IOException("Ses modeli klasörü açılamadı.");
         File file=new File(dir,name);

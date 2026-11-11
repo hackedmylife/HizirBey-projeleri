@@ -65,5 +65,5 @@ public class SpeechRepairTest {
         assertEquals(TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA,launch.getAction());assertEquals("com.reecedunn.espeak",launch.getPackage());
         c.pause().stop().destroy();
     }
-    static class FakeSpeech extends EmbeddedSpeech {String language;Listener listener;FakeSpeech(Context c){super(c);} @Override void listen(String language,Listener listener){this.language=language;this.listener=listener;}}
+    static class FakeSpeech extends EmbeddedSpeech {String language;Listener listener;int finishes;@Override void finishCapture(){finishes++;} FakeSpeech(Context c){super(c);} @Override void listen(String language,Listener listener){this.language=language;this.listener=listener;}}
 }
