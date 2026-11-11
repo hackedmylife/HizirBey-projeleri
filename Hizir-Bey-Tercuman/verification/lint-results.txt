@@ -1,7 +1,7 @@
-/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/RoutedAudio.java:18: Warning: Field requires API level 28 (current min is 26): android.media.AudioDeviceInfo#TYPE_HEARING_AID [InlinedApi]
+/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/RoutedAudio.java:26: Warning: Field requires API level 28 (current min is 26): android.media.AudioDeviceInfo#TYPE_HEARING_AID [InlinedApi]
     static boolean headphones(int type){return type==AudioDeviceInfo.TYPE_WIRED_HEADSET||type==AudioDeviceInfo.TYPE_WIRED_HEADPHONES||type==AudioDeviceInfo.TYPE_BLUETOOTH_A2DP||type==AudioDeviceInfo.TYPE_BLUETOOTH_SCO||type==AudioDeviceInfo.TYPE_USB_HEADSET||type==AudioDeviceInfo.TYPE_BLE_HEADSET||type==AudioDeviceInfo.TYPE_HEARING_AID;}
                                                                                                                                                                                                                                                                                                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/RoutedAudio.java:18: Warning: Field requires API level 31 (current min is 26): android.media.AudioDeviceInfo#TYPE_BLE_HEADSET [InlinedApi]
+/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/RoutedAudio.java:26: Warning: Field requires API level 31 (current min is 26): android.media.AudioDeviceInfo#TYPE_BLE_HEADSET [InlinedApi]
     static boolean headphones(int type){return type==AudioDeviceInfo.TYPE_WIRED_HEADSET||type==AudioDeviceInfo.TYPE_WIRED_HEADPHONES||type==AudioDeviceInfo.TYPE_BLUETOOTH_A2DP||type==AudioDeviceInfo.TYPE_BLUETOOTH_SCO||type==AudioDeviceInfo.TYPE_USB_HEADSET||type==AudioDeviceInfo.TYPE_BLE_HEADSET||type==AudioDeviceInfo.TYPE_HEARING_AID;}
                                                                                                                                                                                                                                                                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -49,10 +49,13 @@
 
    https://developer.android.com/distribute/best-practices/develop/target-sdk.html
 
-/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:753: Warning: Use SwitchCompat from AppCompat or SwitchMaterial from Material library [UseSwitchCompatOrMaterialCode from androidx.appcompat]
-        Switch enabled=new Switch(this);enabled.setText("Groq ile metin çevirisi");enabled.setTextColor(TEXT);enabled.setChecked(prefs.getBoolean("groqEnabled",false));full(content,enabled);gap(content,10);
+/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:758: Warning: Use SwitchCompat from AppCompat or SwitchMaterial from Material library [UseSwitchCompatOrMaterialCode from androidx.appcompat]
+        Switch enabled=new Switch(this);enabled.setText("Groq ile metin çevirisi");enabled.setTextColor(TEXT);enabled.setChecked(prefs.getBoolean("groqEnabled",false));full(content,enabled);gap(content,6);
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:814: Warning: Use SwitchCompat from AppCompat or SwitchMaterial from Material library [UseSwitchCompatOrMaterialCode from androidx.appcompat]
+/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:759: Warning: Use SwitchCompat from AppCompat or SwitchMaterial from Material library [UseSwitchCompatOrMaterialCode from androidx.appcompat]
+        Switch audioEnabled=new Switch(this);audioEnabled.setText("Groq ile ses tanıma · Ses internete gönderilir");audioEnabled.setTextColor(TEXT);audioEnabled.setChecked(prefs.getBoolean("groqAudioEnabled",false));full(content,audioEnabled);gap(content,10);
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:823: Warning: Use SwitchCompat from AppCompat or SwitchMaterial from Material library [UseSwitchCompatOrMaterialCode from androidx.appcompat]
         Switch s=new Switch(this);s.setText(label);s.setTextSize(14);s.setTextColor(TEXT);s.setPadding(0,dp(8),0,dp(8));
         ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -62,17 +65,6 @@
    Vendor: Android Open Source Project
    Identifier: androidx.appcompat
    Feedback: https://issuetracker.google.com/issues/new?component=460343
-
-/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/build.gradle:47: Warning: A newer version of androidx.test:runner than 1.6.2 is available: 1.7.0 [GradleDependency]
-    androidTestImplementation 'androidx.test:runner:1.6.2'
-                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-   Explanation for issues of type "GradleDependency":
-   This detector looks for usages of libraries where the version you are using
-   is not the current stable release. Using older versions is fine, and there
-   are cases where you deliberately want to stick with an older version.
-   However, you may simply not be aware that a more recent version is
-   available, and that is what this lint check helps find.
 
 /workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/build.gradle:12: Warning: Missing x86_64 ABI support for ChromeOS [ChromeOsAbiSupport]
         ndk { abiFilters(*(project.hasProperty('testAbi') ? [project.property('testAbi')] : ['arm64-v8a','armeabi-v7a'])) }
@@ -122,45 +114,48 @@ final class ZoomPhotoView extends View {
    to see if View#isInEditMode() is false, since that method will return false
    at runtime but true within a user interface editor.
 
-/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:325: Warning: Do not concatenate text displayed with setText. Use resource string with placeholders. [SetTextI18n]
+/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:326: Warning: Do not concatenate text displayed with setText. Use resource string with placeholders. [SetTextI18n]
         if(firstTalk!=null){firstTalk.setText((active&&activeSide==0?"● ":"")+LanguageCatalog.name(source)+" dinle");firstTalk.setBackground(shape(active&&activeSide==0?ACCENT:CARD2,18));firstTalk.setTextColor(active&&activeSide==0?BG:TEXT);}
                                               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:325: Warning: String literal in setText can not be translated. Use Android resources instead. [SetTextI18n]
+/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:326: Warning: String literal in setText can not be translated. Use Android resources instead. [SetTextI18n]
         if(firstTalk!=null){firstTalk.setText((active&&activeSide==0?"● ":"")+LanguageCatalog.name(source)+" dinle");firstTalk.setBackground(shape(active&&activeSide==0?ACCENT:CARD2,18));firstTalk.setTextColor(active&&activeSide==0?BG:TEXT);}
                                                                                                            ~~~~~~~~
-/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:326: Warning: Do not concatenate text displayed with setText. Use resource string with placeholders. [SetTextI18n]
+/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:327: Warning: Do not concatenate text displayed with setText. Use resource string with placeholders. [SetTextI18n]
         if(secondTalk!=null){secondTalk.setText((active&&activeSide==1?"● ":"")+LanguageCatalog.name(target)+" dinle");secondTalk.setBackground(shape(active&&activeSide==1?ACCENT:CARD2,18));secondTalk.setTextColor(active&&activeSide==1?BG:TEXT);}
                                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:326: Warning: String literal in setText can not be translated. Use Android resources instead. [SetTextI18n]
+/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:327: Warning: String literal in setText can not be translated. Use Android resources instead. [SetTextI18n]
         if(secondTalk!=null){secondTalk.setText((active&&activeSide==1?"● ":"")+LanguageCatalog.name(target)+" dinle");secondTalk.setBackground(shape(active&&activeSide==1?ACCENT:CARD2,18));secondTalk.setTextColor(active&&activeSide==1?BG:TEXT);}
                                                                                                              ~~~~~~~~
-/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:456: Warning: String literal in setText can not be translated. Use Android resources instead. [SetTextI18n]
+/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:460: Warning: String literal in setText can not be translated. Use Android resources instead. [SetTextI18n]
         if(stopButton!=null)stopButton.setText("Durdur");
                                                ~~~~~~~~
-/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:522: Warning: Do not concatenate text displayed with setText. Use resource string with placeholders. [SetTextI18n]
+/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:526: Warning: Do not concatenate text displayed with setText. Use resource string with placeholders. [SetTextI18n]
                 if(translatedLabel!=null)translatedLabel.setText("ÇEVİRİ · "+LanguageCatalog.name(to));
                                                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:522: Warning: String literal in setText can not be translated. Use Android resources instead. [SetTextI18n]
+/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:526: Warning: String literal in setText can not be translated. Use Android resources instead. [SetTextI18n]
                 if(translatedLabel!=null)translatedLabel.setText("ÇEVİRİ · "+LanguageCatalog.name(to));
                                                                  ~~~~~~~~~~~
-/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:523: Warning: Do not concatenate text displayed with setText. Use resource string with placeholders. [SetTextI18n]
+/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:527: Warning: Do not concatenate text displayed with setText. Use resource string with placeholders. [SetTextI18n]
                 if(originalLabel!=null)originalLabel.setText("ORİJİNAL · "+LanguageCatalog.name(from));
                                                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:523: Warning: String literal in setText can not be translated. Use Android resources instead. [SetTextI18n]
+/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:527: Warning: String literal in setText can not be translated. Use Android resources instead. [SetTextI18n]
                 if(originalLabel!=null)originalLabel.setText("ORİJİNAL · "+LanguageCatalog.name(from));
                                                              ~~~~~~~~~~~~~
-/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:525: Warning: String literal in setText can not be translated. Use Android resources instead. [SetTextI18n]
+/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:529: Warning: String literal in setText can not be translated. Use Android resources instead. [SetTextI18n]
                 if(favoriteButton!=null)favoriteButton.setText("☆ Kaydet");
                                                                ~~~~~~~~~~
-/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:571: Warning: Do not concatenate text displayed with setText. Use resource string with placeholders. [SetTextI18n]
+/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:576: Warning: Do not concatenate text displayed with setText. Use resource string with placeholders. [SetTextI18n]
                 if(input!=null)input.setText(draft);if(originalLabel!=null)originalLabel.setText("DUYULAN · "+LanguageCatalog.name(from));
                                                                                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:571: Warning: String literal in setText can not be translated. Use Android resources instead. [SetTextI18n]
+/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:576: Warning: String literal in setText can not be translated. Use Android resources instead. [SetTextI18n]
                 if(input!=null)input.setText(draft);if(originalLabel!=null)originalLabel.setText("DUYULAN · "+LanguageCatalog.name(from));
                                                                                                  ~~~~~~~~~~~~
-/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:753: Warning: String literal in setText can not be translated. Use Android resources instead. [SetTextI18n]
-        Switch enabled=new Switch(this);enabled.setText("Groq ile metin çevirisi");enabled.setTextColor(TEXT);enabled.setChecked(prefs.getBoolean("groqEnabled",false));full(content,enabled);gap(content,10);
+/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:758: Warning: String literal in setText can not be translated. Use Android resources instead. [SetTextI18n]
+        Switch enabled=new Switch(this);enabled.setText("Groq ile metin çevirisi");enabled.setTextColor(TEXT);enabled.setChecked(prefs.getBoolean("groqEnabled",false));full(content,enabled);gap(content,6);
                                                         ~~~~~~~~~~~~~~~~~~~~~~~~~
+/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:759: Warning: String literal in setText can not be translated. Use Android resources instead. [SetTextI18n]
+        Switch audioEnabled=new Switch(this);audioEnabled.setText("Groq ile ses tanıma · Ses internete gönderilir");audioEnabled.setTextColor(TEXT);audioEnabled.setChecked(prefs.getBoolean("groqAudioEnabled",false));full(content,audioEnabled);gap(content,10);
+                                                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 /workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/PackSetup.java:64: Warning: String literal in setText can not be translated. Use Android resources instead. [SetTextI18n]
         CheckBox voices=new CheckBox(activity);voices.setText("Çok dilli ücretsiz ses motorunu da kur (yaklaşık 10 MB)");voices.setChecked(true);content.addView(voices);
                                                               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -178,4 +173,4 @@ final class ZoomPhotoView extends View {
 
    https://developer.android.com/guide/topics/resources/localization.html
 
-0 errors, 24 warnings
+0 errors, 25 warnings

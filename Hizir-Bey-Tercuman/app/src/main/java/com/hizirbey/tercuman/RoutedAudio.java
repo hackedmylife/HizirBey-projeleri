@@ -9,18 +9,54 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /** Owns only this application's playback. It never changes the global speakerphone mode. */
 final class RoutedAudio implements AutoCloseable {
-    interface Callback {void done();void error(String message);}
+    interface Callback {default void started(){}void done();void error(String message);}
     private final AudioManager manager;private final Handler main=new Handler(Looper.getMainLooper());
     private final ExecutorService worker=Executors.newSingleThreadExecutor();private final AtomicInteger generation=new AtomicInteger();
+    private volatile String lastRouting="Henüz denenmedi.";
+    private volatile boolean privateRoute;
     private volatile AudioTrack current;private volatile int chosenId=-1;private volatile Callback callback;
-    private final AudioDeviceCallback devices=new AudioDeviceCallback(){@Override public void onAudioDevicesRemoved(AudioDeviceInfo[] removed){for(AudioDeviceInfo d:removed)if(d.getId()==chosenId){Callback cb=callback;stop();if(cb!=null)cb.error("Ses çıkışının bağlantısı kesildi. Seslendirme durduruldu.");break;}}};
+    private final AudioDeviceCallback devices=new AudioDeviceCallback(){@Override public void onAudioDevicesRemoved(AudioDeviceInfo[] removed){for(AudioDeviceInfo device:removed)if(device.getId()==chosenId){int request=generation.get();main.postDelayed(()->{
+        if(request!=generation.get())return;
+        // Bluetooth port IDs may be replaced while the same media headset remains available.
+        // Playback independently checks the actual route before every speech block.
+        if(output(privateRoute)!=null)return;
+        Callback cb=callback;stop();if(cb!=null)cb.error("Ses çıkışının bağlantısı kesildi. Seslendirme durduruldu.");
+    },60);break;}}};
     RoutedAudio(Context context){manager=(AudioManager)context.getSystemService(Context.AUDIO_SERVICE);manager.registerAudioDeviceCallback(devices,main);}
     static boolean headphones(int type){return type==AudioDeviceInfo.TYPE_WIRED_HEADSET||type==AudioDeviceInfo.TYPE_WIRED_HEADPHONES||type==AudioDeviceInfo.TYPE_BLUETOOTH_A2DP||type==AudioDeviceInfo.TYPE_BLUETOOTH_SCO||type==AudioDeviceInfo.TYPE_USB_HEADSET||type==AudioDeviceInfo.TYPE_BLE_HEADSET||type==AudioDeviceInfo.TYPE_HEARING_AID;}
-    AudioDeviceInfo output(boolean privateAudio){for(AudioDeviceInfo d:manager.getDevices(AudioManager.GET_DEVICES_OUTPUTS))if(privateAudio?headphones(d.getType()):d.getType()==AudioDeviceInfo.TYPE_BUILTIN_SPEAKER)return d;return null;}
-    String outputs(){StringBuilder s=new StringBuilder();for(AudioDeviceInfo d:manager.getDevices(AudioManager.GET_DEVICES_OUTPUTS))s.append(d.getProductName()).append(" · ").append(d.getType()==AudioDeviceInfo.TYPE_BUILTIN_SPEAKER?"Telefon hoparlörü":headphones(d.getType())?"Kulaklık":"Diğer çıkış").append('\n');return s.toString();}
+    static int mediaRank(int type){
+        switch(type){
+            case AudioDeviceInfo.TYPE_WIRED_HEADSET:case AudioDeviceInfo.TYPE_WIRED_HEADPHONES:return 100;
+            case AudioDeviceInfo.TYPE_USB_HEADSET:return 95;
+            case AudioDeviceInfo.TYPE_BLE_HEADSET:return 90;
+            case AudioDeviceInfo.TYPE_BLUETOOTH_A2DP:return 85;
+            case AudioDeviceInfo.TYPE_HEARING_AID:return 80;
+            default:return -1; // SCO/HFP is a call channel, never a media-playback fallback.
+        }
+    }
+    static boolean routeMatches(int requestedType,int actualType,boolean privateAudio){
+        return privateAudio?mediaRank(requestedType)>0&&mediaRank(actualType)>0:actualType==AudioDeviceInfo.TYPE_BUILTIN_SPEAKER;
+    }
+    static int selectIndex(int[] types,boolean privateAudio){
+        int best=-1,rank=-1;for(int i=0;i<types.length;i++){
+            if(!privateAudio&&types[i]==AudioDeviceInfo.TYPE_BUILTIN_SPEAKER)return i;
+            int candidate=mediaRank(types[i]);if(privateAudio&&candidate>rank){rank=candidate;best=i;}
+        }return best;
+    }
+    AudioDeviceInfo output(boolean privateAudio){
+        AudioDeviceInfo[] devices=manager.getDevices(AudioManager.GET_DEVICES_OUTPUTS);int[] types=new int[devices.length];for(int i=0;i<types.length;i++)types[i]=devices[i].getType();
+        int index=selectIndex(types,privateAudio);return index<0?null:devices[index];
+    }
+    static String label(int type){
+        if(type==AudioDeviceInfo.TYPE_BLUETOOTH_A2DP)return "Bluetooth medya (A2DP)";
+        if(type==AudioDeviceInfo.TYPE_BLUETOOTH_SCO)return "Bluetooth arama (SCO)";
+        if(type==AudioDeviceInfo.TYPE_BLE_HEADSET)return "Bluetooth LE Audio";
+        return type==AudioDeviceInfo.TYPE_BUILTIN_SPEAKER?"Telefon hoparlörü":headphones(type)?"Kulaklık":"Diğer çıkış";
+    }
+    String outputs(){StringBuilder s=new StringBuilder();for(AudioDeviceInfo device:manager.getDevices(AudioManager.GET_DEVICES_OUTPUTS))s.append(device.getProductName()).append(" · ").append(label(device.getType())).append('\n');return s+"\nSon yönlendirme: "+lastRouting;}
     void play(File file,boolean privateAudio,Callback cb){
-        stop();int request=generation.get();callback=cb;
-        AudioDeviceInfo target=output(privateAudio);if(target==null){file.delete();callback=null;cb.error(privateAudio?"Kulaklık bağlı değil. Türkçe çeviri seslendirilmedi.":"Telefon hoparlörü bulunamadı.");return;}chosenId=target.getId();
+        stop();privateRoute=privateAudio;int request=generation.get();callback=cb;
+        AudioDeviceInfo target=output(privateAudio);if(target==null){file.delete();callback=null;cb.error(privateAudio?"Medya kulaklığı bulunamadı. Bluetooth ayarında Medya sesi açık olmalı; yalnız arama kanalı yeterli değil.":"Telefon hoparlörü bulunamadı.");return;}chosenId=target.getId();
         worker.execute(()->{AudioTrack track=null;String failure=null;
             try(Wave wave=new Wave(file)){
                 if(request!=generation.get())return;
@@ -30,21 +66,23 @@ final class RoutedAudio implements AutoCloseable {
                 track=new AudioTrack.Builder().setAudioAttributes(new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).setContentType(AudioAttributes.CONTENT_TYPE_SPEECH).build())
                     .setAudioFormat(new AudioFormat.Builder().setSampleRate(wave.rate).setChannelMask(channel).setEncoding(encoding).build()).setBufferSizeInBytes(Math.max(min,4096)).setTransferMode(AudioTrack.MODE_STREAM).build();
                 if(request!=generation.get())return;current=track;
-                if(!track.setPreferredDevice(target))throw new IOException("Telefon seçilen ses çıkışına izin vermedi.");
+                if(!track.setPreferredDevice(target)){if(!privateAudio)throw new IOException("Telefon seçilen ses çıkışına izin vermedi.");track.setPreferredDevice(null);}
                 // Verify the real route while muted, before putting speech in the buffer.
                 track.setVolume(0);track.play();byte[] silence=new byte[Math.max(128,wave.rate*wave.channels*(wave.bits/8)/10)];if(wave.bits==8)java.util.Arrays.fill(silence,(byte)128);
                 track.write(silence,0,silence.length,AudioTrack.WRITE_BLOCKING);
-                long until=SystemClock.elapsedRealtime()+1500;AudioDeviceInfo routed;
-                do{if(request!=generation.get())return;routed=track.getRoutedDevice();if(routed!=null&&routed.getId()==target.getId())break;SystemClock.sleep(20);}while(SystemClock.elapsedRealtime()<until);
-                if(routed==null||routed.getId()!=target.getId())throw new IOException("Android bu çıkışı kullanmadı. Seslendirme güvenli biçimde durduruldu; başka kulaklık veya normal ses modu dene.");
-                track.setVolume(1f);int frame=wave.channels*(wave.bits/8);int block=Math.max(frame,wave.rate*frame/50);byte[] bytes=new byte[block];long left=wave.length,written=silence.length;
+                long routingStarted=SystemClock.elapsedRealtime(),until=routingStarted+1500;boolean systemFallback=false;AudioDeviceInfo routed;
+                do{if(request!=generation.get())return;routed=track.getRoutedDevice();if(routed!=null&&routeMatches(target.getType(),routed.getType(),privateAudio))break;
+                    if(privateAudio&&!systemFallback&&SystemClock.elapsedRealtime()-routingStarted>=300){track.setPreferredDevice(null);systemFallback=true;}SystemClock.sleep(20);}while(SystemClock.elapsedRealtime()<until);
+                lastRouting="İstenen: "+label(target.getType())+"; Etkin: "+(routed==null?"Bilinmiyor":label(routed.getType()));
+                if(routed==null||!routeMatches(target.getType(),routed.getType(),privateAudio))throw new IOException("Android bu çıkışı kullanmadı. Seslendirme güvenli biçimde durduruldu; başka kulaklık veya normal ses modu dene.");
+                track.setVolume(1f);main.post(()->{if(request==generation.get())cb.started();});int frame=wave.channels*(wave.bits/8);int block=Math.max(frame,wave.rate*frame/50);byte[] bytes=new byte[block];long left=wave.length,written=silence.length;
                 while(left>0&&request==generation.get()){
-                    AudioDeviceInfo actual=track.getRoutedDevice();if(actual==null||actual.getId()!=target.getId())throw new IOException("Ses çıkışı değişti. Seslendirme durduruldu.");
+                    AudioDeviceInfo actual=track.getRoutedDevice();if(actual==null||!routeMatches(target.getType(),actual.getType(),privateAudio))throw new IOException("Ses çıkışı değişti. Seslendirme durduruldu.");
                     int n=wave.input.read(bytes,0,(int)Math.min(bytes.length,left));if(n<0)throw new EOFException("Eksik ses verisi.");
                     int offset=0;while(offset<n&&request==generation.get()){int sent=track.write(bytes,offset,n-offset,AudioTrack.WRITE_BLOCKING);if(sent<0)throw new IOException("Ses çıkışı kapandı.");if(sent==0){SystemClock.sleep(5);continue;}offset+=sent;written+=sent;}left-=n;
                 }
                 long frames=written/frame;long deadline=SystemClock.elapsedRealtime()+5000;
-                while(request==generation.get()&&Integer.toUnsignedLong(track.getPlaybackHeadPosition())<frames&&SystemClock.elapsedRealtime()<deadline){AudioDeviceInfo actual=track.getRoutedDevice();if(actual==null||actual.getId()!=target.getId())throw new IOException("Ses çıkışı değişti. Seslendirme durduruldu.");SystemClock.sleep(20);}
+                while(request==generation.get()&&Integer.toUnsignedLong(track.getPlaybackHeadPosition())<frames&&SystemClock.elapsedRealtime()<deadline){AudioDeviceInfo actual=track.getRoutedDevice();if(actual==null||!routeMatches(target.getType(),actual.getType(),privateAudio))throw new IOException("Ses çıkışı değişti. Seslendirme durduruldu.");SystemClock.sleep(20);}
             }catch(Exception e){failure=e.getMessage()==null?"Ses çıkışına erişilemedi.":e.getMessage();}
             finally{if(current==track)current=null;if(track!=null){try{track.pause();track.flush();}catch(RuntimeException ignored){}track.release();}file.delete();}
             if(request==generation.get()){String error=failure;callback=null;chosenId=-1;main.post(()->{if(request==generation.get()){if(error==null)cb.done();else cb.error(error);}});}

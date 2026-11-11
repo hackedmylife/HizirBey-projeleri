@@ -74,6 +74,7 @@ public class MainActivity extends Activity {
     private PhotoPage photoPage;private boolean showTranslatedPhoto;
     private AlertDialog cropDialog,photoDialog;
     private RoutedAudio routedAudio;private File routedFile;private String routedId="";private boolean privateAudio;
+    private int forceAudioRoute=-1;private long finishPressedAt,ttsRequestedAt,lastAsrMs=-1,lastTranslationMs=-1,lastVoiceMs=-1;
     private int resumeVoiceSide=-1;
     private long preparationSerial;
     private boolean preparationActive;
@@ -178,7 +179,7 @@ public class MainActivity extends Activity {
         header.addView(names,new LinearLayout.LayoutParams(0,-2,1));
         Button menu=button("Ayarlar",false,this::settings);header.addView(menu);full(root,header);gap(root,14);
         LinearLayout chip=horizontal();chip.setPadding(dp(12),dp(8),dp(12),dp(8));chip.setBackground(shape(0xFF142B29,12));
-        full(chip,text(prefs.getBoolean("groqEnabled",false)?"●  Groq internet desteği açık":"●  Ücretsiz · Cihazda çeviri",12,GREEN,true));full(root,chip);gap(root,14);
+        full(chip,text((prefs.getBoolean("groqEnabled",false)||prefs.getBoolean("groqAudioEnabled",false))?"●  Groq internet desteği açık":"●  Ücretsiz · Cihazda çeviri",12,GREEN,true));full(root,chip);gap(root,14);
         LinearLayout tabs=horizontal();tabButtons.clear();
         String[] titles={"Konuşma","Metin","Fotoğraf","Geçmiş"};
         for(int i=0;i<titles.length;i++) {
@@ -314,7 +315,7 @@ public class MainActivity extends Activity {
     }
     private void finishCurrentCapture(){
         if(!microphoneActive||!sessionActive)return;
-        embeddedSpeech.finishCapture();updateMicrophone(false);setStatus("Alınan konuşma metne çevrilecek…");
+        finishPressedAt=SystemClock.elapsedRealtime();embeddedSpeech.finishCapture();updateMicrophone(false);setStatus("Alınan konuşma metne çevrilecek…");
     }
     private void stopByUser(){
         rememberInput();stopSession();setStatus("Durduruldu · Yeniden başlatmak için dil düğmesine dokun.");
@@ -352,7 +353,7 @@ public class MainActivity extends Activity {
     }
     private void attachTtsListener(TextToSpeech voice){
         voice.setOnUtteranceProgressListener(new UtteranceProgressListener(){
-            @Override public void onStart(String id){}
+            @Override public void onStart(String id){handler.post(()->{if(id.equals(utteranceId)&&!id.equals(routedId)&&ttsRequestedAt>0&&lastVoiceMs<0)lastVoiceMs=SystemClock.elapsedRealtime()-ttsRequestedAt;});}
             @Override public void onDone(String id){handler.post(()->{if(id.equals(routedId))playRouted(id);else finishSpeaking(id,false);});}
             @Override public void onError(String id){handler.post(()->finishSpeaking(id,true));}
         });
@@ -381,12 +382,17 @@ public class MainActivity extends Activity {
         if(error)toast("Seslendirme tamamlanamadı. Telefonun ses paketlerini kontrol et.");
         if(done!=null)done.run();
     }
+    private boolean knownLightVoice(TextToSpeech voice){
+        if(voice==tts&&VoiceSelector.knownOfflineEngine(tts.getDefaultEngine()))return true;
+        for(Map.Entry<String,TextToSpeech> entry:extraTts.entrySet())if(entry.getValue()==voice)return VoiceSelector.knownOfflineEngine(entry.getKey());return false;
+    }
     private void speak(String value,String language,long token,Runnable done){
         if(value.isEmpty()){done.run();return;}
         Locale locale=Locale.forLanguageTag(LanguageCatalog.speechTag(language));
         boolean offline=true;
         ArrayList<TextToSpeech> candidates=new ArrayList<>();if(ttsReady)candidates.add(tts);
         for(String name:readyTts){TextToSpeech voice=extraTts.get(name);if(voice!=null)candidates.add(voice);}
+        if(mode==0&&prefs.getBoolean("fastDialogue",true))candidates.sort((a,b)->Boolean.compare(knownLightVoice(b),knownLightVoice(a)));
         speakingTts=null;
         for(TextToSpeech candidate:candidates){
             Voice selected=VoiceSelector.choose(candidate.getVoices(),locale,offline);
@@ -405,19 +411,17 @@ public class MainActivity extends Activity {
             done.run();return;
         }
         final TextToSpeech selectedEngine=speakingTts;
+        selectedEngine.setAudioAttributes(new android.media.AudioAttributes.Builder().setUsage(android.media.AudioAttributes.USAGE_MEDIA).setContentType(android.media.AudioAttributes.CONTENT_TYPE_SPEECH).build());
         utteranceId="hb-"+token+"-"+System.nanoTime();String id=utteranceId;
         int limit=Math.min(TextToSpeech.getMaxSpeechInputLength(),4000);
-        int end=Math.min(value.length(),limit);
-        if(end<value.length()){
-            int boundary=value.lastIndexOf(' ',end-1);if(boundary>end/2)end=boundary;
-            if(end>0&&Character.isHighSurrogate(value.charAt(end-1)))end--;
-        }
+        int end=SpeechChunks.end(value,limit,mode==0&&prefs.getBoolean("fastDialogue",true));
         final String rest=value.substring(end).trim();
         afterSpeech=()->{if(alive(token)){if(rest.isEmpty())done.run();else speak(rest,language,token,done);}};
         setStatus("Seslendiriliyor · "+LanguageCatalog.name(language));
         String chunk=value.substring(0,end);
-        if(prefs.getBoolean("splitAudio",false)&&mode==0){
-            privateAudio=language.equals("tr");
+        if(ttsRequestedAt==0){ttsRequestedAt=SystemClock.elapsedRealtime();lastVoiceMs=-1;}
+        if(forceAudioRoute>=0||(prefs.getBoolean("splitAudio",false)&&mode==0)){
+            privateAudio=forceAudioRoute>=0?forceAudioRoute==1:language.equals("tr");
             if(routedAudio.output(privateAudio)==null){afterSpeech=null;utteranceId="";sessionActive=false;conversationStarted=false;setStatus(privateAudio?"Kulaklık bağlı değil. Türkçe çeviri seslendirilmedi.":"Telefon hoparlörü bulunamadı.");return;}
             try{routedFile=File.createTempFile("speech-",".wav",getCacheDir());routedId=id;
                 setStatus("Ses hazırlanıyor · "+(privateAudio?"Türkçe → Kulaklık":LanguageCatalog.name(language)+" → Telefon hoparlörü"));
@@ -450,7 +454,7 @@ public class MainActivity extends Activity {
         if(packSetup!=null)packSetup.resumeAfterConversation();
         if(embeddedSpeech!=null)embeddedSpeech.cancel();embeddedThisTurn=false;
         afterSpeech=null;utteranceId="";routedId="";if(routedAudio!=null)routedAudio.stop();
-        if(routedFile!=null){routedFile.delete();routedFile=null;}if(tts!=null)tts.stop();
+        if(routedFile!=null){routedFile.delete();routedFile=null;}forceAudioRoute=-1;ttsRequestedAt=0;if(tts!=null)tts.stop();
         for(TextToSpeech voice:extraTts.values())voice.stop();
         getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         if(stopButton!=null)stopButton.setText("Durdur");
@@ -511,12 +515,12 @@ public class MainActivity extends Activity {
         prepare(from,to,token,()->translate(value,from,to,token,false));
     }
     private void translate(String value,String from,String to,long token,boolean conversation){
-        if(!alive(token))return;setStatus("Çevriliyor · "+LanguageCatalog.name(from)+" → "+LanguageCatalog.name(to));
-        engine.translate(value,from,to,new TranslationEngine.Callback<String>(){
+        if(!alive(token))return;final long translationStarted=SystemClock.elapsedRealtime();setStatus("Çevriliyor · "+LanguageCatalog.name(from)+" → "+LanguageCatalog.name(to));
+        engine.translate(value,from,to,conversation&&prefs.getBoolean("fastDialogue",true),new TranslationEngine.Callback<String>(){
             @Override public void success(String result){
                 if(!alive(token))return;
                 if(result.trim().isEmpty()){fail(token,"Çeviri sonucu boş geldi. Metni kontrol edip tekrar dene.",null);return;}
-                translation=result;lastFrom=from;lastTo=to;lastCloudResult=engine instanceof HybridTranslationEngine&&((HybridTranslationEngine)engine).usingCloud();
+                lastTranslationMs=SystemClock.elapsedRealtime()-translationStarted;translation=result;lastFrom=from;lastTo=to;lastCloudResult=engine instanceof HybridTranslationEngine&&((HybridTranslationEngine)engine).usingCloud();
                 if(attributionPanel!=null){attributionPanel.removeAllViews();attribution(attributionPanel,lastCloudResult);}
                 if(output!=null){output.setText(result);output.setTextColor(TEXT);}
                 if(translatedLabel!=null)translatedLabel.setText("ÇEVİRİ · "+LanguageCatalog.name(to));
@@ -532,7 +536,7 @@ public class MainActivity extends Activity {
                         if(prefs.getBoolean("alternate",false))activeSide=1-activeSide;
                         String next=activeSide==0?source:target;
                         setStatus("Yeniden dinlenecek · "+LanguageCatalog.name(next));
-                        handler.postDelayed(()->{if(alive(token)&&sessionActive&&foreground)beginListening(token);},850);
+                        handler.postDelayed(()->{if(alive(token)&&sessionActive&&foreground)beginListening(token);},250);
                     }else{sessionActive=false;packSetup.resumeAfterConversation();getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);setStatus("Çeviri hazır · "+LanguageCatalog.name(to));}
                 };
                 if(prefs.getBoolean("autoSpeak",true))speak(result,to,token,done);else done.run();
@@ -552,6 +556,7 @@ public class MainActivity extends Activity {
     }
     private void beginListening(long token){
         if(!alive(token)||!foreground||!sessionActive)return;
+        finishPressedAt=0;
         String from=activeSide==0?source:target,to=activeSide==0?target:source;
         if(!LanguageCatalog.supportsEmbeddedSpeech(from)){
             fail(token,LanguageCatalog.name(from)+" için çevrimdışı konuşma tanıma bulunmuyor. Metin çevirisini kullanabilirsin.",null);return;
@@ -571,7 +576,7 @@ public class MainActivity extends Activity {
                 if(input!=null)input.setText(draft);if(originalLabel!=null)originalLabel.setText("DUYULAN · "+LanguageCatalog.name(from));
             }
             public void result(String value){
-                if(!alive(token))return;silenceCount=0;draft=value.length()>4000?value.substring(0,4000):value;draftFrom=from;
+                if(!alive(token))return;if(finishPressedAt>0)lastAsrMs=SystemClock.elapsedRealtime()-finishPressedAt;silenceCount=0;draft=value.length()>4000?value.substring(0,4000):value;draftFrom=from;
                 if(input!=null)input.setText(draft);translateCaptured(draft,from,to,token);
             }
             public void error(String message){fail(token,message,null);}
@@ -743,22 +748,23 @@ public class MainActivity extends Activity {
     private void playRouted(String id){
         if(!id.equals(utteranceId)||routedFile==null)return;File file=routedFile;routedFile=null;routedId="";
         setStatus("Seslendiriliyor · "+(privateAudio?"Kulaklık":"Telefon hoparlörü"));
-        routedAudio.play(file,privateAudio,new RoutedAudio.Callback(){public void done(){finishSpeaking(id,false);}public void error(String message){
+        routedAudio.play(file,privateAudio,new RoutedAudio.Callback(){public void started(){if(id.equals(utteranceId)&&lastVoiceMs<0)lastVoiceMs=SystemClock.elapsedRealtime()-ttsRequestedAt;}public void done(){finishSpeaking(id,false);}public void error(String message){
             if(!id.equals(utteranceId))return;afterSpeech=null;utteranceId="";sessionActive=false;conversationStarted=false;setStatus(message);toast(message);
         }});
     }
     private void groqSettings(){
         LinearLayout content=vertical();content.setPadding(dp(20),dp(8),dp(20),dp(8));
-        full(content,text("İsteğe bağlı internet desteği. Açıkken çevrilecek metin Groq'a gönderilir; fotoğraf ve ses gönderilmez. Ücretsiz hesap limitlidir; ücretsiz hesabının anahtarını kullan. Uygulama hesap planını doğrulayamaz. Hata veya kota durumunda yerel çeviri denenir. API anahtarını bir kez kaydet.",14,TEXT,false));gap(content,12);
-        Switch enabled=new Switch(this);enabled.setText("Groq ile metin çevirisi");enabled.setTextColor(TEXT);enabled.setChecked(prefs.getBoolean("groqEnabled",false));full(content,enabled);gap(content,10);
+        full(content,text("İsteğe bağlı internet desteği. Metin seçeneği çevrilecek yazıyı; ses seçeneği dinleme sırasında kısa ses parçalarını Groq'a gönderir. Fotoğraf dosyası gönderilmez. Ücretsiz hesap limitlidir; ücretsiz hesabının anahtarını kullan. Uygulama hesap planını doğrulayamaz. Hata veya kota durumunda yerel çeviri denenir. API anahtarını bir kez kaydet.",14,TEXT,false));gap(content,12);
+        Switch enabled=new Switch(this);enabled.setText("Groq ile metin çevirisi");enabled.setTextColor(TEXT);enabled.setChecked(prefs.getBoolean("groqEnabled",false));full(content,enabled);gap(content,6);
+        Switch audioEnabled=new Switch(this);audioEnabled.setText("Groq ile ses tanıma · Ses internete gönderilir");audioEnabled.setTextColor(TEXT);audioEnabled.setChecked(prefs.getBoolean("groqAudioEnabled",false));full(content,audioEnabled);gap(content,10);
         EditText key=new EditText(this);key.setTextColor(TEXT);key.setHintTextColor(MUTED);key.setSingleLine(true);key.setInputType(android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
         key.setHint(ApiKeyStore.has(this)?"Anahtar kayıtlı · Değiştirmek için yaz":"Groq API anahtarı");key.setImportantForAutofill(View.IMPORTANT_FOR_AUTOFILL_NO);full(content,key);
         AlertDialog dialog=new AlertDialog.Builder(this).setTitle("Groq desteği").setView(content).setPositiveButton("Kaydet",null)
-            .setNeutralButton("Anahtarı sil",(d,w)->{ApiKeyStore.clear(this);prefs.edit().putBoolean("groqEnabled",false).apply();stopSession();setStatus("Groq kapatıldı. Yerel çeviri kullanılacak.");}).setNegativeButton("Vazgeç",null).create();
+            .setNeutralButton("Anahtarı sil",(d,w)->{ApiKeyStore.clear(this);prefs.edit().putBoolean("groqEnabled",false).putBoolean("groqAudioEnabled",false).apply();stopSession();setStatus("Groq kapatıldı. Yerel çeviri kullanılacak.");}).setNegativeButton("Vazgeç",null).create();
         dialog.setOnShowListener(d->dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v->{try{
             String value=key.getText().toString().trim();if(!value.isEmpty())ApiKeyStore.save(this,value);
-            if(enabled.isChecked()&&!ApiKeyStore.has(this)){key.setError("Önce API anahtarını gir.");return;}
-            stopSession();prefs.edit().putBoolean("groqEnabled",enabled.isChecked()).apply();render();setStatus(enabled.isChecked()?"Groq internet desteği açık.":"Yerel çeviri seçildi.");dialog.dismiss();
+            if((enabled.isChecked()||audioEnabled.isChecked())&&!ApiKeyStore.has(this)){key.setError("Önce API anahtarını gir.");return;}
+            stopSession();prefs.edit().putBoolean("groqEnabled",enabled.isChecked()).putBoolean("groqAudioEnabled",audioEnabled.isChecked()).apply();render();setStatus((enabled.isChecked()||audioEnabled.isChecked())?"Groq internet desteği açık.":"Yerel çeviri seçildi.");dialog.dismiss();
         }catch(Exception e){key.setError("Anahtar güvenli biçimde kaydedilemedi.");}}));dialog.show();
     }
     private Bitmap decodeImage(Uri uri)throws IOException{
@@ -791,8 +797,11 @@ public class MainActivity extends Activity {
         rememberInput();stopSession();LinearLayout content=vertical();content.setPadding(dp(22),dp(6),dp(22),dp(12));
         full(content,text("Ücretsiz motor · "+languages.size()+" dilde metin çevirisi\nSes tanıma uygulamanın içinde, çevrimdışı çalışır.",14,TEXT,false));gap(content,12);
         settingSwitch(content,"Çeviriyi otomatik seslendir","autoSpeak",true);
+        settingSwitch(content,"Hızlı diyalog modu","fastDialogue",true);
+        full(content,text("Çok dilli ses modeli diller arasında yeniden yüklenmez. Kısa konuşmalar daha küçük işlem penceresinde çözülür; ses parçaları daha erken oynatılır. Hız için tanıma doğruluğu azalabilir ve daha mekanik bir ses kullanılabilir; daha ayrıntılı tanıma için bu seçeneği kapat.",12,MUTED,false));gap(content,6);
         settingSwitch(content,"Kulaklıkla karşılıklı konuşma","splitAudio",false);
         settingSwitch(content,"Kulaklık modunda telefon mikrofonunu kullan","phoneMic",true);
+        full(content,button("Ses çıkışlarını dene",false,this::testAudioOutputs));gap(content,6);
         full(content,text("Konuşma sekmesinde Türkçe çeviri kulaklığa, diğer dil telefon hoparlörüne verilir. Türkçe ve karşı tarafın dilini seç. Kulaklık yoksa Türkçe ses oynatılmaz. Telefonun çıkış yönlendirme desteği gerekir.",12,MUTED,false));gap(content,8);
         full(content,button("Groq internet desteği",false,this::groqSettings));gap(content,8);
         settingSwitch(content,"Çeviriden sonra yeniden dinle","repeat",true);
@@ -806,7 +815,7 @@ public class MainActivity extends Activity {
         full(content,button("Telefon ve ses desteğini kontrol et",false,this::diagnostics));gap(content,8);
         full(content,button("Seslendirme ayarları",false,()->openSystem("com.android.settings.TTS_SETTINGS",null)));gap(content,8);
         full(content,button("Çeviri hakkında",false,()->openSystem(Intent.ACTION_VIEW,Uri.parse("https://cloud.google.com/translate/"))));gap(content,12);
-        full(content,text("Metin çevirisi, fotoğraftan okuma ve yerel konuşma modeli cihazda çalışır. Konuşma kaydı ve çözümlemesi için Google ses hizmeti kullanılmaz. İlk çeviri paketi indirmesi internet gerektirir. Varsayılan yerel kullanımda API anahtarı veya abonelik gerekmez. İsteğe bağlı Groq desteği yalnızca açıldığında metni internete gönderir.\n\nHızır Bey Tercüman 0.5.0 · Test sürümü\nYerel ses: Whisper / whisper.cpp (MIT). Çok dilli sesli okuma: ayrı ve isteğe bağlı eSpeak NG uygulaması (GPL-3.0+). Google Translate modelleri ile otomatik çeviri (Google ML Kit). Fotoğraftan okuma: Google ML Kit.\n\nÇeviriler otomatik oluşturulur. Google; çevirilerin doğruluğu, güvenilirliği, ticari elverişliliği, belirli bir amaca uygunluğu ve hak ihlali içermemesi konusunda açık veya örtülü garanti vermez.",12,MUTED,false));
+        full(content,text("Metin çevirisi, fotoğraftan okuma ve yerel konuşma modeli cihazda çalışır. Konuşma kaydı ve çözümlemesi için Google ses hizmeti kullanılmaz. İlk çeviri paketi indirmesi internet gerektirir. Varsayılan yerel kullanımda API anahtarı veya abonelik gerekmez. İsteğe bağlı Groq desteği yalnızca açıldığında metni internete gönderir.\n\nHızır Bey Tercüman 0.5.1 · Test sürümü\nYerel ses: Whisper / whisper.cpp (MIT). Çok dilli sesli okuma: ayrı ve isteğe bağlı eSpeak NG uygulaması (GPL-3.0+). Google Translate modelleri ile otomatik çeviri (Google ML Kit). Fotoğraftan okuma: Google ML Kit.\n\nÇeviriler otomatik oluşturulur. Google; çevirilerin doğruluğu, güvenilirliği, ticari elverişliliği, belirli bir amaca uygunluğu ve hak ihlali içermemesi konusunda açık veya örtülü garanti vermez.",12,MUTED,false));
         ScrollView scroll=new ScrollView(this);scroll.addView(content);
         new AlertDialog.Builder(this).setTitle("Tercihler").setView(scroll).setPositiveButton("Tamam",(d,w)->render()).show();
     }
@@ -818,10 +827,17 @@ public class MainActivity extends Activity {
         try{Intent i=new Intent(action);if(uri!=null)i.setData(uri);startActivity(i);}
         catch(ActivityNotFoundException e){toast("Bu telefonda ilgili ayar ekranı bulunamadı.");}
     }
+    private void testAudioOutputs(){
+        new AlertDialog.Builder(this).setTitle("Ses çıkışını dene").setItems(new String[]{"Kulaklık · Türkçe ses","Telefon hoparlörü"},(dialog,index)->{
+            stopSession();forceAudioRoute=index==0?1:0;long token=gate.current();
+            speak(index==0?"Kulaklık ses denemesi.":"Telefon hoparlörü ses denemesi.","tr",token,()->{forceAudioRoute=-1;setStatus("Ses denemesi tamamlandı.");});
+        }).setNegativeButton("Kapat",null).show();
+    }
     private void diagnostics(){
         String device=Build.MANUFACTURER+" "+Build.MODEL+"\nAndroid "+Build.VERSION.RELEASE+" (API "+Build.VERSION.SDK_INT+")\n\n";
         device+="Ses çıkışları:\n"+routedAudio.outputs()+"\n";
         device+="Ses tanıma: Uygulamaya dahil Whisper · Çevrimdışı\n";
+        device+="Son aşamalar · Bitir sonrası yazı: "+lastAsrMs+" ms; metin çevirisi: "+lastTranslationMs+" ms; ses hazırlığı: "+lastVoiceMs+" ms\n(-1: henüz ölçülmedi; Bluetooth'un kulağa ulaşma süresi dahil değil.)\n\n";
         device+="Yerel ses durumu: "+embeddedSpeech.diagnostics()+"\n";
         device+="Seslendirme: "+(ttsReady?"Hazır":"Hazır değil")+"\n\n";
         if(ttsReady){for(String code:new String[]{source,target}){
@@ -829,7 +845,7 @@ public class MainActivity extends Activity {
             device+=LanguageCatalog.name(code)+" seslendirme: "+(support>=0?"Destekleniyor":"Paket eksik / desteklenmiyor")+"\n";
         }}
         device+="\nMetin çevirisi: "+languages.size()+" dil\nFotoğraf alfabeleri: Latin, Makedonca, Çince, Japonca, Korece, Devanagari\n\nSes tanıma ve seslendirme dil listeleri metin çevirisi listesinden farklı olabilir.";
-        device+="\n\nUygulama: 0.5.0\nSon paket hatası: "+(lastPreparationError.isEmpty()?"Yok":lastPreparationError);
+        device+="\n\nUygulama: 0.5.1\nSon paket hatası: "+(lastPreparationError.isEmpty()?"Yok":lastPreparationError);
         final String summary=device;
         AlertDialog d=new AlertDialog.Builder(this).setTitle("Telefon desteği").setMessage(device)
             .setNeutralButton("Kopyala",(dialog,w)->copy(summary)).setPositiveButton("Tamam",null).create();d.show();

@@ -1,0 +1,115 @@
+whisper_init_from_file_with_params_no_state: loading model from 'restored/HizirBey-Tercuman/app/src/main/assets/models/ggml-base-q5_1.bin'
+whisper_init_with_params_no_state: use gpu    = 0
+whisper_init_with_params_no_state: flash attn = 0
+whisper_init_with_params_no_state: gpu_device = 0
+whisper_init_with_params_no_state: dtw        = 0
+whisper_init_with_params_no_state: devices    = 1
+whisper_init_with_params_no_state: backends   = 1
+whisper_model_load: loading model
+whisper_model_load: n_vocab       = 51865
+whisper_model_load: n_audio_ctx   = 1500
+whisper_model_load: n_audio_state = 512
+whisper_model_load: n_audio_head  = 8
+whisper_model_load: n_audio_layer = 6
+whisper_model_load: n_text_ctx    = 448
+whisper_model_load: n_text_state  = 512
+whisper_model_load: n_text_head   = 8
+whisper_model_load: n_text_layer  = 6
+whisper_model_load: n_mels        = 80
+whisper_model_load: ftype         = 9
+whisper_model_load: qntvr         = 1
+whisper_model_load: type          = 2 (base)
+whisper_model_load: adding 1608 extra tokens
+whisper_model_load: n_langs       = 99
+whisper_model_load:          CPU total size =    59.12 MB
+whisper_model_load: model size    =   59.12 MB
+whisper_backend_init_gpu: no GPU found
+whisper_init_state: kv self size  =    6.29 MB
+whisper_init_state: kv cross size =   18.87 MB
+whisper_init_state: kv pad  size  =    3.15 MB
+whisper_init_state: compute buffer (conv)   =   16.26 MB
+whisper_init_state: compute buffer (encode) =   85.86 MB
+whisper_init_state: compute buffer (cross)  =    4.65 MB
+whisper_init_state: compute buffer (decode) =   96.35 MB
+whisper_vad_init_from_file_with_params: loading VAD model from 'restored/HizirBey-Tercuman/app/src/main/assets/models/ggml-silero-v5.1.2.bin'
+whisper_vad_init_with_params: model type: silero-16k
+whisper_vad_init_with_params: model version: 5.1.2
+whisper_vad_init_with_params: n_encoder_layers = 4
+whisper_vad_init_with_params: encoder_in_channels[0] = 129
+whisper_vad_init_with_params: encoder_in_channels[1] = 128
+whisper_vad_init_with_params: encoder_in_channels[2] = 64
+whisper_vad_init_with_params: encoder_in_channels[3] = 64
+whisper_vad_init_with_params: encoder_out_channels[0] = 128
+whisper_vad_init_with_params: encoder_out_channels[1] = 64
+whisper_vad_init_with_params: encoder_out_channels[2] = 64
+whisper_vad_init_with_params: encoder_out_channels[3] = 128
+whisper_vad_init_with_params: lstm_input_size = 128
+whisper_vad_init_with_params: lstm_hidden_size = 128
+whisper_vad_init_with_params: final_conv_in = 128
+whisper_vad_init_with_params: final_conv_out = 1
+whisper_vad_init_with_params:          CPU total size =     0.88 MB
+whisper_vad_init_with_params: model size    =    0.88 MB
+whisper_backend_init_gpu: no GPU found
+whisper_vad_init_context: compute buffer (VAD)   =    1.58 MB
+whisper_vad_segments_from_samples: detecting speech timestamps in 176000 samples
+whisper_vad_detect_speech: detecting speech in 176000 samples
+whisper_vad_detect_speech: n_chunks: 344
+whisper_vad_detect_speech: props size: 344
+whisper_vad_detect_speech: chunk_len: 384 < n_window: 512
+whisper_vad_detect_speech: vad time = 83.33 ms processing 176000 samples
+whisper_vad_segments_from_probs: detecting speech timestamps using 344 probabilities
+whisper_vad_segments_from_probs: Merged 0 adjacent segments, now have 5 segments
+whisper_vad_segments_from_probs: Final speech segments after filtering: 5
+whisper_vad_segments_from_probs: VAD segment 0: start = 0.29, end = 2.21 (duration: 1.92)
+whisper_vad_segments_from_probs: VAD segment 1: start = 3.30, end = 3.77 (duration: 0.47)
+whisper_vad_segments_from_probs: VAD segment 2: start = 4.00, end = 4.35 (duration: 0.35)
+whisper_vad_segments_from_probs: VAD segment 3: start = 5.38, end = 7.65 (duration: 2.27)
+whisper_vad_segments_from_probs: VAD segment 4: start = 8.16, end = 10.59 (duration: 2.43)
+whisper_vad_segments_from_samples: detecting speech timestamps in 48000 samples
+whisper_vad_detect_speech: detecting speech in 48000 samples
+whisper_vad_detect_speech: n_chunks: 94
+whisper_vad_detect_speech: props size: 94
+whisper_vad_detect_speech: chunk_len: 384 < n_window: 512
+whisper_vad_detect_speech: vad time = 106.27 ms processing 48000 samples
+whisper_vad_segments_from_probs: detecting speech timestamps using 94 probabilities
+whisper_vad_segments_from_probs: Final speech segments after filtering: 0
+INIT base ms=369
+whisper_vad_segments_from_samples: detecting speech timestamps in 176000 samples
+whisper_vad_detect_speech: detecting speech in 176000 samples
+whisper_vad_detect_speech: n_chunks: 344
+whisper_vad_detect_speech: props size: 344
+whisper_vad_detect_speech: chunk_len: 384 < n_window: 512
+whisper_vad_detect_speech: vad time = 182.33 ms processing 176000 samples
+whisper_vad_segments_from_probs: detecting speech timestamps using 344 probabilities
+whisper_vad_segments_from_probs: Merged 0 adjacent segments, now have 5 segments
+whisper_vad_segments_from_probs: Final speech segments after filtering: 5
+whisper_vad_segments_from_probs: VAD segment 0: start = 0.17, end = 2.33 (duration: 2.16)
+whisper_vad_segments_from_probs: VAD segment 1: start = 3.18, end = 3.89 (duration: 0.71)
+whisper_vad_segments_from_probs: VAD segment 2: start = 3.89, end = 4.47 (duration: 0.58)
+whisper_vad_segments_from_probs: VAD segment 3: start = 5.26, end = 7.77 (duration: 2.51)
+whisper_vad_segments_from_probs: VAD segment 4: start = 8.04, end = 10.71 (duration: 2.67)
+RESULT base fast=false ms=1840 text=And so my fellow Americans, ask not what your country can do for you, ask what you can do for your country.
+whisper_vad_segments_from_samples: detecting speech timestamps in 176000 samples
+whisper_vad_detect_speech: detecting speech in 176000 samples
+whisper_vad_detect_speech: n_chunks: 344
+whisper_vad_detect_speech: props size: 344
+whisper_vad_detect_speech: chunk_len: 384 < n_window: 512
+whisper_vad_detect_speech: vad time = 255.68 ms processing 176000 samples
+whisper_vad_segments_from_probs: detecting speech timestamps using 344 probabilities
+whisper_vad_segments_from_probs: Merged 0 adjacent segments, now have 5 segments
+whisper_vad_segments_from_probs: Final speech segments after filtering: 5
+whisper_vad_segments_from_probs: VAD segment 0: start = 0.17, end = 2.33 (duration: 2.16)
+whisper_vad_segments_from_probs: VAD segment 1: start = 3.18, end = 3.89 (duration: 0.71)
+whisper_vad_segments_from_probs: VAD segment 2: start = 3.89, end = 4.47 (duration: 0.58)
+whisper_vad_segments_from_probs: VAD segment 3: start = 5.26, end = 7.77 (duration: 2.51)
+whisper_vad_segments_from_probs: VAD segment 4: start = 8.04, end = 10.71 (duration: 2.67)
+RESULT base fast=true ms=889 text=And so my fellow Americans, ask not what your country can do for you, ask what you can do for your country.
+whisper_vad_segments_from_samples: detecting speech timestamps in 48000 samples
+whisper_vad_detect_speech: detecting speech in 48000 samples
+whisper_vad_detect_speech: n_chunks: 94
+whisper_vad_detect_speech: props size: 94
+whisper_vad_detect_speech: chunk_len: 384 < n_window: 512
+whisper_vad_detect_speech: vad time = 276.64 ms processing 48000 samples
+whisper_vad_segments_from_probs: detecting speech timestamps using 94 probabilities
+whisper_vad_segments_from_probs: Final speech segments after filtering: 0
+NATIVE_LATENCY_REGRESSION_PASS

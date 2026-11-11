@@ -11,5 +11,6 @@ public interface TranslationEngine extends AutoCloseable {
     default void prepare(String from,String to,boolean wifiOnly,PreparationProgress progress,Callback<Void> callback){prepare(from,to,wifiOnly,callback);}
     default void cancelPreparation(){}
     void translate(String text, String from, String to, Callback<String> callback);
+    default void translate(String text,String from,String to,boolean fast,Callback<String> callback){translate(text,from,to,callback);}
     @Override void close();
 }

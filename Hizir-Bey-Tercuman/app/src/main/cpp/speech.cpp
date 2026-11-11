@@ -5,7 +5,7 @@
 #include <algorithm>
 #include "whisper.h"
 
-struct Context { whisper_context * whisper; whisper_vad_context * vad=nullptr; std::atomic<bool> cancelled{false}; };
+struct Context { whisper_context * whisper; whisper_vad_context * vad=nullptr; bool fast=false; std::atomic<bool> cancelled{false}; };
 static bool aborted(void * data) { return static_cast<Context *>(data)->cancelled.load(); }
 static void error(JNIEnv * env,const char * message) {
     env->ThrowNew(env->FindClass("java/lang/IllegalStateException"),message);
@@ -28,6 +28,18 @@ Java_com_hizirbey_tercuman_NativeWhisper_configureVad(JNIEnv *env,jclass,jlong a
     auto options=whisper_vad_default_context_params();options.use_gpu=false;options.n_threads=2;
     c->vad=whisper_vad_init_from_file_with_params(p,options);env->ReleaseStringUTFChars(path,p);
     if(!c->vad)error(env,"Konuşma etkinliği modeli açılamadı.");
+}
+extern "C" JNIEXPORT void JNICALL
+Java_com_hizirbey_tercuman_NativeWhisper_configureFast(JNIEnv *,jclass,jlong address,jboolean fast) {
+    if(address)reinterpret_cast<Context *>(address)->fast=fast;
+}
+extern "C" JNIEXPORT jboolean JNICALL
+Java_com_hizirbey_tercuman_NativeWhisper_hasSpeech(JNIEnv *env,jclass,jlong address,jfloatArray samples) {
+    auto * c=reinterpret_cast<Context *>(address);if(!c||c->cancelled.load()||!c->vad)return false;
+    int n=env->GetArrayLength(samples);std::vector<float> pcm(n);env->GetFloatArrayRegion(samples,0,n,pcm.data());
+    auto params=whisper_vad_default_params();params.threshold=0.5f;params.min_speech_duration_ms=100;
+    auto * segments=whisper_vad_segments_from_samples(c->vad,params,pcm.data(),n);if(!segments)return false;
+    bool speech=whisper_vad_segments_n_segments(segments)>0;whisper_vad_free_segments(segments);return speech&&!c->cancelled.load();
 }
 extern "C" JNIEXPORT void JNICALL
 Java_com_hizirbey_tercuman_NativeWhisper_cancel(JNIEnv *,jclass,jlong address) {
@@ -69,6 +81,9 @@ Java_com_hizirbey_tercuman_NativeWhisper_transcribe(JNIEnv *env,jclass,jlong add
     params.language=code.c_str();params.translate=false;params.detect_language=false;
     params.no_context=true;params.no_timestamps=true;params.single_segment=false;
     params.print_special=false;params.print_progress=false;params.print_realtime=false;params.print_timestamps=false;
+    // Short conversation chunks do not need the full 30-second encoder window.
+    if(c->fast){int needed=static_cast<int>((pcm.size()+319)/320)+128;
+        params.audio_ctx=std::min(whisper_n_audio_ctx(c->whisper),std::max(768,((needed+63)/64)*64));}
     params.suppress_nst=true;params.temperature=0;params.temperature_inc=0;
     params.greedy.best_of=1;params.abort_callback=aborted;params.abort_callback_user_data=c;
     const int result=whisper_full(c->whisper,params,pcm.data(),static_cast<int>(pcm.size()));

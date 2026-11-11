@@ -1,0 +1,25 @@
+Hızır Bey Tercüman 0.5.1 — 11 Kasım 2026
+Paket com.hizirbey.tercuman; versionCode 9; minSdk26 / targetSdk34; ARM64 + ARMv7.
+APK boyutu: 169422267 bayt.
+APK SHA-256: 77378e211deaeaaf0a0c4e040bf4cf6eb7707c11c942d1423983b458bcbb2f55
+İmza SHA-256: d47ad32e1ed0241f879cedeae27ac8520105b94c3e83bb4b415eb2043b5190c3
+Aynı önceki özel imza. apksigner verify ve zipalign başarılı.
+
+assembleDebug testDebugUnitTest lintDebug: BUILD SUCCESSFUL.
+113 test, 0 başarısız, 0 hata. Lint: 0 hata, 25 uyarı.
+Yeni kontroller: SCO önce listelense bile A2DP seçimi; medya olmayan arama kanalının reddi; karşı tarafa dahili hoparlör seçimi; port kimliği değişiminde kullanılabilir kulaklığın korunması; bütün kulaklıkların kaybında iptal; gerçek çıkış sınıfı kontrolü; kısa TTS parçalarının Unicode/kelime kaybetmemesi; hızlı Groq metin modeli; PCM16 16kHz WAV ve multipart gövdesi; iptal edilmiş ses isteğinin bağlantı açmadan reddi. Önceki konuşma, OCR ve resim testleri korunur. Bluetooth, Robolectric AudioManager ile taklit edilmiştir.
+
+Gerçek native/JNI kontrolü, Linux CPU (telefon değil):
+Base modeli / aynı yaklaşık 11 saniyelik İngilizce JFK kaydı / 4 iş parçacığı.
+Tam 30 saniyelik pencere: 1840 ms.
+Kısa pencere: 889 ms.
+İki ayarda aynı metin döndü; meşru 'you' korundu.
+Konuşma etkinliği denetimi gerçek sesi kabul etti ve sessizliği reddetti; sessizlikten metin çıkmadı.
+Bu tek ölçüm telefonda bu süreleri veya aynı hız oranını garanti etmez; model ısınması, CPU ve yük değişir. Baseline diller arasında yeniden yükleme süresi ayrıca ölçülmedi.
+Deneysel Tiny modeli İngilizce testte hızlı çıktı, ancak Türkçe/Makedonca robotik eSpeak denemelerinde tekrarlar üretti; APK'da kullanılmıyor. Aynı robotik kayıtlarda Base de sözcük hataları yaptı. Bu denemeler dil doğruluğu kıyaslaması sayılmaz; doğal kullanıcı sesi olmadan genel doğruluk iddiası yoktur.
+
+Yeni Groq ses yolu:
+Ayrı opt-in, varsayılan kapalı. Dinleme sırasında kısa ses parçaları gönderilir. Yerel VAD boş sesleri elemek için kullanılır. Çevrimdışıyken veya tercih kapalıyken bu yol çağrılmaz. HTTP istek biçimi ve iptal kontrolleri test edildi; gerçek Groq API anahtarıyla uçtan uca çağrı/kalite/hız test edilmedi. Ağ hatası/kota sonrası yerel model ve 30 saniye ağ bekleme uygulanır. Mikrofon kullanımı eskisi gibi kullanıcı Bitir'e basana kadar devam eder.
+
+Doğrulanmayanlar:
+Bu sürüm fiziksel Samsung S20 FE, Redmi Note 10 Pro veya Bluetooth kulaklık üzerinde denenmedi. Bluetooth medya profilinin telefonda açık olması ve Android ses politikasının yönlendirmeye izin vermesi gerekir. Sesin kulağa varış süresi ölçülmedi. Yeni Android native emülatör testi yapılmadı; önceki sürüm raporları tarihsel kalır. Eski 0.5.0 fotoğraf özellikleri korunur; fotoğraf motorları bu sürümde değiştirilmedi.

@@ -37,6 +37,7 @@ class EmbeddedSpeech implements AutoCloseable {
     private volatile String diagnostics="Henüz dinleme başlatılmadı.";
     private long context;
     private String loadedModel="";
+    private final GroqTranscriber cloudSpeech=new GroqTranscriber();
     EmbeddedSpeech(Context app){this(app,null);}
     EmbeddedSpeech(Context app,CaptureFactory factory){this(app,factory,null);}
     EmbeddedSpeech(Context app,CaptureFactory factory,Decoder decoder){
@@ -83,16 +84,17 @@ class EmbeddedSpeech implements AutoCloseable {
         return out;
     }
     private static final class Turn {
-        final long job;final String language;final Listener listener;
+        final long job;final String language;final Listener listener;final boolean fast;
         final StringBuilder text=new StringBuilder(); // Decoding worker owns this.
         volatile boolean captureDone,heardSpeech;
         volatile Throwable decodingFailure;
-        Turn(long job,String language,Listener listener){this.job=job;this.language=language;this.listener=listener;}
+        Turn(long job,String language,Listener listener,boolean fast){this.job=job;this.language=language;this.listener=listener;this.fast=fast;}
     }
     private boolean current(Turn turn){return !closed.get()&&generation.get()==turn.job;}
     void listen(String language,Listener listener){
         if(closed.get())return;
-        cancel();Turn turn=new Turn(generation.get(),language,listener);
+        cancel();Turn turn=new Turn(generation.get(),language,listener,app.getSharedPreferences("tercuman",0).getBoolean("fastDialogue",true));
+        if(decoder==null)decodingWorker.execute(()->{if(current(turn))try{ensureContext(turn.fast);}catch(Exception|LinkageError|OutOfMemoryError e){diagnostics="Model ön hazırlığı: "+e.getClass().getSimpleName();}});
         worker.execute(()->capture(turn));
     }
     private void capture(Turn turn){
@@ -159,7 +161,7 @@ class EmbeddedSpeech implements AutoCloseable {
         main.post(heartbeat);main.postDelayed(deadline,45000);
         try{
             float[] samples=new float[pcm.length];for(int i=0;i<pcm.length;i++)samples[i]=pcm[i]/32768f;
-            String text=decoder==null?decodeNative(samples,turn.language,turn.job):decoder.decode(samples,turn.language);
+            String text=decoder==null?decodeNative(samples,turn.language,turn.job,turn.fast):decoder.decode(samples,turn.language);
             if(!current(turn)||turn.decodingFailure!=null||text==null)return;text=text.trim();
             if(!text.isEmpty()){
                 if(turn.text.length()>0)turn.text.append(' ');turn.text.append(text);
@@ -182,15 +184,36 @@ class EmbeddedSpeech implements AutoCloseable {
             turn.listener.error(error.getMessage()==null?"Yerel ses motoru çalıştırılamadı.":error.getMessage());
         });
     }
-    private String decodeNative(float[] spoken,String language,long job)throws IOException{
-        String model=language.equals("en")?"ggml-tiny.en-q5_1.bin":"ggml-base-q5_1.bin";
+    private void ensureContext(boolean fast)throws IOException{
+        String model="ggml-base-q5_1.bin"; // One cached multilingual model for both directions.
         if(context!=0&&!loadedModel.equals(model)){synchronized(nativeLock){NativeWhisper.destroy(context);context=0;}}
         if(context==0){long loaded=NativeWhisper.create(modelFile(model).getAbsolutePath());synchronized(nativeLock){context=loaded;loadedModel=model;}}
+        NativeWhisper.configureFast(context,fast);
+        NativeWhisper.configureVad(context,modelFile("ggml-silero-v5.1.2.bin").getAbsolutePath());
+    }
+    private String decodeNative(float[] spoken,String language,long job,boolean fast)throws IOException{
+        long started=SystemClock.elapsedRealtime();ensureContext(fast);
         synchronized(nativeLock){NativeWhisper.reset(context);}
         if(generation.get()!=job)return "";
-        NativeWhisper.configureVad(context,modelFile("ggml-silero-v5.1.2.bin").getAbsolutePath());
+        if(app.getSharedPreferences("tercuman",0).getBoolean("groqAudioEnabled",false)){
+            android.net.ConnectivityManager manager=(android.net.ConnectivityManager)app.getSystemService(Context.CONNECTIVITY_SERVICE);
+            android.net.NetworkCapabilities network=manager.getNetworkCapabilities(manager.getActiveNetwork());
+            if(network!=null&&network.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET)&&ApiKeyStore.has(app)){
+                try{
+                    if(!NativeWhisper.hasSpeech(context,spoken))return "";
+                    post(job,()->{if(finishRequested.get()==job)diagnostics="Groq ses tanıma · İnternet desteği";});
+                    if(generation.get()!=job)return "";
+                    String value=cloudSpeech.transcribe(spoken,language,ApiKeyStore.read(app),fast,()->generation.get()==job&&!closed.get());
+                    if(generation.get()!=job)return "";
+                    if(!value.isEmpty()){diagnostics="Groq ses tanıma · "+(SystemClock.elapsedRealtime()-started)+" ms";return value;}
+                }catch(Exception e){if(generation.get()!=job)return "";diagnostics="Groq ses kullanılamadı · Yerel model deneniyor";}
+            }
+        }
+        ensureContext(fast);
+        synchronized(nativeLock){NativeWhisper.reset(context);}
         if(generation.get()!=job)return "";
         byte[] bytes=NativeWhisper.transcribe(context,spoken,language,Math.min(4,Runtime.getRuntime().availableProcessors()));
+        diagnostics=(fast?"Hızlı":"Ayrıntılı")+" · "+loadedModel+" · Son ses çözümleme: "+(SystemClock.elapsedRealtime()-started)+" ms";
         return new String(bytes==null?new byte[0]:bytes,StandardCharsets.UTF_8).trim();
     }
     /** Finish the current utterance without cancelling its recognition or translation. */
@@ -206,7 +229,7 @@ class EmbeddedSpeech implements AutoCloseable {
         if(!temp.renameTo(file))throw new IOException("Ses modeli hazırlanamadı.");return file;
     }
     void cancel(){
-        generation.incrementAndGet();Capture active=recorder;if(active!=null)active.close();
+        generation.incrementAndGet();cloudSpeech.cancel();Capture active=recorder;if(active!=null)active.close();
         synchronized(nativeLock){if(context!=0)NativeWhisper.cancel(context);}
     }
     @Override public void close(){

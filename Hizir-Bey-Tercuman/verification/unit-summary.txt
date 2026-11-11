@@ -1,6 +1,5 @@
-Version: 0.5.0
-Tests: 90
+Version: 0.5.1
+Tests: 113
 Failures: 0
 Errors: 0
-Robolectric API 28/33 with native bitmap drawing. UI engines and cloud transport mocked.
-Android API28 offline OCR/audio: 4 tests passed; separate emulator variant, ASR assets omitted to reduce install time. No live Groq key used.
+Robolectric SDK28/33 and JVM format tests. Bluetooth routes are simulated; no physical Bluetooth validation. Native Base full/fast and VAD checked separately on Linux CPU. No live Groq key/API request used.

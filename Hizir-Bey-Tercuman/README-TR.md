@@ -1,17 +1,28 @@
-# Hızır Bey Tercüman 0.5.0
+# Hızır Bey Tercüman 0.5.1
 
-Ücretsiz Android çevirmeni. Android 8.0+, ARM64/ARMv7. Samsung S20 FE ve Redmi Note 10 Pro üzerinde fiziksel test henüz yapılmadı. Gerçek doğrulama kapsamı DOGRULAMA-0.5.0.txt dosyasında yazılıdır.
+Ücretsiz Android çevirmeni. Android 8.0+, ARM64/ARMv7. Samsung S20 FE ve Redmi Note 10 Pro üzerinde fiziksel test henüz yapılmadı. Gerçek doğrulama kapsamı DOGRULAMA-0.5.1.txt dosyasında yazılıdır.
 
 ## Bu sürümde
 
-0.5.0: Fotoğrafın üzerinde çeviri, Makedonca okuma ve kulaklık modu.
+0.5.1: Bluetooth medya seçimi ve diyalog gecikmesi düzeltmesi.
+
+- Kulaklık için ilk görünen aygıt alınmaz: A2DP/LE/kablolu/USB medya çıkışları seçilir; Bluetooth arama (SCO) kanalı medya sesi yerine kullanılmaz. Android'in değiştirdiği çıkış kimlikleri, hâlâ özel bir medya kulaklığı etkinse hata sayılmaz. İstenen özel çıkış uygulanmazsa yalnızca sessiz doğrulama sırasında sistemin medya yolu denenir; gerçek çıkış kulaklık değilse konuşma oynatılmaz. Çıkış kaybında ses kesilir. Donanım ve Bluetooth ayarındaki **Medya sesi** desteği gerekir.
+- **Hızlı diyalog modu** varsayılan açıktır. Aynı çok dilli Base modeli İngilizce/Türkçe/Makedonca geçişlerinde korunur ve konuşma kaydı sürerken hazırlanır. Kısa ses parçaları tam 30 saniyelik pencere yerine en az 768 encoder adımlı (15,36 saniyelik) pencereyle çözülür; uzun parçalar için sınır modele göre büyütülür. Mikrofona otomatik kapanma eklenmedi: Bitir ve çevir kontrolü aynıdır.
+- Hızlı modda ilk kısa cümle/160 karakterlik bölüm seslendirilir, sonra kalan bölümler sırayla devam eder. İlk ses için bütün uzun metnin WAV dosyası beklenmez. Hafif çevrimdışı ses motoru varsa öncelik verilir; ses daha mekanik olabilir. Yeniden dinleme aralığı 850 ms yerine 250 ms'dir. Hızlı mod kapatılınca tam ses penceresi ve normal uzun seslendirme kullanılır.
+- Çok küçük Tiny modeli Türkçe/Makedonca sentetik ses denemelerinde tekrarlara girdiği için bu dağıtıma alınmadı. Base modeli korunur; bu seçim bütün kayıtların doğru anlaşılacağını garanti etmez.
+- **Groq ile ses tanıma** ayrı ve varsayılan kapalı bir tercihtir. Açıkken dinleme sırasındaki konuşma parçaları Groq'a gönderilir. Yerel Silero denetimi ses içermeyen parçaları elemeden gönderim yapılmaz. Hızlı modda whisper-large-v3-turbo, normal modda whisper-large-v3 kullanılır. Ağ/kota/hata durumunda yerel modele dönülür; başarısız istekten sonra 30 saniye boyunca yeni ağ denemesi yapılmaz. Durdur, sıradaki gönderimi iptal eder.
+- Groq metin ve ses seçenekleri ayrı ayrı açılır; her ikisi de kapalıyken konuşma/çeviri/seslendirme çevrimdışıdır (metin paketleri önceden indirilmiş olmalı). Mevcut Groq metin tercihi, güncelleme sonrası ses gönderimini kendiliğinden açmaz. Anahtarı silmek her iki tercihi kapatır. Gerçek API anahtarı ile bu sürüm test edilmedi; ücretsiz hesap kotası ve ağ gecikmesi değişebilir, uygulama hesap planını doğrulayamaz.
+- Hızlı konuşma çevirilerinde Groq gpt-oss-20b ve daha kısa yanıt bekleme sınırı kullanılır. Metin ağ hatası sonrası 30 saniye boyunca tekrar ağ beklenmez; yerel motor kullanılır. Fotoğraf/normal metin yollarında gpt-oss-120b korunur. Başka ücretli sağlayıcıya geçiş yapılmaz.
+- **Ayarlar → Ses çıkışlarını dene** kulaklık ve telefon hoparlörünü çevirisiz sınar. **Telefon ve ses desteğini kontrol et** aktif medya/arama aygıtını ve son uygulama aşaması sürelerini gösterir. Bluetooth'un fiziksel ses gecikmesi bu sürelerle ölçülmez.
+
+0.5.0'dan korunan fotoğraf özellikleri:
 
 - Makedonca OCR, gömülü tessdata_best LSTM modeliyle çalışır. Fotoğrafı seçince yazı alanı parmakla çerçevelenir; Tümü ile bütün görüntü seçilebilir. Seçili alan büyütülür; fotoğrafın özgün ışık/renk yapısı korunur. Küçük gri etiketlerde kontrastı bozan yapay beyaz kenar eklenmez. Düşük güvenli okuma ayrıca belirtilir. Latin harfleri Kiril'e tahmini olarak değiştiren bir filtre yoktur.
 - **Resim üzerinde çevir** metin alanlarını yerel çeviri motoruyla çevirip ilgili alanların üzerine yerleştirir. Fotoğraf/çeviri arasında geçiş ve tam ekranda iki parmakla yakınlaştırma vardır. **Okunan alanları düzelt** ile bir alanın OCR metni düzeltilip yeniden çevrilebilir. Her alan en fazla 4000 karakter; resim toplamı 24000 karakter/150 alan. Daha uzun belgeler parça parça seçilmelidir. Arka plan alan kenarlarının rengiyle örtülür; karmaşık dokuyu, yazı tipini veya belge düzenini birebir yeniden üretme garantisi yoktur. Canlı kamera videosu değil, çekilmiş/seçilmiş fotoğraf kullanılır. Çevrilmiş resim oturum belleğinde kalır; uygulama yeniden açılınca fotoğraf tekrar seçilir.
 - Ayarlar'daki **Kulaklıkla karşılıklı konuşma** seçeneği Konuşma sekmesinde geçerlidir. Dil çiftinin biri Türkçe olmalıdır: Türkçe çeviri kulaklığa, diğer dil telefonun dahili hoparlörüne gönderilir. Mikrofon varsayılan olarak telefondan alınır; bu tercih kapatılabilir. Ses önce çevrimdışı TTS ile özel geçici WAV dosyasına hazırlanır, sonra yalnızca uygulamanın AudioTrack çıkışı seçilir. Global hoparlör/arama modu değiştirilmez.
 - Gerçek ses çıkışı sessiz bir başlangıç sırasında doğrulanır. Kulaklık yoksa, Android istenen çıkışı uygulamazsa veya çıkış değişirse seslendirme durur; başka çıkışa bilerek devam edilmez. Bluetooth/kablolu/USB yönlendirme telefonun ses politikalarına bağlıdır; gerçek iki telefonda doğrulama gerekir. Donanım değişikliğinin algılanma süresi Android'e bağlıdır, mutlak ses sızıntısı garantisi verilemez.
-- Varsayılan çalışma **çevrimdışıdır**. İsteğe bağlı **Groq internet desteği** yalnızca açıkken ve anahtar kaydedildiğinde çevrilecek metni Groq'a gönderir. Ses ve fotoğraf gönderilmez; fotoğraftan çıkarılmış metin, resim çevirisinde bu seçenek açıkken gönderilir. Anahtar Android Keystore AES/GCM ile şifrelenir. Ücretsiz hesabın kotası sınırlıdır; ücret/hesap sınırları kullanıcı hesabına bağlıdır. Anahtar, APK'ya veya kaynak yedeğine eklenmez.
-- Groq için openai/gpt-oss-120b kullanılır. Başarısız/kota/bağlantı durumunda yerel motor denenir. Yerel dil paketi yoksa internet açıkken indirme gerekebilir. Başka ücretli servise otomatik geçiş yoktur. Kaydedilmiş anahtarın ücretli bir Groq hesabına ait olup olmadığı uygulama tarafından belirlenemez; hesap limitleri Groq konsolundan yönetilmelidir.
+- Varsayılan çalışma **çevrimdışıdır**. Groq metin seçeneği yalnızca açıkken ve anahtar kaydedildiğinde çevrilecek metni gönderir. Fotoğraf dosyası gönderilmez; çıkarılan metin gönderilebilir. Yeni ses tercihi ayrıca açılırsa kısa konuşma parçaları da gönderilir. Anahtar Android Keystore AES/GCM ile şifrelenir. Ücretsiz hesabın kotası sınırlıdır; ücret/hesap sınırları kullanıcı hesabına bağlıdır. Anahtar, APK'ya veya kaynak yedeğine eklenmez.
+- Groq normal metin/fotoğraf için openai/gpt-oss-120b, hızlı konuşma metni için openai/gpt-oss-20b kullanır. Başarısız/kota/bağlantı durumunda yerel motor denenir. Yerel dil paketi yoksa internet açıkken indirme gerekebilir. Başka ücretli servise otomatik geçiş yoktur. Kaydedilmiş anahtarın ücretli bir Groq hesabına ait olup olmadığı uygulama tarafından belirlenemez; hesap limitleri Groq konsolundan yönetilmelidir.
 - **Bitir ve çevir** kaydı tamamlar; **Durdur** kayıt/çözümleme/çeviri/seslendirmeyi iptal eder ve otomatik tekrar başlamasını önler. Sonradan gelen eski sonuçlar gösterilmez. Silero konuşma etkinliği filtresi korunur; gerçek konuşmadaki “you” gibi kelimeler körlemesine silinmez.
 
 Önceki sürümden korunan özellikler:
@@ -20,7 +31,7 @@
 - Dil seçimi veya ⇄ ile dil değiştirildiğinde, başlatılmış konuşma yeni kaynak dilde yeniden dinlenir. Eski ekranın gecikmiş seçim olayı ve iptal edilmiş ses sonucu reddedilir.
 - Dinleme düğmesi yalnızca mikrofon gerçekten açıldığında vurgulanır. Ses seviyesi göstergesi gerçek PCM düzeyini gösterir; cihazın mikrofon açması ile konuşmayı duyması ayrı ayrı kontrol edilir.
 - Mikrofon 16 kHz, 48 kHz ve 44,1 kHz ile denenir. Yüksek örnek hızları 16 kHz modele dönüştürülür; parçalı okumalar tam ses çerçevesi olana kadar biriktirilir. Veri gelmemesi ve çözümleme süresi sınırlandırılmıştır.
-- İngilizce için daha küçük tiny.en Q5 modeli, diğer desteklenen diller için çok dilli base Q5 modeli kullanılır. Modeller uygulamaya dahildir; ayrı konuşma paketi indirmek gerekmez.
+- Desteklenen bütün dillerde tek, çok dilli Base Q5 modeli kullanılır; dil değişiminde model yeniden yüklenmez. Modeller uygulamaya dahildir; ayrı konuşma paketi indirmek gerekmez.
 - Makedonca Kiril yazısını okumak için Tesseract modeli APK'ya eklendi. Latin, Çince, Japonca, Korece ve Devanagari okumaları da cihazda çalışır.
 - İnternet yokken eksik çeviri paketi için indirme beklenmez; hangi paketin eksik olduğu açıklanır. Önceden indirilen modeller çevrimdışı kullanılmaya devam eder.
 - eSpeak'in eski setLanguage arayüzü, yalnızca bu bilinen çevrimdışı motorda kullanılabilir. İnternet gerektiren sesler seçilmez.
@@ -35,7 +46,7 @@
 6. **Durdur** dinlemeyi, bekleyen çeviriyi ve seslendirmeyi keser. Yeniden başlatmak için dil düğmesine dokun. Varsayılan olarak çeviriden sonra aynı yönde dinleme yeniden başlar. Ayarlar'dan kapatılabilir. İstersen sırayla iki dile geçiş açılabilir; bu, otomatik konuşma dili tespiti değildir.
 7. Fotoğraf sekmesinde kaynak/ hedef dili seç, Kamera veya Fotoğraf seç kullan, yazı alanını çerçevele ve Seçili alanı oku'ya bas. Küçük bir tabela için yalnız yazıyı seçmek doğruluğu artırır. Metin sonucu için **Metni çevir**, fotoğraf üstündeki sonuç için **Resim üzerinde çevir** seç. Orijinali göster/Çevrilmiş resmi göster ile karşılaştır. Resme dokunup tam ekranda yakınlaştır.
 8. Kulaklık için Ayarlar → Kulaklıkla karşılıklı konuşma'yı aç, otomatik seslendirmeyi açık tut, Türkçe ve karşı tarafın dilini seç. Önce kısa bir cümleyle iki yönü dene. Telefon yönlendirmeyi reddederse normal ses modunu veya farklı kulaklığı dene.
-9. Groq kullanmak istersen Ayarlar → Groq internet desteği → anahtarını gir → seçeneği aç → Kaydet. Kapalıyken yerel motor kullanılır. Anahtarı sil düğmesi internet desteğini kapatır. Gerçek anahtarla çevrimiçi kalite testi bu dağıtım hazırlanırken yapılmamıştır.
+9. Çevrimiçi ses tanıma için Ayarlar → Groq internet desteği → mevcut anahtarını kullan veya gir → Groq ile ses tanıma seçeneğini aç → Kaydet. Sesin internete gönderileceğini onaylayan bu tercih ayrıca seçilmelidir. Groq metin seçeneği bağımsızdır; iki seçenek de kapalıyken yerel motor kullanılır. Anahtarı sil düğmesi internet desteğini kapatır. Gerçek anahtarla çevrimiçi kalite testi bu dağıtım hazırlanırken yapılmamıştır.
 
 İlk model ve ses kurulumu tamamlandıktan sonra uçak modunda konuşma, indirilmiş dil çiftlerinde metin çevirisi ve desteklenen fotoğraf alfabeleri kullanılabilir. Ses tanıma, metin çevirisi ve seslendirme üç ayrı bileşendir. Yerel modelin dili içermesi her aksanı kusursuz anlaması demek değildir. Çözümleme süresi ve kalite telefona, konuşma uzunluğuna ve gürültüye bağlıdır.
 
@@ -71,7 +82,6 @@ Android cihaz testleri app/src/androidTest altındadır. Uçak modu açılmış,
 - Silero v5.1.2 GGML modeli: https://huggingface.co/ggml-org/whisper-vad
 - Whisper model (MIT): https://github.com/openai/whisper
 - Model: https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base-q5_1.bin
-- İngilizce modeli: https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.en-q5_1.bin
 - Makedonca fotoğraf modeli (Apache-2.0): https://github.com/tesseract-ocr/tessdata_best
 - Android Tesseract bağlayıcısı (Apache-2.0): https://github.com/adaptech-cz/Tesseract4Android
 - eSpeak NG, ayrı uygulama (GPL-3.0+): https://github.com/espeak-ng/espeak-ng
@@ -79,7 +89,7 @@ Android cihaz testleri app/src/androidTest altındadır. Uçak modu açılmış,
 - ML Kit: https://developers.google.com/ml-kit/language/translation/android
 - OCR: https://developers.google.com/ml-kit/vision/text-recognition/v2/android
 - Android mikrofon API: https://developer.android.com/reference/android/media/AudioRecord
-- Groq API ve model belgeleri: https://console.groq.com/docs/api-reference , https://console.groq.com/docs/model/openai/gpt-oss-120b
+- Groq API ve model belgeleri: https://console.groq.com/docs/speech-to-text , https://console.groq.com/docs/speech-to-text , https://console.groq.com/docs/api-reference , https://console.groq.com/docs/model/openai/gpt-oss-120b
 - Groq limitleri: https://console.groq.com/docs/rate-limits
 - Android AudioTrack: https://developer.android.com/reference/android/media/AudioTrack
 - Çeviri hakkında: https://cloud.google.com/translate/
