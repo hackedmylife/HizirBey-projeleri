@@ -10,3 +10,5 @@ local.properties
 vendor/
 app/src/main/assets/models/*.bin
 secrets.properties
+app/src/main/assets/tessdata/*.traineddata
+app/src/androidTest/assets/*.wav

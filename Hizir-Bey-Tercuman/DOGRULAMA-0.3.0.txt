@@ -1,0 +1,42 @@
+Hızır Bey Tercüman 0.3.0 — Test sürümü, 11 Kasım 2026
+
+Derleme: ARM64/ARMv7, minSdk 26, targetSdk 34, versionCode 4.
+47 birim/Robolectric testi geçti (API 28/33 akış kontrolleri dahil).
+Lint: 0 hata, 15 uyarı. APK imzası ve 4 KiB ZIP hizalaması doğrulandı.
+Önceki APK ile aynı sertifika SHA-256:
+d47ad32e1ed0241f879cedeae27ac8520105b94c3e83bb4b415eb2043b5190c3
+APK bytes: 166729670
+APK SHA-256: 6ecab1c434a1237780965fd31053ad6547fcf53356423234dce5c7f73a809833
+
+Gerçek Android API 28 yazılım emülatörü, uçak modu açık:
+- Android AudioRecord gerçek PCM üretimi: GEÇTİ.
+- İngilizceden Makedoncaya dil değişiminde gerçek mikrofonun yeniden açılması: GEÇTİ.
+- Uygulamaya dahil ML Kit ile İngilizce fotoğraf OCR: GEÇTİ.
+- Uygulamaya dahil Tesseract ile Makedonca Kiril fotoğraf OCR: GEÇTİ.
+- İngilizce tam JFK WAV kaydının EmbeddedSpeech + JNI üzerinden çözülmesi:
+  180 saniyelik uygulama sınırında ZAMAN AŞIMI. Bu kontrol geçmiş sayılmadı.
+- eSpeak ilk denemede ses verileri henüz çıkarılmadığı için BAŞARISIZDI.
+  Üretim kurulum akışı doğrudan INSTALL_TTS_DATA açacak şekilde değiştirildi;
+  ses hazırlama eylemi yeni regresyon testiyle doğrulandı.
+  Düzeltme sonrası uçak modunda üç dilde gerçek WAV sentezi: GEÇTİ.
+  İngilizce, Makedonca ve Türkçe; 1 test / 0 hata; 2.411 saniye.
+
+Emülatör donanım hızlandırması olmadan x86_64 TCG kullanır. Android emülatörü
+süre aşımı fiziksel telefon performansı değildir; telefonun hızının yeterli
+olduğunu da kanıtlamaz. Aynı JNI kaynak kodu ve aynı APK içi İngilizce tiny.en
+modeli, ayrı yerel Linux/JVM CPU testinde gerçek JFK kaydını doğru çözdü:
+"And so my fellow Americans ... ask what you can do for your country."
+Model açılışı + çözümleme 0.851 saniye. Bu masaüstü ölçümüdür, telefon ölçümü değildir.
+
+Samsung S20 FE / Redmi Note 10 Pro'da fiziksel mikrofon, kameradan çekim,
+sesli okuma, gerçek çeviri modellerinin indirilmesi ve uçtan uca çeviri bu
+ortamda doğrulanmadı. İndirilen çeviri paketleri önceki sürümün aynı ML Kit
+motoruyla kullanılır. İnternet olmadan eksik modeller için açık hata verilir.
+Metin/ses tanıma/sesli okuma destekleri ayrı ayrı değerlendirilmelidir.
+Bu nedenle APK doğrulanmış bir son ürün olarak değil, test güncellemesi
+olarak paylaşılır. Sonucu kullanıcı telefonunda kontrol etmek gerekir.
+
+Modellerin SHA-256 özetleri:
+base-q5_1: 422f1ae452ade6f30a004d7e5c6a43195e4433bc370bf23fac9cc591f01a8898
+tiny.en-q5_1: c77c5766f1cef09b6b7d47f21b546cbddd4157886b3b5d6d4f709e91e66c7c2b
+mkd.traineddata: 58622bf154830fa62103359938564aeb8112b929759e22a48224f3ecfaac34c6

@@ -1,0 +1,98 @@
+/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/build.gradle:9: Warning: Not targeting the latest versions of Android; compatibility modes apply. Consider testing and updating this version. Consult the android.os.Build.VERSION_CODES javadoc for details. [OldTargetApi]
+        targetSdk 34
+        ~~~~~~~~~~~~
+
+   Explanation for issues of type "OldTargetApi":
+   When your application runs on a version of Android that is more recent than
+   your targetSdkVersion specifies that it has been tested with, various
+   compatibility modes kick in. This ensures that your application continues
+   to work, but it may look out of place. For example, if the targetSdkVersion
+   is less than 14, your app may get an option button in the UI.
+
+   To fix this issue, set the targetSdkVersion to the highest available value.
+   Then test your app to make sure everything works correctly. You may want to
+   consult the compatibility notes to see what changes apply to each version
+   you are adding support for:
+   https://developer.android.com/reference/android/os/Build.VERSION_CODES.html
+   as well as follow this guide:
+   https://developer.android.com/distribute/best-practices/develop/target-sdk.
+   html
+
+   https://developer.android.com/distribute/best-practices/develop/target-sdk.html
+
+/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:686: Warning: Use SwitchCompat from AppCompat or SwitchMaterial from Material library [UseSwitchCompatOrMaterialCode from androidx.appcompat]
+        Switch s=new Switch(this);s.setText(label);s.setTextSize(14);s.setTextColor(TEXT);s.setPadding(0,dp(8),0,dp(8));
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+   Explanation for issues of type "UseSwitchCompatOrMaterialCode":
+   Use SwitchCompat from AppCompat or SwitchMaterial from Material library
+
+   Vendor: Android Open Source Project
+   Identifier: androidx.appcompat
+   Feedback: https://issuetracker.google.com/issues/new?component=460343
+
+/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/build.gradle:12: Warning: Missing x86_64 ABI support for ChromeOS [ChromeOsAbiSupport]
+        ndk { abiFilters(*(project.hasProperty('testAbi') ? [project.property('testAbi')] : ['arm64-v8a','armeabi-v7a'])) }
+                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+   Explanation for issues of type "ChromeOsAbiSupport":
+   To properly support ChromeOS, your Android application should have an x86
+   and/or x86_64 binary as part of the build configuration. To fix the issue,
+   ensure your files are properly optimized for ARM; the binary translator
+   will then ensure compatibility with x86. Alternatively, add an abiSplit for
+   x86 within your build.gradle file and create the required x86
+   dependencies.
+
+   https://developer.android.com/ndk/guides/abis
+
+/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:300: Warning: Do not concatenate text displayed with setText. Use resource string with placeholders. [SetTextI18n]
+        if(firstTalk!=null){firstTalk.setText((active&&activeSide==0?"● ":"")+LanguageCatalog.name(source)+" dinle");firstTalk.setBackground(shape(active&&activeSide==0?ACCENT:CARD2,18));firstTalk.setTextColor(active&&activeSide==0?BG:TEXT);}
+                                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:300: Warning: String literal in setText can not be translated. Use Android resources instead. [SetTextI18n]
+        if(firstTalk!=null){firstTalk.setText((active&&activeSide==0?"● ":"")+LanguageCatalog.name(source)+" dinle");firstTalk.setBackground(shape(active&&activeSide==0?ACCENT:CARD2,18));firstTalk.setTextColor(active&&activeSide==0?BG:TEXT);}
+                                                                                                           ~~~~~~~~
+/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:301: Warning: Do not concatenate text displayed with setText. Use resource string with placeholders. [SetTextI18n]
+        if(secondTalk!=null){secondTalk.setText((active&&activeSide==1?"● ":"")+LanguageCatalog.name(target)+" dinle");secondTalk.setBackground(shape(active&&activeSide==1?ACCENT:CARD2,18));secondTalk.setTextColor(active&&activeSide==1?BG:TEXT);}
+                                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:301: Warning: String literal in setText can not be translated. Use Android resources instead. [SetTextI18n]
+        if(secondTalk!=null){secondTalk.setText((active&&activeSide==1?"● ":"")+LanguageCatalog.name(target)+" dinle");secondTalk.setBackground(shape(active&&activeSide==1?ACCENT:CARD2,18));secondTalk.setTextColor(active&&activeSide==1?BG:TEXT);}
+                                                                                                             ~~~~~~~~
+/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:421: Warning: String literal in setText can not be translated. Use Android resources instead. [SetTextI18n]
+        if(stopButton!=null)stopButton.setText("Durdur");
+                                               ~~~~~~~~
+/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:486: Warning: Do not concatenate text displayed with setText. Use resource string with placeholders. [SetTextI18n]
+                if(translatedLabel!=null)translatedLabel.setText("ÇEVİRİ · "+LanguageCatalog.name(to));
+                                                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:486: Warning: String literal in setText can not be translated. Use Android resources instead. [SetTextI18n]
+                if(translatedLabel!=null)translatedLabel.setText("ÇEVİRİ · "+LanguageCatalog.name(to));
+                                                                 ~~~~~~~~~~~
+/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:487: Warning: Do not concatenate text displayed with setText. Use resource string with placeholders. [SetTextI18n]
+                if(originalLabel!=null)originalLabel.setText("ORİJİNAL · "+LanguageCatalog.name(from));
+                                                             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:487: Warning: String literal in setText can not be translated. Use Android resources instead. [SetTextI18n]
+                if(originalLabel!=null)originalLabel.setText("ORİJİNAL · "+LanguageCatalog.name(from));
+                                                             ~~~~~~~~~~~~~
+/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:489: Warning: String literal in setText can not be translated. Use Android resources instead. [SetTextI18n]
+                if(favoriteButton!=null)favoriteButton.setText("☆ Kaydet");
+                                                               ~~~~~~~~~~
+/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:529: Warning: String literal in setText can not be translated. Use Android resources instead. [SetTextI18n]
+            public void state(String message){if(alive(token)){setStatus(message);if(stopButton!=null)stopButton.setText("Yerel ses · Durdur");}}
+                                                                                                                         ~~~~~~~~~~~~~~~~~~~~
+/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/PackSetup.java:64: Warning: String literal in setText can not be translated. Use Android resources instead. [SetTextI18n]
+        CheckBox voices=new CheckBox(activity);voices.setText("Çok dilli ücretsiz ses motorunu da kur (yaklaşık 10 MB)");voices.setChecked(true);content.addView(voices);
+                                                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+   Explanation for issues of type "SetTextI18n":
+   When calling TextView#setText
+   * Never call Number#toString() to format numbers; it will not handle
+   fraction separators and locale-specific digits properly. Consider using
+   String#format with proper format specifications (%d or %f) instead.
+   * Do not pass a string literal (e.g. "Hello") to display text. Hardcoded
+   text can not be properly translated to other languages. Consider using
+   Android resource strings instead.
+   * Do not build messages by concatenating text chunks. Such messages can not
+   be properly translated.
+
+   https://developer.android.com/guide/topics/resources/localization.html
+
+0 errors, 15 warnings

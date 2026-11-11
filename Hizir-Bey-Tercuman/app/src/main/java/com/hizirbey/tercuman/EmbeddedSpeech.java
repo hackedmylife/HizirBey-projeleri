@@ -39,6 +39,8 @@ class EmbeddedSpeech implements AutoCloseable {
     String diagnostics(){return diagnostics;}
     private void post(long job,Runnable task){main.post(()->{if(!closed.get()&&generation.get()==job)task.run();});}
     private Capture openPlatformCapture(){
+        if(app.checkSelfPermission(Manifest.permission.RECORD_AUDIO)!=PackageManager.PERMISSION_GRANTED)
+            throw new SecurityException("Mikrofon izni gerekli.");
         String last="Mikrofon açılamadı.";
         for(int rate:new int[]{16000,48000,44100})for(int source:new int[]{MediaRecorder.AudioSource.VOICE_RECOGNITION,MediaRecorder.AudioSource.MIC}){
             AudioRecord record=null;

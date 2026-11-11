@@ -1,70 +1,68 @@
-# Hızır Bey Tercüman 0.2.1
+# Hızır Bey Tercüman 0.3.0
 
-Ücretsiz Android uygulaması. Samsung S20 FE ve Redmi Note 10 Pro için ARM64/ARMv7, Android 8.0+. Fiziksel telefonların mikrofon/kamera testi bu ortamda yapılmadı.
+Ücretsiz Android çevirmeni. Android 8.0+, ARM64/ARMv7. Samsung S20 FE ve Redmi Note 10 Pro üzerinde fiziksel test henüz yapılmadı. Gerçek doğrulama kapsamı DOGRULAMA-0.3.0.txt dosyasında yazılıdır.
 
-## 0.2.1: Paket beklerken dinlememe düzeltmesi
+## Bu sürümde
 
-Konuşma düğmesi artık çeviri paketinin indirilmesini beklemeden dinlemeyi başlatır. Yerel dinlemede mikrofon, Whisper modeli belleğe yüklenmeden önce açılır; model konuşma alındıktan sonra çözümleme için hazırlanır. Konuşma metni önce ekrana yazılır. Çeviri için yalnızca seçili dil çiftinin eksik modelleri hazırlanır. Bu modellerin hazır olması çeviri için hâlâ gereklidir; dinleme için değildir.
+- Konuşma tanıma artık desteklenen dillerde her zaman APK içindeki Whisper motorunu kullanır. Android/Google ses tanıma hizmetine yönlendirme yoktur.
+- Dil seçimi veya ⇄ ile dil değiştirildiğinde, başlatılmış konuşma yeni kaynak dilde yeniden dinlenir. Eski ekranın gecikmiş seçim olayı ve iptal edilmiş ses sonucu reddedilir.
+- Dinleme düğmesi yalnızca mikrofon gerçekten açıldığında vurgulanır. Ses seviyesi göstergesi gerçek PCM düzeyini gösterir; cihazın mikrofon açması ile konuşmayı duyması ayrı ayrı kontrol edilir.
+- Mikrofon 16 kHz, 48 kHz ve 44,1 kHz ile denenir. Yüksek örnek hızları 16 kHz modele dönüştürülür; parçalı okumalar tam ses çerçevesi olana kadar biriktirilir. Veri gelmemesi ve çözümleme süresi sınırlandırılmıştır.
+- İngilizce için daha küçük tiny.en Q5 modeli, diğer desteklenen diller için çok dilli base Q5 modeli kullanılır. Modeller uygulamaya dahildir; ayrı konuşma paketi indirmek gerekmez.
+- Makedonca Kiril yazısını okumak için Tesseract modeli APK'ya eklendi. Latin, Çince, Japonca, Korece ve Devanagari okumaları da cihazda çalışır.
+- İnternet yokken eksik çeviri paketi için indirme beklenmez; hangi paketin eksik olduğu açıklanır. Önceden indirilen modeller çevrimdışı kullanılmaya devam eder.
+- eSpeak'in eski setLanguage arayüzü, yalnızca bu bilinen çevrimdışı motorda kullanılabilir. İnternet gerektiren sesler seçilmez.
 
-Daha önce indirilmiş paketler kullanılırken yeni bir indirme isteği gönderilmez. Seçili paket hazırlığı 90 saniyede bitmezse bekleme sonlandırılır, alınan metin korunur ve hata/yeniden deneme ekranı gösterilir. “Bu bağlantıyla indir” seçeneği yalnızca seçili çifti Wi-Fi kısıtı olmadan denemek içindir; mobil veri kullanabilir. Genel Wi-Fi tercihini değiştirmez.
+## Kurulum
 
-Konuşma sırasında toplu indirme **sırasına** ara verilir; başlamış bir SDK indirmesi arka planda tamamlanabilir. Seçili çift önceliklidir. Konuşma tamamlandığında/durdurulduğunda toplu sıra uygulama açıkken sürer. Toplu paket isteğine de paket başına süre sınırı eklendi. Mikrofon izni sonucunun ekran yeniden görünmeden gelmesi durumunda dinleme ekran görünür olunca başlatılır.
+1. Yeni APK'yı mevcut uygulamanın üzerine kur; kaldırma. Aynı özel test imzası korunur.
+2. İlk açılışta **Tüm dil ve ses desteğini hazırla → Tümünü hazırla** seçilebilir. Daha önce bu soruyu geçtiysen Ayarlar'dan aynı ekranı aç.
+3. Metin çevirisi 59 dili destekler. İngilizce ortak dil olduğu için 58 paket indirilir. Tüm paketler yaklaşık 2 GB boş alan/internet gerektirebilir; boyut değişir. Kurulum sırasında internet gerekir. Uygulama açıkken sıra sürer; sonraki açılışta eksikler tamamlanır.
+4. İsteğe bağlı ücretsiz eSpeak NG tüm seslerini ayrı bir uygulamada getirir. Android'in uygulama yükleme onayı gerekir; kurulumdan sonra otomatik açılan ses verisi hazırlama ekranı kapanana kadar bekle. İlk kurulumda bütün diller birlikte hazırlanır. Doğal seslere göre daha robotiktir.
+5. Mikrofon iznini ver. Konuşan kişinin dil düğmesine dokun. Ses seviyesi çubuğu hareket etmeli. Kısa bir cümle söyle, ardından yaklaşık bir saniye durakla. En çok 20 saniyelik parçalar alınır; çevrilip seslendirilir.
+6. Varsayılan olarak çeviriden sonra aynı yönde dinleme yeniden başlar. Ayarlar'dan kapatılabilir. İstersen sırayla iki dile geçiş açılabilir; bu, otomatik konuşma dili tespiti değildir.
+7. Fotoğraf sekmesinde kaynak dili seçip Kamera veya Fotoğraf seç kullan. Okunan metni kontrol ettikten sonra **Google ile çevir** düğmesine dokun. Bu düğme cihazdaki ML Kit motorunu çalıştırır.
 
-## Güncelleme ve toplu kurulum
+İlk model ve ses kurulumu tamamlandıktan sonra uçak modunda konuşma, indirilmiş dil çiftlerinde metin çevirisi ve desteklenen fotoğraf alfabeleri kullanılabilir. Ses tanıma, metin çevirisi ve seslendirme üç ayrı bileşendir. Yerel modelin dili içermesi her aksanı kusursuz anlaması demek değildir. Çözümleme süresi ve kalite telefona, konuşma uzunluğuna ve gürültüye bağlıdır.
 
-1. APK'yı eski uygulamanın üzerine kur; uygulamayı kaldırma. Aynı test imzası kullanılır.
-2. İlk açılışta **Tüm dil ve ses desteğini hazırla** sorusu çıkar. **Tümünü hazırla** seçeneği 59 dilde metin çevirisi için 58 paketi sırayla indirir; İngilizce ortak dil olduğundan ayrı çeviri paketi yoktur. Yaklaşık 2 GB internet ve boş alan gerekebilir. Boyut modellere göre değişir. Wi-Fi tercihi uygulanır. Uygulamayı açık tut; kesilirse sonraki açılışta eksik paketlerden devam edilir. Önceki paketler korunur.
-3. İşaretli **Çok dilli ücretsiz ses motorunu da kur** seçeneği yaklaşık 10 MB eSpeak NG uygulamasını resmi F-Droid deposundan indirir. Bu ayrı ve ücretsiz uygulama çok sayıda ses dilini tek kurulumda getirir. Android'in **Bu kaynaktan yüklemeye izin ver** ve **Yükle** onaylarını ver. Kurulum sonrası açılan eSpeak kendi verilerini hazırlar; Geri ile Tercüman'a dön. Varsayılan ses motorunu değiştirmen gerekmez.
-4. Daha sonra aynı hazırlık ekranı **Ayarlar → Tüm dil ve ses desteğini hazırla** üzerinden açılabilir. İlk soruda geçmek hiçbir toplu indirme başlatmaz.
-5. Mikrofon iznini ver. Konuşan kişinin dil düğmesine dokun. Yerel dinlemede kısa cümlenin ardından yaklaşık bir saniye durakla. Bir konuşma parçası en çok 20 saniyedir.
+## Sınırlar
 
-## Ses paketi düzeltmesi
-
-İngilizce ve Makedonca doğrudan APK içindeki **Whisper base-q5_1 / whisper.cpp** çok dilli konuşma motorunda çözülür. Android'den bu iki dil için ayrı konuşma tanıma paketi istenmez. Makedoncanın Android bölge kodu `mk-MK` olarak düzeltildi. Diğer desteklenen dillerde Android ses hizmeti hata verirse yerel motor açılır.
-
-**Kesin çevrimdışı ses** veya **Konuşmayı her zaman telefonda çözümle** seçeneği desteklenen dillerde yerel tanımayı kullanır. Ücretli API, sunucu, GPU veya anahtar gerekmez. Yaklaşık 60 MB model APK içindedir; ilk kullanımda özel alana kopyalanır. CPU üzerinde çözümleme telefona/cümleye göre birkaç saniye veya daha uzun sürebilir. Modelin dili desteklemesi kusursuz tanıma anlamına gelmez; gürültü, aksan ve az verili diller kaliteyi etkiler.
-
-Metin çevirisi listesindeki Esperanto ve İrlandaca yerel Whisper modelinde yoktur. Bu iki dilde konuşma Android hizmetine bağlıdır. Konuşmayı tanımak, çeviri modeli ve sesli okuma ayrı işlevlerdir.
-
-Sesli okumada mevcut doğal ses tercih edilir; uygun ses yoksa eSpeak dahil diğer yüklü motorlar denenir. Bölgesi farklı ama dili aynı ses kabul edilir. Eksik sesli okumada çeviri ekranda kalır ve kurulum seçeneği sunulur. eSpeak daha robotik seslidir. Sistem motorlarının bütün seslerini üçüncü taraf uygulamadan sessizce kurmak Android tarafından garanti edilmez; toplu seslendirme için ayrı çok dilli motorun bir kez kurulması kullanılır.
-
-## Diğer özellikler
-
-59 dilde Google ML Kit metin çevirisi; ilgili paketler indirildikten sonra internetsiz çalışır. İki yönlü konuşma, sesli okuma, sırayla iki dile geçme, yapıştırma, metin dilini algılama, kopyalama, favoriler, son 200 çevirinin yerel geçmişi ve silme vardır. Sırayla dinleme konuşanın dilini kendiliğinden tespit etmez.
-
-Fotoğraf/kamera OCR: Latin, Çince, Japonca, Korece ve Devanagari. Arapça/Kiril/diğer alfabeler için OCR yoktur; bu sınırlama ses tanımadan ayrıdır. Metin girişi 4000 karakterdir. Büyük fotoğraf küçültülür ve EXIF yönü düzeltilir. Uzun seslendirme parçalanır. Uygulama arka planda mikrofonu kapatır ve iptal edilen işlemin geç sonucunu reddeder.
-
-Telefon/WhatsApp aramasını yakalama, başka uygulama videosuna dublaj, 139 dilde tam çevrimdışı destek ve otomatik uygulama güncellemesi bu sürümde yoktur. Gelecekte ücretli çeviri sağlayıcısı `TranslationEngine` üzerinden eklenebilir; mevcut sürüm ücretli API çağırmaz.
-
-## Veriler ve kurulum
-
-Yerel tanımada ham ses dosyası oluşturulmaz; RAM'de işlenir. Diğer dillerde kullanılan Android ses hizmeti sesi internetten işleyebilir. Geçmiş uygulama alanında kalır; bulut yedeği ve cihaz aktarımı kapalıdır. Uygulamayı kaldırmak verileri silebilir.
-
-eSpeak yalnızca kullanıcının seçimiyle indirilir. F-Droid APK'sının SHA-256 özeti ve paket adı doğrulanır. `REQUEST_INSTALL_PACKAGES`, Android kurucusunu açmak içindir; sessiz kurulum yapılmaz. Yüklüyse yeniden indirilmez. API anahtarı veya token yoktur.
+- 59 metin dilinin Esperanto ve İrlandaca hariç 57'sinde yerel konuşma modeli kullanılabilir. Bu iki dilde metin çevrilebilir fakat ses tanıma başlatılmaz.
+- Sesli okuma için istenen dili destekleyen kurulu çevrimdışı ses motoru gerekir. eSpeak isteğe bağlı tek kurulum seçeneğidir. Metin desteği bütün doğal Android seslerinin var olduğu anlamına gelmez.
+- Fotoğraf okuma Makedonca dışındaki Kiril dilleri, Arapça ve listedeki diğer desteklenmeyen alfabelerde sunulmaz. Bu sınırlama metin/ses desteğinden ayrıdır.
+- Telefon veya WhatsApp araması yakalama, başka uygulama videosuna dublaj, canlı görüntülü görüşme çevirisi, 140 dilde çevrimdışı destek ve otomatik uygulama güncellemesi yoktur.
+- Metin en fazla 4000 karakter; yerel geçmiş en fazla 200 çeviri. Kopyalama, yapıştırma, favori ve geçmişi silme vardır.
+- Ham ses dosyaya yazılmaz, RAM'de işlenir. Arka plana geçilince mikrofon kapatılır. Geçmiş özel uygulama alanındadır; bulut yedeği ve cihaz aktarımı kapalıdır.
+- Ücretli API kullanılmaz. İleride bir çeviri sağlayıcısı TranslationEngine üzerinden eklenebilir.
 
 ## Derleme ve yedek
 
-JDK 17/21, SDK 35, Build Tools 34, NDK 25.2.9519653, CMake 3.22.1, Gradle Wrapper 8.9 gerekir. Android Studio ile açılabilir. `ANDROID_HOME` veya `local.properties` içindeki `sdk.dir` ayarlanmalıdır.
+JDK 17, Android SDK 35, Build Tools 34, NDK 25.2.9519653, CMake 3.22.1 ve Gradle 8.9 gerekir. ANDROID_HOME veya local.properties içindeki sdk.dir ayarlanmalıdır.
 
 ```sh
 python3 prepare_dependencies.py
-./gradlew assembleDebug testDebugUnitTest lintDebug
+bash gradlew assembleDebug testDebugUnitTest lintDebug
 ```
 
-Windows'ta `python` ve `gradlew.bat` kullanılır. APK: `app/build/outputs/apk/debug/app-debug.apk`.
+Windows'ta python ve gradlew.bat kullanılır. APK: app/build/outputs/apk/debug/app-debug.apk.
 
-Özel kaynak ZIP'i aynı imzayla güncelleme için `signing/hizirbey-test.keystore` içerir. Bu kişisel test anahtarı mağaza/üretim anahtarı değildir; hiçbir API anahtarı yoktur. Genel GitHub yedeği imza anahtarını, büyük modeli ve üçüncü taraf kaynak ağacını içermez. `prepare_dependencies.py` özeti sabitlenmiş kaynak/modeli geri getirir. Orijinal anahtar yoksa yeni bir yerel test anahtarı üretir; bu anahtarla eski APK'nın üzerine güncelleme yapılamaz. Bunun için özel kaynak ZIP'indeki orijinal anahtarı kullan.
+Android cihaz testleri app/src/androidTest altındadır. Uçak modu açılmış, mikrofon izni verilmiş ve eSpeak kurulmuş Android test cihazı gerekir. Emülatör için -PtestAbi=x86_64 kullanılabilir. Teslim APK'sı bu bayrak olmadan ARM64/ARMv7 olarak derlenmelidir.
+
+Özel kaynak ZIP'i, önceki APK'nın üzerine güncelleme yapabilmek için signing/hizirbey-test.keystore içerir. Bu mağaza/üretim anahtarı değildir. Genel GitHub yedeği imza anahtarını, büyük modelleri ve üçüncü taraf kaynak ağacını içermez. prepare_dependencies.py sabit SHA-256 ile model ve whisper.cpp kaynaklarını geri getirir. Orijinal anahtar yoksa yeni yerel test anahtarı üretir; yeni anahtarla eski uygulamanın üzerine kurulamaz. Bunun için özel ZIP'teki anahtarı kullan. Hiçbir API anahtarı veya token paketlenmez.
 
 ## Kaynaklar ve lisanslar
 
 - whisper.cpp v1.7.6 (MIT): https://github.com/ggml-org/whisper.cpp/tree/v1.7.6
 - Whisper model (MIT): https://github.com/openai/whisper
 - Model: https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base-q5_1.bin
+- İngilizce modeli: https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.en-q5_1.bin
+- Makedonca fotoğraf modeli (Apache-2.0): https://github.com/tesseract-ocr/tessdata_fast
+- Android Tesseract bağlayıcısı (Apache-2.0): https://github.com/adaptech-cz/Tesseract4Android
 - eSpeak NG, ayrı uygulama (GPL-3.0+): https://github.com/espeak-ng/espeak-ng
 - eSpeak APK ve karşılık gelen kaynak: https://f-droid.org/packages/com.reecedunn.espeak/
 - ML Kit: https://developers.google.com/ml-kit/language/translation/android
 - OCR: https://developers.google.com/ml-kit/vision/text-recognition/v2/android
-- Android ses hizmeti: https://developer.android.com/reference/android/speech/SpeechRecognizer
+- Android mikrofon API: https://developer.android.com/reference/android/media/AudioRecord
 - Çeviri hakkında: https://cloud.google.com/translate/
 - Atıf koşulları: https://developers.google.com/ml-kit/language/translation/translation-terms
 

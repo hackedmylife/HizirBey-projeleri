@@ -58,5 +58,12 @@ public class SpeechRepairTest {
         assertFalse(c.get().getSharedPreferences("tercuman",0).getBoolean("allPacksPending",false));
         d.getButton(android.content.DialogInterface.BUTTON_NEGATIVE).performClick();c.pause().stop().destroy();
     }
+    @Test public void voiceSetupExplicitlyPreparesAllDataInsteadOfOpeningOnlySettings(){
+        ActivityController<MainActivity> c=Robolectric.buildActivity(MainActivity.class).setup();MainActivity a=c.get();
+        PackSetup setup=ReflectionHelpers.getField(a,"packSetup");setup.initializeVoiceEngine();
+        Intent launch=Shadows.shadowOf(a).getNextStartedActivity();assertNotNull(launch);
+        assertEquals(TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA,launch.getAction());assertEquals("com.reecedunn.espeak",launch.getPackage());
+        c.pause().stop().destroy();
+    }
     static class FakeSpeech extends EmbeddedSpeech {String language;Listener listener;FakeSpeech(Context c){super(c);} @Override void listen(String language,Listener listener){this.language=language;this.listener=listener;}}
 }

@@ -38,8 +38,7 @@ final class PackSetup implements AutoCloseable {
         if(prefs.getBoolean("voiceInstallPending",false))continueVoiceInstall();
         else if(prefs.getBoolean("voiceInitPending",false)&&voiceInstalled()){
             prefs.edit().putBoolean("voiceInitPending",false).apply();
-            Intent launch=activity.getPackageManager().getLaunchIntentForPackage(VOICE_PACKAGE);
-            if(launch!=null){toast("Ses motoru ilk açılışta verilerini hazırlar. Ardından Geri ile Tercüman'a dön.");activity.startActivity(launch);}
+            initializeVoiceEngine();
         }
         if(!prefs.getBoolean("setupOfferV2",false))showOffer();
         else if(prefs.getBoolean("allPacksPending",false)&&!running&&!foregroundWork)downloadAll();
@@ -123,8 +122,7 @@ final class PackSetup implements AutoCloseable {
     void installVoiceEngine(){
         if(closed)return;
         if(voiceInstalled()){
-            toast("Çok dilli ses motoru yüklü. İlk hazırlık ekranı açılıyor; ardından Geri ile dön.");
-            Intent launch=activity.getPackageManager().getLaunchIntentForPackage(VOICE_PACKAGE);if(launch!=null)activity.startActivity(launch);return;
+            initializeVoiceEngine();return;
         }
         if(voiceDownloading){toast("Ses motoru indiriliyor…");return;}
         voiceDownloading=true;toast("Ücretsiz çok dilli ses motoru indiriliyor (yaklaşık 10 MB)…");
@@ -158,6 +156,17 @@ final class PackSetup implements AutoCloseable {
                     .setNegativeButton("Kapat",null).show();
             }});}
         });
+    }
+    void initializeVoiceEngine(){
+        if(closed)return;
+        Intent intent=new Intent(android.speech.tts.TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA).setPackage(VOICE_PACKAGE);
+        try{
+            toast("Ses verileri hazırlanıyor. Hazırlık ekranı kapanana kadar bekle; tüm diller birlikte kurulacak.");
+            activity.startActivity(intent);
+        }catch(ActivityNotFoundException e){
+            toast("Ses verileri hazırlığı açılamadı. eSpeak uygulamasını açıp kurulumu tamamla.");
+            Intent launch=activity.getPackageManager().getLaunchIntentForPackage(VOICE_PACKAGE);if(launch!=null)activity.startActivity(launch);
+        }
     }
     private void continueVoiceInstall(){
         if(closed||!resumed)return;

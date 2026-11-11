@@ -530,7 +530,7 @@ public class MainActivity extends Activity {
             public void recording(boolean active){if(alive(token))updateMicrophone(active);}
             public void level(float value){if(alive(token)&&microphoneLevel!=null)microphoneLevel.setProgress(Math.round(value*100));}
             public void result(String value){
-                if(!alive(token))return;draft=value.length()>4000?value.substring(0,4000):value;draftFrom=from;
+                if(!alive(token))return;silenceCount=0;draft=value.length()>4000?value.substring(0,4000):value;draftFrom=from;
                 if(input!=null)input.setText(draft);translateCaptured(draft,from,to,token);
             }
             public void error(String message){fail(token,message,null);}

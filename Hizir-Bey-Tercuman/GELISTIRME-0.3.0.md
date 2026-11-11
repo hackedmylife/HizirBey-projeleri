@@ -1,13 +1,7 @@
-# 0.3.0 geliştirme kontrol noktası
+# 0.3.0 kaynak kontrol noktası
 
-Bu bir kaynak yedeğidir; yeni APK henüz yayımlanmadı.
+47 birim/Robolectric testi, Android mikrofon/dil değişimi, İngilizce ve Makedonca OCR, üç dilde eSpeak seslendirme kontrolleri geçti.
 
-- Desteklenen dillerde Android RecognitionService yerine daima yerel Whisper.
-- İngilizce için tiny.en Q5; diğer desteklenen diller için base Q5.
-- Gerçek AudioRecord durumu ve ses seviyesi; örnek hızı geri dönüşleri.
-- Dil değişiminde dinlemeyi yeniden başlatma ve eski görünüm olaylarını reddetme.
-- Uygulamaya dahil Makedonca Tesseract fotoğraf modeli.
-- İnternet yokken eksik çeviri modeli için hemen açıklama.
-- eSpeak çevrimdışı eski dil seçme API'siyle uyumluluk.
+İngilizce tam JFK kaydını Android yazılım emülatöründe çözümleme 180 saniyede zaman aşımına uğradı. Aynı model ve JNI kodu ayrı Linux/JVM CPU testinde doğru metin üretti. Bu telefon hızı ölçümü değildir.
 
-Derleme, birim testleri ve uçak modu Android testleri tamamlanınca sonuçlar ayrı doğrulama dosyasında yazılacak. Samsung S20 FE ve Redmi Note 10 Pro üzerinde henüz fiziksel test yapılmadı.
+0.3.0 test APK'sı ve özel kaynak yedeği paylaşılır. Fiziksel telefon doğrulaması yapılmadı; sınırlar DOGRULAMA-0.3.0.txt ve README-TR.md içindedir.
