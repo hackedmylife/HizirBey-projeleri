@@ -30,9 +30,7 @@ class EmbeddedSpeech implements AutoCloseable {
             try{
                 if(app.checkSelfPermission(Manifest.permission.RECORD_AUDIO)!=PackageManager.PERMISSION_GRANTED)
                     throw new IllegalStateException("Mikrofon izni gerekli.");
-                post(job,()->listener.state("Yerel ses motoru hazırlanıyor…"));
-                if(context==0){File model=modelFile();long loaded=NativeWhisper.create(model.getAbsolutePath());synchronized(nativeLock){context=loaded;}}
-                synchronized(nativeLock){NativeWhisper.reset(context);}
+                post(job,()->listener.state("Mikrofon hazırlanıyor…"));
                 if(generation.get()!=job)return;
                 int minimum=AudioRecord.getMinBufferSize(16000,AudioFormat.CHANNEL_IN_MONO,AudioFormat.ENCODING_PCM_16BIT);
                 if(minimum<0)throw new IllegalStateException("Mikrofon 16 kHz ses kaydını desteklemiyor.");
@@ -51,6 +49,9 @@ class EmbeddedSpeech implements AutoCloseable {
                 if(!boundary.hasSpeech()){post(job,()->listener.error("Konuşma duyulmadı. Dil düğmesine dokunup tekrar konuş."));return;}
                 float[] spoken=Arrays.copyOfRange(audio,boundary.startSample(),boundary.endSample(used));
                 post(job,()->listener.state("Konuşma telefonda çözümleniyor · "+LanguageCatalog.name(language)));
+                if(context==0){File model=modelFile();long loaded=NativeWhisper.create(model.getAbsolutePath());synchronized(nativeLock){context=loaded;}}
+                synchronized(nativeLock){NativeWhisper.reset(context);}
+                if(generation.get()!=job)return;
                 byte[] bytes=NativeWhisper.transcribe(context,spoken,language,Math.min(4,Runtime.getRuntime().availableProcessors()));
                 String text=new String(bytes==null?new byte[0]:bytes,StandardCharsets.UTF_8).trim();
                 post(job,()->{if(text.isEmpty())listener.error("Konuşma çözümlenemedi. Daha net ve kısa bir cümleyle tekrar dene.");else listener.result(text);});

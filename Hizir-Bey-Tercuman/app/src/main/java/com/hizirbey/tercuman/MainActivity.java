@@ -69,6 +69,11 @@ public class MainActivity extends Activity {
     private Runnable afterSpeech;
     private String utteranceId="";
     private Bitmap photoPreview;
+    private int resumeVoiceSide=-1;
+    private long preparationSerial;
+    private boolean preparationActive;
+    private Runnable preparationHeartbeat,preparationDeadline;
+    private String lastPreparationError="";
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
@@ -97,6 +102,7 @@ public class MainActivity extends Activity {
     @Override protected void onResume() {
         super.onResume();foreground=true;refreshTtsEngines();
         handler.post(()->{if(foreground&&!isFinishing())packSetup.onResume();});
+        if(resumeVoiceSide>=0){int side=resumeVoiceSide;resumeVoiceSide=-1;handler.post(()->{if(foreground)startVoice(side);});}
     }
     @Override protected void onPause() {
         foreground=false;if(packSetup!=null)packSetup.onPause();int requestedSide=permissionSide;stopSession();permissionSide=requestedSide;super.onPause();
@@ -387,6 +393,8 @@ public class MainActivity extends Activity {
     }
     private void stopSession(){
         gate.renew();sessionActive=false;permissionSide=-1;releaseSpeech();
+        resumeVoiceSide=-1;cancelPreparationWait();if(engine!=null)engine.cancelPreparation();
+        if(packSetup!=null)packSetup.resumeAfterConversation();
         if(embeddedSpeech!=null)embeddedSpeech.cancel();embeddedThisTurn=false;
         afterSpeech=null;utteranceId="";if(tts!=null)tts.stop();
         for(TextToSpeech voice:extraTts.values())voice.stop();
@@ -397,19 +405,51 @@ public class MainActivity extends Activity {
         if(!alive(token))return;stopSession();setStatus(message);toast(message);
     }
     private void prepare(String from,String to,long token,Runnable next){
-        setStatus("Dil paketleri kontrol ediliyor · İlk kullanımda indirme gerekebilir.");
-        handler.postDelayed(()->{
-            if(alive(token)&&status!=null&&status.getText().toString().startsWith("Dil paketleri"))
-                setStatus("Dil paketleri indiriliyor veya bağlantı bekleniyor. Durdur ile iptal edebilirsin.");
-        },5000);
-        handler.postDelayed(()->{
-            if(alive(token)&&status!=null&&(status.getText().toString().startsWith("Dil paketleri")))
-                fail(token,"Paket indirme zaman aşımı. Wi-Fi ve Google Play Hizmetlerini kontrol edip yeniden dene.",null);
-        },120000);
-        engine.prepare(from,to,prefs.getBoolean("wifiOnly",true),new TranslationEngine.Callback<Void>(){
-            @Override public void success(Void v){if(alive(token))next.run();}
-            @Override public void failure(Exception e){fail(token,"Dil paketi indirilemedi. Wi-Fi bağlantısını ve Google Play Hizmetlerini kontrol et.",e);}
-        });
+        prepare(from,to,token,next,prefs.getBoolean("wifiOnly",true));
+    }
+    private void cancelPreparationWait(){
+        preparationSerial++;preparationActive=false;
+        if(preparationHeartbeat!=null)handler.removeCallbacks(preparationHeartbeat);
+        if(preparationDeadline!=null)handler.removeCallbacks(preparationDeadline);
+        preparationHeartbeat=null;preparationDeadline=null;
+    }
+    private void prepare(String from,String to,long token,Runnable next,boolean wifiOnly){
+        if(!alive(token))return;
+        cancelPreparationWait();packSetup.pauseForConversation();
+        final long serial=preparationSerial,started=SystemClock.elapsedRealtime();preparationActive=true;
+        final String[] phase={"Seçili çeviri paketleri kontrol ediliyor"};
+        preparationHeartbeat=new Runnable(){public void run(){
+            if(!alive(token)||!preparationActive||serial!=preparationSerial)return;
+            setStatus(phase[0]+" · "+((SystemClock.elapsedRealtime()-started)/1000)+" sn");handler.postDelayed(this,1000);
+        }};
+        preparationDeadline=()->{
+            if(alive(token)&&preparationActive&&serial==preparationSerial){
+                engine.cancelPreparation();cancelPreparationWait();preparationFailed(from,to,token,next,wifiOnly,new java.util.concurrent.TimeoutException("Paket hazırlığı 90 saniyede tamamlanmadı."));
+            }
+        };
+        handler.post(preparationHeartbeat);handler.postDelayed(preparationDeadline,90000);
+        try{engine.prepare(from,to,wifiOnly,message->{if(alive(token)&&preparationActive&&serial==preparationSerial){phase[0]=message;setStatus(message);}},new TranslationEngine.Callback<Void>(){
+            public void success(Void v){if(alive(token)&&preparationActive&&serial==preparationSerial){cancelPreparationWait();next.run();}}
+            public void failure(Exception e){if(alive(token)&&preparationActive&&serial==preparationSerial){cancelPreparationWait();preparationFailed(from,to,token,next,wifiOnly,e);}}
+        });}catch(Exception error){if(alive(token)&&serial==preparationSerial){cancelPreparationWait();preparationFailed(from,to,token,next,wifiOnly,error);}}
+    }
+    private void preparationFailed(String from,String to,long token,Runnable next,boolean wifiOnly,Exception error){
+        if(!alive(token))return;sessionActive=false;getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        String detail=error==null?"Nedeni bildirilmedi.":error.getClass().getSimpleName()+": "+error.getMessage();
+        if(error instanceof com.google.mlkit.common.MlKitException)detail+=" (kod "+((com.google.mlkit.common.MlKitException)error).getErrorCode()+")";
+        lastPreparationError=LanguageCatalog.name(from)+" → "+LanguageCatalog.name(to)+" · "+detail;
+        setStatus("Çeviri paketi hazır değil. Alınan konuşma/metin korunuyor.");
+        new AlertDialog.Builder(this).setTitle("Çeviri paketi hazırlanamadı")
+            .setMessage("Konuşma/metin ekranda duruyor. Mikrofonu kullanmak için bu paketi beklemen gerekmiyor.\n\n"+
+                LanguageCatalog.name(from)+" → "+LanguageCatalog.name(to)+"\n"+detail+
+                "\n\nWi-Fi, boş alan ve Google Play Hizmetlerini kontrol et. İstersen yalnızca seçili dil çiftini mevcut bağlantıyla indirmeyi dene; mobil veri kullanabilir (dil başına yaklaşık 30 MB).")
+            .setPositiveButton("Yeniden dene",(d,w)->{if(alive(token))prepare(from,to,token,next,wifiOnly);})
+            .setNeutralButton("Bu bağlantıyla indir",(d,w)->{if(alive(token))prepare(from,to,token,next,false);})
+            .setNegativeButton("Kapat",(d,w)->packSetup.resumeAfterConversation()).show();
+    }
+    private void translateCaptured(String value,String from,String to,long token){
+        if(!alive(token))return;
+        prepare(from,to,token,()->translate(value,from,to,token,true));
     }
     private void submitText(){
         rememberInput();String value=draft.trim();if(value.isEmpty()){toast("Önce bir metin yaz.");return;}
@@ -438,7 +478,7 @@ public class MainActivity extends Activity {
                         String next=activeSide==0?source:target;
                         setStatus("Yeniden dinlenecek · "+LanguageCatalog.name(next));
                         handler.postDelayed(()->{if(alive(token)&&sessionActive&&foreground)beginListening(token);},850);
-                    }else{sessionActive=false;getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);setStatus("Çeviri hazır · "+LanguageCatalog.name(to));}
+                    }else{sessionActive=false;packSetup.resumeAfterConversation();getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);setStatus("Çeviri hazır · "+LanguageCatalog.name(to));}
                 };
                 if(prefs.getBoolean("autoSpeak",true))speak(result,to,token,done);else done.run();
             }
@@ -452,12 +492,7 @@ public class MainActivity extends Activity {
         }
         if(source.equals(target)){toast("Konuşma için iki farklı dil seç.");return;}
         activeSide=side;sessionActive=true;silenceCount=0;long token=gate.current();
-        String from=side==0?source:target,to=side==0?target:source;
-        prepare(from,to,token,()->{
-            if(prefs.getBoolean("repeat",false)&&prefs.getBoolean("alternate",false))
-                prepare(to,from,token,()->beginListening(token));
-            else beginListening(token);
-        });
+        packSetup.pauseForConversation();beginListening(token);
     }
     private Intent recognitionIntent(String from){
         Intent intent=new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
@@ -499,7 +534,7 @@ public class MainActivity extends Activity {
                     silenceCount=0;String value=values.get(0).trim();
                     if(value.length()>4000)value=value.substring(0,4000);
                     draft=value;draftFrom=from;if(input!=null)input.setText(value);releaseSpeech();
-                    translate(value,from,to,token,true);
+                    translateCaptured(value,from,to,token);
                 }
                 @Override public void onError(int code){
                     if(!alive(token)||current!=speech)return;
@@ -543,7 +578,7 @@ public class MainActivity extends Activity {
             public void state(String message){if(alive(token)){setStatus(message);if(stopButton!=null)stopButton.setText("Yerel ses · Durdur");}}
             public void result(String value){
                 if(!alive(token))return;draft=value.length()>4000?value.substring(0,4000):value;draftFrom=from;
-                if(input!=null)input.setText(draft);translate(draft,from,to,token,true);
+                if(input!=null)input.setText(draft);translateCaptured(draft,from,to,token);
             }
             public void error(String message){fail(token,message,null);}
         });
@@ -551,7 +586,7 @@ public class MainActivity extends Activity {
     @Override public void onRequestPermissionsResult(int request,String[] permissions,int[] results){
         super.onRequestPermissionsResult(request,permissions,results);
         if(request==MICROPHONE_REQUEST){int side=permissionSide;permissionSide=-1;
-            if(results.length>0&&results[0]==PackageManager.PERMISSION_GRANTED&&side>=0)startVoice(side);
+            if(results.length>0&&results[0]==PackageManager.PERMISSION_GRANTED&&side>=0){if(foreground)startVoice(side);else resumeVoiceSide=side;}
             else new AlertDialog.Builder(this).setTitle("Mikrofon izni gerekli")
                 .setMessage("Sesli çeviri için uygulama ayarlarından mikrofon iznini aç. Metin ve fotoğraf çevirisini izinsiz kullanabilirsin.")
                 .setNegativeButton("Kapat",null).setPositiveButton("İzinler",(d,w)->openSystem("android.settings.APPLICATION_DETAILS_SETTINGS",Uri.parse("package:"+getPackageName()))).show();
@@ -679,7 +714,7 @@ public class MainActivity extends Activity {
         full(content,button("Seslendirme ayarları",false,()->openSystem("com.android.settings.TTS_SETTINGS",null)));gap(content,8);
         full(content,button("Ses tanıma ayarları",false,()->openSystem(android.provider.Settings.ACTION_VOICE_INPUT_SETTINGS,null)));gap(content,12);
         full(content,button("Çeviri hakkında",false,()->openSystem(Intent.ACTION_VIEW,Uri.parse("https://cloud.google.com/translate/"))));gap(content,12);
-        full(content,text("Metin çevirisi, fotoğraftan okuma ve yerel konuşma modeli cihazda çalışır. Varsayılan Android ses tanıma hizmeti sesi internet üzerinden işleyebilir. API anahtarı veya abonelik gerekmez.\n\nHızır Bey Tercüman 0.2.0 · Test sürümü\nYerel ses: Whisper / whisper.cpp (MIT). Çok dilli sesli okuma: ayrı ve isteğe bağlı eSpeak NG uygulaması (GPL-3.0+). Google Translate modelleri ile otomatik çeviri (Google ML Kit). Fotoğraftan okuma: Google ML Kit.\n\nÇeviriler otomatik oluşturulur. Google; çevirilerin doğruluğu, güvenilirliği, ticari elverişliliği, belirli bir amaca uygunluğu ve hak ihlali içermemesi konusunda açık veya örtülü garanti vermez.",12,MUTED,false));
+        full(content,text("Metin çevirisi, fotoğraftan okuma ve yerel konuşma modeli cihazda çalışır. Varsayılan Android ses tanıma hizmeti sesi internet üzerinden işleyebilir. API anahtarı veya abonelik gerekmez.\n\nHızır Bey Tercüman 0.2.1 · Test sürümü\nYerel ses: Whisper / whisper.cpp (MIT). Çok dilli sesli okuma: ayrı ve isteğe bağlı eSpeak NG uygulaması (GPL-3.0+). Google Translate modelleri ile otomatik çeviri (Google ML Kit). Fotoğraftan okuma: Google ML Kit.\n\nÇeviriler otomatik oluşturulur. Google; çevirilerin doğruluğu, güvenilirliği, ticari elverişliliği, belirli bir amaca uygunluğu ve hak ihlali içermemesi konusunda açık veya örtülü garanti vermez.",12,MUTED,false));
         ScrollView scroll=new ScrollView(this);scroll.addView(content);
         new AlertDialog.Builder(this).setTitle("Tercihler").setView(scroll).setPositiveButton("Tamam",(d,w)->render()).show();
     }
@@ -702,6 +737,7 @@ public class MainActivity extends Activity {
             device+=LanguageCatalog.name(code)+" seslendirme: "+(support>=0?"Destekleniyor":"Paket eksik / desteklenmiyor")+"\n";
         }}
         device+="\nMetin çevirisi: "+languages.size()+" dil\nFotoğraf alfabeleri: Latin, Çince, Japonca, Korece, Devanagari\n\nSes tanıma ve seslendirme dil listeleri metin çevirisi listesinden farklı olabilir.";
+        device+="\n\nUygulama: 0.2.1\nSon paket hatası: "+(lastPreparationError.isEmpty()?"Yok":lastPreparationError);
         final String summary=device;
         AlertDialog d=new AlertDialog.Builder(this).setTitle("Telefon desteği").setMessage(device)
             .setNeutralButton("Kopyala",(dialog,w)->copy(summary)).setPositiveButton("Tamam",null).create();d.show();

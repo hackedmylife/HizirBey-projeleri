@@ -1,6 +1,14 @@
-# Hızır Bey Tercüman 0.2.0
+# Hızır Bey Tercüman 0.2.1
 
 Ücretsiz Android uygulaması. Samsung S20 FE ve Redmi Note 10 Pro için ARM64/ARMv7, Android 8.0+. Fiziksel telefonların mikrofon/kamera testi bu ortamda yapılmadı.
+
+## 0.2.1: Paket beklerken dinlememe düzeltmesi
+
+Konuşma düğmesi artık çeviri paketinin indirilmesini beklemeden dinlemeyi başlatır. Yerel dinlemede mikrofon, Whisper modeli belleğe yüklenmeden önce açılır; model konuşma alındıktan sonra çözümleme için hazırlanır. Konuşma metni önce ekrana yazılır. Çeviri için yalnızca seçili dil çiftinin eksik modelleri hazırlanır. Bu modellerin hazır olması çeviri için hâlâ gereklidir; dinleme için değildir.
+
+Daha önce indirilmiş paketler kullanılırken yeni bir indirme isteği gönderilmez. Seçili paket hazırlığı 90 saniyede bitmezse bekleme sonlandırılır, alınan metin korunur ve hata/yeniden deneme ekranı gösterilir. “Bu bağlantıyla indir” seçeneği yalnızca seçili çifti Wi-Fi kısıtı olmadan denemek içindir; mobil veri kullanabilir. Genel Wi-Fi tercihini değiştirmez.
+
+Konuşma sırasında toplu indirme **sırasına** ara verilir; başlamış bir SDK indirmesi arka planda tamamlanabilir. Seçili çift önceliklidir. Konuşma tamamlandığında/durdurulduğunda toplu sıra uygulama açıkken sürer. Toplu paket isteğine de paket başına süre sınırı eklendi. Mikrofon izni sonucunun ekran yeniden görünmeden gelmesi durumunda dinleme ekran görünür olunca başlatılır.
 
 ## Güncelleme ve toplu kurulum
 

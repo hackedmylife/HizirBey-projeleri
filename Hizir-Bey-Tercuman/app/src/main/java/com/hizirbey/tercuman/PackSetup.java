@@ -26,7 +26,8 @@ final class PackSetup implements AutoCloseable {
     private final Handler main=new Handler(Looper.getMainLooper());
     private final ExecutorService downloader=Executors.newSingleThreadExecutor();
     private volatile boolean closed;
-    private boolean running,voiceDownloading,offerVisible,resumed,permissionPromptShown;
+    private boolean running,voiceDownloading,offerVisible,resumed,permissionPromptShown,foregroundWork;
+    private Runnable queueDeadline;
     private int generation;
     private AlertDialog progressDialog;
     private AlertDialog offerDialog;
@@ -41,9 +42,17 @@ final class PackSetup implements AutoCloseable {
             if(launch!=null){toast("Ses motoru ilk açılışta verilerini hazırlar. Ardından Geri ile Tercüman'a dön.");activity.startActivity(launch);}
         }
         if(!prefs.getBoolean("setupOfferV2",false))showOffer();
-        else if(prefs.getBoolean("allPacksPending",false)&&!running)downloadAll();
+        else if(prefs.getBoolean("allPacksPending",false)&&!running&&!foregroundWork)downloadAll();
     }
     void onPause(){resumed=false;}
+    void pauseForConversation(){
+        foregroundWork=true;
+        if(running){running=false;generation++;clearQueueDeadline();setProgress("Konuşma için toplu indirme sırasına ara verildi. Seçili çeviri çifti öncelikli hazırlanacak.");}
+    }
+    void resumeAfterConversation(){
+        foregroundWork=false;
+        main.postDelayed(()->{if(!closed&&resumed&&!foregroundWork&&!running&&prefs.getBoolean("allPacksPending",false))downloadAll(false);},2000);
+    }
     static ArrayList<String> downloadableLanguages(Collection<String> languages){
         ArrayList<String> out=new ArrayList<>();for(String l:languages)if(!l.equals("en"))out.add(l);
         Collections.sort(out);if(out.remove("tr"))out.add(0,"tr");if(out.remove("mk"))out.add(Math.min(1,out.size()),"mk");return out;
@@ -62,11 +71,14 @@ final class PackSetup implements AutoCloseable {
             }).setNegativeButton("Şimdilik geç",null).setOnDismissListener(d->offerVisible=false).show();
     }
     private void downloadAll(){
-        if(closed||running)return;running=true;int token=++generation;
-        showProgress();setProgress("Yüklü paketler kontrol ediliyor…");
+        downloadAll(true);
+    }
+    private void downloadAll(boolean showUi){
+        if(closed||running||foregroundWork)return;running=true;int token=++generation;
+        if(showUi)showProgress();setProgress("Yüklü paketler kontrol ediliyor…");armQueueDeadline(token);
         RemoteModelManager manager=RemoteModelManager.getInstance();
         manager.getDownloadedModels(TranslateRemoteModel.class).addOnSuccessListener(existing->{
-            if(!valid(token))return;Set<String> loaded=new HashSet<>();for(TranslateRemoteModel m:existing)loaded.add(m.getLanguage());
+            if(!valid(token))return;clearQueueDeadline();Set<String> loaded=new HashSet<>();for(TranslateRemoteModel m:existing)loaded.add(m.getLanguage());
             ArrayList<String> all=downloadableLanguages(TranslateLanguage.getAllLanguages());
             downloadNext(all,loaded,0,token);
         }).addOnFailureListener(e->downloadFailed(token));
@@ -76,28 +88,33 @@ final class PackSetup implements AutoCloseable {
         if(!valid(token))return;
         int index=position;while(index<all.size()&&loaded.contains(all.get(index)))index++;
         if(index>=all.size()){
-            running=false;prefs.edit().putBoolean("allPacksPending",false).putBoolean("allPacksReady",true).apply();
+            running=false;clearQueueDeadline();prefs.edit().putBoolean("allPacksPending",false).putBoolean("allPacksReady",true).apply();
             setProgress("Tüm metin çevirisi paketleri hazır. Ses tanıma modeli uygulamada hazır; sesli okuma için ses motorunun kurulumunu tamamla.");
             toast("Tüm metin çevirisi paketleri hazır.");return;
         }
         String language=all.get(index);int next=index+1;
         setProgress("Paket "+next+" / "+all.size()+" · "+LanguageCatalog.name(language)+"\nİndiriliyor veya Wi-Fi bekleniyor…\n\nDaha önce indirilen paketler korunur.");
         DownloadConditions.Builder options=new DownloadConditions.Builder();if(prefs.getBoolean("wifiOnly",true))options.requireWifi();
+        armQueueDeadline(token);
         RemoteModelManager.getInstance().download(new TranslateRemoteModel.Builder(language).build(),options.build())
-            .addOnSuccessListener(v->{if(valid(token)){loaded.add(language);downloadNext(all,loaded,next,token);}})
+            .addOnSuccessListener(v->{if(valid(token)){clearQueueDeadline();loaded.add(language);downloadNext(all,loaded,next,token);}})
             .addOnFailureListener(e->downloadFailed(token));
     }
     private void downloadFailed(int token){
-        if(!valid(token))return;running=false;
+        if(!valid(token))return;running=false;clearQueueDeadline();
         setProgress("Paket indirme kesildi. Wi-Fi, boş alan ve Google Play Hizmetlerini kontrol et. Uygulamayı yeniden açınca eksik paketlerden devam edilir.");
         toast("Bazı paketler indirilemedi. İndirilenler korundu.");
+    }
+    private void clearQueueDeadline(){if(queueDeadline!=null)main.removeCallbacks(queueDeadline);queueDeadline=null;}
+    private void armQueueDeadline(int token){
+        clearQueueDeadline();queueDeadline=()->downloadFailed(token);main.postDelayed(queueDeadline,180000);
     }
     private void showProgress(){
         if(progressDialog!=null&&progressDialog.isShowing())return;
         progress=new TextView(activity);int pad=Math.round(22*activity.getResources().getDisplayMetrics().density);progress.setPadding(pad,pad,pad,pad);
         progressDialog=new AlertDialog.Builder(activity).setTitle("Dil paketleri hazırlanıyor").setView(progress)
             .setPositiveButton("Arka plana al",null).setNegativeButton("İndirme sırasını durdur",(d,w)->{
-                running=false;generation++;prefs.edit().putBoolean("allPacksPending",false).apply();
+                running=false;generation++;clearQueueDeadline();prefs.edit().putBoolean("allPacksPending",false).apply();
                 toast("İndirme sırası durduruldu. Başlamış olan paket indirmesi Android tarafından tamamlanabilir.");
             }).create();progressDialog.show();
     }

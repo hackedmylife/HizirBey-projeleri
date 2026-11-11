@@ -39,7 +39,7 @@ public class SpeechRepairTest {
             a.getSharedPreferences("tercuman",0).edit().putBoolean("preferEmbedded",true).commit();SessionGate gate=ReflectionHelpers.getField(a,"gate");
             ReflectionHelpers.callInstanceMethod(a,"beginListening",ReflectionHelpers.ClassParameter.from(long.class,gate.current()));
             assertEquals(language,local.language);local.listener.result(language.equals("en")?"Hello":"Здраво");
-            assertEquals(language,engine.from);assertEquals("tr",engine.to);engine.result.success("Merhaba");
+            assertNotNull(engine.ready);engine.ready.success(null);assertEquals(language,engine.from);assertEquals("tr",engine.to);engine.result.success("Merhaba");
             assertEquals("Merhaba",((TextView)ReflectionHelpers.getField(a,"output")).getText().toString());
             c.pause().stop().destroy();
         }
