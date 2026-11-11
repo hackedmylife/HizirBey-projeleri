@@ -55,6 +55,11 @@ class EmbeddedSpeech implements AutoCloseable {
                 if(minimum<=0)continue;
                 record=new AudioRecord(source,rate,AudioFormat.CHANNEL_IN_MONO,AudioFormat.ENCODING_PCM_16BIT,Math.max(minimum,rate/5));
                 if(record.getState()!=AudioRecord.STATE_INITIALIZED)throw new IllegalStateException("Mikrofon başlatılamadı.");
+                if(app.getSharedPreferences("tercuman",0).getBoolean("splitAudio",false)&&app.getSharedPreferences("tercuman",0).getBoolean("phoneMic",true)){
+                    AudioManager manager=(AudioManager)app.getSystemService(Context.AUDIO_SERVICE);AudioDeviceInfo builtin=null;
+                    for(AudioDeviceInfo device:manager.getDevices(AudioManager.GET_DEVICES_INPUTS))if(device.getType()==AudioDeviceInfo.TYPE_BUILTIN_MIC){builtin=device;break;}
+                    if(builtin==null||!record.setPreferredDevice(builtin))throw new IllegalStateException("Telefon mikrofonu seçilemedi. Kulaklık modunun mikrofon ayarını kontrol et.");
+                }
                 record.startRecording();
                 if(record.getRecordingState()!=AudioRecord.RECORDSTATE_RECORDING)throw new IllegalStateException("Telefon mikrofon kaydını başlatmadı.");
                 AudioRecord active=record;

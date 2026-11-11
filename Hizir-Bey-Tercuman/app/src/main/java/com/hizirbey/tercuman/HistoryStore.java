@@ -8,7 +8,7 @@ public final class HistoryStore {
     public static final class Entry {
         public String id, original, translated, from, to;
         public long time;
-        public boolean favorite;
+        public boolean favorite,cloud;
         Entry(String id, String original, String translated, String from, String to, long time, boolean favorite) {
             this.id=id; this.original=original; this.translated=translated;
             this.from=from; this.to=to; this.time=time; this.favorite=favorite;
@@ -24,12 +24,14 @@ public final class HistoryStore {
                 JSONObject o=array.getJSONObject(i);
                 entries.add(new Entry(o.getString("id"), o.getString("original"), o.getString("translated"),
                     o.getString("from"), o.getString("to"), o.getLong("time"), o.optBoolean("favorite")));
+                entries.get(entries.size()-1).cloud=o.optBoolean("cloud",false);
             }
         } catch(JSONException ignored) { entries.clear(); }
     }
-    public Entry add(String original,String translated,String from,String to) {
+    public Entry add(String original,String translated,String from,String to) {return add(original,translated,from,to,false);}
+    public Entry add(String original,String translated,String from,String to,boolean cloud) {
         Entry e=new Entry(UUID.randomUUID().toString(),original,translated,from,to,System.currentTimeMillis(),false);
-        entries.add(0,e);
+        e.cloud=cloud;entries.add(0,e);
         while(entries.size()>200) {
             int remove=-1;
             for(int i=entries.size()-1;i>=0;i--) if(!entries.get(i).favorite){remove=i;break;}
@@ -51,7 +53,7 @@ public final class HistoryStore {
             try {
                 JSONObject o=new JSONObject();
                 o.put("id",e.id);o.put("original",e.original);o.put("translated",e.translated);
-                o.put("from",e.from);o.put("to",e.to);o.put("time",e.time);o.put("favorite",e.favorite);
+                o.put("cloud",e.cloud);o.put("from",e.from);o.put("to",e.to);o.put("time",e.time);o.put("favorite",e.favorite);
                 array.put(o);
             } catch(JSONException ignored) { /* All values are valid primitives. */ }
         }

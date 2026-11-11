@@ -1,0 +1,12 @@
+11-11 10:56:34.199  2848  2865 I TestRunner: started: shoppingLabelIsCyrillicAndHasImageCoordinatesOffline(com.hizirbey.tercuman.PhotoAudioDeviceTest)
+11-11 10:56:34.782  2848  2865 I Tesseract(native): Initialized Tesseract API with language=mkd
+11-11 10:56:45.841  2848  2865 I PhotoAudioDeviceTest: MK OCR=кошничка за пазарење confidence=95 regions=1
+11-11 10:56:45.842  2848  2865 I TestRunner: finished: shoppingLabelIsCyrillicAndHasImageCoordinatesOffline(com.hizirbey.tercuman.PhotoAudioDeviceTest)
+11-11 10:56:45.858  2848  2865 I TestRunner: started: privateScreenshotLabelCanBeCheckedWithoutBundlingUserImage(com.hizirbey.tercuman.PhotoAudioDeviceTest)
+11-11 10:56:45.987  2848  2865 I Tesseract(native): Initialized Tesseract API with language=mkd
+11-11 10:56:51.349  2848  2865 I PhotoAudioDeviceTest: PRIVATE MK OCR=кошничка за пазарење confidence=94
+11-11 10:56:51.350  2848  2865 I TestRunner: finished: privateScreenshotLabelCanBeCheckedWithoutBundlingUserImage(com.hizirbey.tercuman.PhotoAudioDeviceTest)
+11-11 10:56:51.358  2848  2865 I TestRunner: started: absentHeadphonesNeverFallsBackToSpeaker(com.hizirbey.tercuman.PhotoAudioDeviceTest)
+11-11 10:56:51.458  2848  2865 I TestRunner: finished: absentHeadphonesNeverFallsBackToSpeaker(com.hizirbey.tercuman.PhotoAudioDeviceTest)
+11-11 10:56:51.471  2848  2865 I TestRunner: started: audioTrackRoutesSynthesizedOfflineTurkishToSpeaker(com.hizirbey.tercuman.PhotoAudioDeviceTest)
+11-11 10:56:55.912  2848  2865 I TestRunner: finished: audioTrackRoutesSynthesizedOfflineTurkishToSpeaker(com.hizirbey.tercuman.PhotoAudioDeviceTest)

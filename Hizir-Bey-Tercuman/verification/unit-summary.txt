@@ -1,5 +1,6 @@
-Version: 0.4.1
-Tests: 67
+Version: 0.5.0
+Tests: 90
 Failures: 0
 Errors: 0
-Robolectric Android API 28 and 33; mocked speech/translation in UI flow tests.
+Robolectric API 28/33 with native bitmap drawing. UI engines and cloud transport mocked.
+Android API28 offline OCR/audio: 4 tests passed; separate emulator variant, ASR assets omitted to reduce install time. No live Groq key used.

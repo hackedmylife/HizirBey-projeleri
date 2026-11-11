@@ -1,0 +1,13 @@
+package com.hizirbey.tercuman;
+import java.io.*;
+import java.nio.*;
+import org.junit.*;
+import static org.junit.Assert.*;
+public class RoutedAudioTest {
+    @Test public void waveReaderAcceptsEspeakStylePcmAndFindsDataAfterOddMetadata()throws Exception{File file=wave(1,16,2);try(RoutedAudio.Wave reader=new RoutedAudio.Wave(file)){assertEquals(22050,reader.rate);assertEquals(2,reader.channels);assertEquals(16,reader.bits);assertEquals(8,reader.length);assertEquals(0x12,reader.input.readUnsignedByte());}finally{file.delete();}}
+    @Test public void malformedOrUnsupportedWaveIsRejected()throws Exception{File file=wave(1,24,1);try{new RoutedAudio.Wave(file);fail("24-bit PCM must not play as 16-bit");}catch(IOException expected){}finally{file.delete();}}
+    @Test public void truncatedWaveIsRejected()throws Exception{File file=wave(1,16,1);try(RandomAccessFile out=new RandomAccessFile(file,"rw")){out.setLength(file.length()-2);}try{new RoutedAudio.Wave(file);fail("Truncated data accepted");}catch(IOException expected){}finally{file.delete();}}
+    @Test public void speakerAndHdmiAreNeverClassifiedAsPrivateHeadphones(){assertTrue(RoutedAudio.headphones(android.media.AudioDeviceInfo.TYPE_WIRED_HEADSET));assertTrue(RoutedAudio.headphones(android.media.AudioDeviceInfo.TYPE_BLUETOOTH_A2DP));assertTrue(RoutedAudio.headphones(android.media.AudioDeviceInfo.TYPE_BLE_HEADSET));assertFalse(RoutedAudio.headphones(android.media.AudioDeviceInfo.TYPE_BUILTIN_SPEAKER));assertFalse(RoutedAudio.headphones(android.media.AudioDeviceInfo.TYPE_HDMI));}
+    private File wave(int format,int bits,int channels)throws Exception{ByteArrayOutputStream out=new ByteArrayOutputStream();out.write("RIFF".getBytes("US-ASCII"));out.write(new byte[4]);out.write("WAVE".getBytes("US-ASCII"));out.write("JUNK".getBytes("US-ASCII"));out.write(le(1));out.write(new byte[2]);out.write("fmt ".getBytes("US-ASCII"));out.write(le(16));ByteBuffer fmt=ByteBuffer.allocate(16).order(ByteOrder.LITTLE_ENDIAN);fmt.putShort((short)format).putShort((short)channels).putInt(22050).putInt(22050*channels*bits/8).putShort((short)(channels*bits/8)).putShort((short)bits);out.write(fmt.array());out.write("data".getBytes("US-ASCII"));out.write(le(8));out.write(new byte[]{0x12,0,0,0,0,0,0,0});byte[] bytes=out.toByteArray();ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).putInt(4,bytes.length-8);File file=File.createTempFile("tts-test-",".wav");try(FileOutputStream f=new FileOutputStream(file)){f.write(bytes);}return file;}
+    private byte[] le(int value){return ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(value).array();}
+}

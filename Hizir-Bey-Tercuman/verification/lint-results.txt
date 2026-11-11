@@ -1,3 +1,32 @@
+/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/RoutedAudio.java:18: Warning: Field requires API level 28 (current min is 26): android.media.AudioDeviceInfo#TYPE_HEARING_AID [InlinedApi]
+    static boolean headphones(int type){return type==AudioDeviceInfo.TYPE_WIRED_HEADSET||type==AudioDeviceInfo.TYPE_WIRED_HEADPHONES||type==AudioDeviceInfo.TYPE_BLUETOOTH_A2DP||type==AudioDeviceInfo.TYPE_BLUETOOTH_SCO||type==AudioDeviceInfo.TYPE_USB_HEADSET||type==AudioDeviceInfo.TYPE_BLE_HEADSET||type==AudioDeviceInfo.TYPE_HEARING_AID;}
+                                                                                                                                                                                                                                                                                                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/RoutedAudio.java:18: Warning: Field requires API level 31 (current min is 26): android.media.AudioDeviceInfo#TYPE_BLE_HEADSET [InlinedApi]
+    static boolean headphones(int type){return type==AudioDeviceInfo.TYPE_WIRED_HEADSET||type==AudioDeviceInfo.TYPE_WIRED_HEADPHONES||type==AudioDeviceInfo.TYPE_BLUETOOTH_A2DP||type==AudioDeviceInfo.TYPE_BLUETOOTH_SCO||type==AudioDeviceInfo.TYPE_USB_HEADSET||type==AudioDeviceInfo.TYPE_BLE_HEADSET||type==AudioDeviceInfo.TYPE_HEARING_AID;}
+                                                                                                                                                                                                                                                                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+   Explanation for issues of type "InlinedApi":
+   This check scans through all the Android API field references in the
+   application and flags certain constants, such as static final integers and
+   Strings, which were introduced in later versions. These will actually be
+   copied into the class files rather than being referenced, which means that
+   the value is available even when running on older devices. In some cases
+   that's fine, and in other cases it can result in a runtime crash or
+   incorrect behavior. It depends on the context, so consider the code
+   carefully and decide whether it's safe and can be suppressed or whether the
+   code needs to be guarded.
+
+   If you really want to use this API and don't need to support older devices
+   just set the minSdkVersion in your build.gradle or AndroidManifest.xml
+   files.
+
+   If your code is deliberately accessing newer APIs, and you have ensured
+   (e.g. with conditional execution) that this code will only ever be called
+   on a supported platform, then you can annotate your class or method with
+   the @TargetApi annotation specifying the local minimum SDK to apply, such
+   as @TargetApi(11), such that this check considers 11 rather than your
+   manifest file's minimum SDK as the required API level.
+
 /workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/build.gradle:9: Warning: Not targeting the latest versions of Android; compatibility modes apply. Consider testing and updating this version. Consult the android.os.Build.VERSION_CODES javadoc for details. [OldTargetApi]
         targetSdk 34
         ~~~~~~~~~~~~
@@ -20,7 +49,10 @@
 
    https://developer.android.com/distribute/best-practices/develop/target-sdk.html
 
-/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:702: Warning: Use SwitchCompat from AppCompat or SwitchMaterial from Material library [UseSwitchCompatOrMaterialCode from androidx.appcompat]
+/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:753: Warning: Use SwitchCompat from AppCompat or SwitchMaterial from Material library [UseSwitchCompatOrMaterialCode from androidx.appcompat]
+        Switch enabled=new Switch(this);enabled.setText("Groq ile metin çevirisi");enabled.setTextColor(TEXT);enabled.setChecked(prefs.getBoolean("groqEnabled",false));full(content,enabled);gap(content,10);
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:814: Warning: Use SwitchCompat from AppCompat or SwitchMaterial from Material library [UseSwitchCompatOrMaterialCode from androidx.appcompat]
         Switch s=new Switch(this);s.setText(label);s.setTextSize(14);s.setTextColor(TEXT);s.setPadding(0,dp(8),0,dp(8));
         ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -31,9 +63,9 @@
    Identifier: androidx.appcompat
    Feedback: https://issuetracker.google.com/issues/new?component=460343
 
-/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/build.gradle:38: Warning: A newer version of androidx.exifinterface:exifinterface than 1.3.7 is available: 1.4.2 [GradleDependency]
-    implementation 'androidx.exifinterface:exifinterface:1.3.7'
-                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/build.gradle:47: Warning: A newer version of androidx.test:runner than 1.6.2 is available: 1.7.0 [GradleDependency]
+    androidTestImplementation 'androidx.test:runner:1.6.2'
+                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
    Explanation for issues of type "GradleDependency":
    This detector looks for usages of libraries where the version you are using
@@ -56,42 +88,79 @@
 
    https://developer.android.com/ndk/guides/abis
 
-/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:312: Warning: Do not concatenate text displayed with setText. Use resource string with placeholders. [SetTextI18n]
+/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/PhotoCropView.java:15: Warning: Avoid object allocations during draw/layout operations (preallocate and reuse instead) [DrawAllocation]
+        float sx=display.width()/image.getWidth(),sy=display.height()/image.getHeight();RectF r=new RectF(display.left+selection.left*sx,display.top+selection.top*sy,display.left+selection.right*sx,display.top+selection.bottom*sy);
+                                                                                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+   Explanation for issues of type "DrawAllocation":
+   You should avoid allocating objects during a drawing or layout operation.
+   These are called frequently, so a smooth UI can be interrupted by garbage
+   collection pauses caused by the object allocations.
+
+   The way this is generally handled is to allocate the needed objects up
+   front and to reuse them for each drawing operation.
+
+   Some methods allocate memory on your behalf (such as Bitmap.create), and
+   these should be handled in the same way.
+
+/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/PhotoCropView.java:5: Warning: Custom view PhotoCropView is missing constructor used by tools: (Context) or (Context,AttributeSet) or (Context,AttributeSet,int) [ViewConstructor]
+final class PhotoCropView extends View {
+            ~~~~~~~~~~~~~
+/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/ZoomPhotoView.java:5: Warning: Custom view ZoomPhotoView is missing constructor used by tools: (Context) or (Context,AttributeSet) or (Context,AttributeSet,int) [ViewConstructor]
+final class ZoomPhotoView extends View {
+            ~~~~~~~~~~~~~
+
+   Explanation for issues of type "ViewConstructor":
+   Some layout tools (such as the Android layout editor) need to find a
+   constructor with one of the following signatures:
+   * View(Context context)
+   * View(Context context, AttributeSet attrs)
+   * View(Context context, AttributeSet attrs, int defStyle)
+
+   If your custom view needs to perform initialization which does not apply
+   when used in a layout editor, you can surround the given code with a check
+   to see if View#isInEditMode() is false, since that method will return false
+   at runtime but true within a user interface editor.
+
+/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:325: Warning: Do not concatenate text displayed with setText. Use resource string with placeholders. [SetTextI18n]
         if(firstTalk!=null){firstTalk.setText((active&&activeSide==0?"● ":"")+LanguageCatalog.name(source)+" dinle");firstTalk.setBackground(shape(active&&activeSide==0?ACCENT:CARD2,18));firstTalk.setTextColor(active&&activeSide==0?BG:TEXT);}
                                               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:312: Warning: String literal in setText can not be translated. Use Android resources instead. [SetTextI18n]
+/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:325: Warning: String literal in setText can not be translated. Use Android resources instead. [SetTextI18n]
         if(firstTalk!=null){firstTalk.setText((active&&activeSide==0?"● ":"")+LanguageCatalog.name(source)+" dinle");firstTalk.setBackground(shape(active&&activeSide==0?ACCENT:CARD2,18));firstTalk.setTextColor(active&&activeSide==0?BG:TEXT);}
                                                                                                            ~~~~~~~~
-/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:313: Warning: Do not concatenate text displayed with setText. Use resource string with placeholders. [SetTextI18n]
+/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:326: Warning: Do not concatenate text displayed with setText. Use resource string with placeholders. [SetTextI18n]
         if(secondTalk!=null){secondTalk.setText((active&&activeSide==1?"● ":"")+LanguageCatalog.name(target)+" dinle");secondTalk.setBackground(shape(active&&activeSide==1?ACCENT:CARD2,18));secondTalk.setTextColor(active&&activeSide==1?BG:TEXT);}
                                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:313: Warning: String literal in setText can not be translated. Use Android resources instead. [SetTextI18n]
+/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:326: Warning: String literal in setText can not be translated. Use Android resources instead. [SetTextI18n]
         if(secondTalk!=null){secondTalk.setText((active&&activeSide==1?"● ":"")+LanguageCatalog.name(target)+" dinle");secondTalk.setBackground(shape(active&&activeSide==1?ACCENT:CARD2,18));secondTalk.setTextColor(active&&activeSide==1?BG:TEXT);}
                                                                                                              ~~~~~~~~
-/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:433: Warning: String literal in setText can not be translated. Use Android resources instead. [SetTextI18n]
+/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:456: Warning: String literal in setText can not be translated. Use Android resources instead. [SetTextI18n]
         if(stopButton!=null)stopButton.setText("Durdur");
                                                ~~~~~~~~
-/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:498: Warning: Do not concatenate text displayed with setText. Use resource string with placeholders. [SetTextI18n]
+/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:522: Warning: Do not concatenate text displayed with setText. Use resource string with placeholders. [SetTextI18n]
                 if(translatedLabel!=null)translatedLabel.setText("ÇEVİRİ · "+LanguageCatalog.name(to));
                                                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:498: Warning: String literal in setText can not be translated. Use Android resources instead. [SetTextI18n]
+/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:522: Warning: String literal in setText can not be translated. Use Android resources instead. [SetTextI18n]
                 if(translatedLabel!=null)translatedLabel.setText("ÇEVİRİ · "+LanguageCatalog.name(to));
                                                                  ~~~~~~~~~~~
-/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:499: Warning: Do not concatenate text displayed with setText. Use resource string with placeholders. [SetTextI18n]
+/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:523: Warning: Do not concatenate text displayed with setText. Use resource string with placeholders. [SetTextI18n]
                 if(originalLabel!=null)originalLabel.setText("ORİJİNAL · "+LanguageCatalog.name(from));
                                                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:499: Warning: String literal in setText can not be translated. Use Android resources instead. [SetTextI18n]
+/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:523: Warning: String literal in setText can not be translated. Use Android resources instead. [SetTextI18n]
                 if(originalLabel!=null)originalLabel.setText("ORİJİNAL · "+LanguageCatalog.name(from));
                                                              ~~~~~~~~~~~~~
-/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:501: Warning: String literal in setText can not be translated. Use Android resources instead. [SetTextI18n]
+/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:525: Warning: String literal in setText can not be translated. Use Android resources instead. [SetTextI18n]
                 if(favoriteButton!=null)favoriteButton.setText("☆ Kaydet");
                                                                ~~~~~~~~~~
-/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:546: Warning: Do not concatenate text displayed with setText. Use resource string with placeholders. [SetTextI18n]
+/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:571: Warning: Do not concatenate text displayed with setText. Use resource string with placeholders. [SetTextI18n]
                 if(input!=null)input.setText(draft);if(originalLabel!=null)originalLabel.setText("DUYULAN · "+LanguageCatalog.name(from));
                                                                                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:546: Warning: String literal in setText can not be translated. Use Android resources instead. [SetTextI18n]
+/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:571: Warning: String literal in setText can not be translated. Use Android resources instead. [SetTextI18n]
                 if(input!=null)input.setText(draft);if(originalLabel!=null)originalLabel.setText("DUYULAN · "+LanguageCatalog.name(from));
                                                                                                  ~~~~~~~~~~~~
+/workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/MainActivity.java:753: Warning: String literal in setText can not be translated. Use Android resources instead. [SetTextI18n]
+        Switch enabled=new Switch(this);enabled.setText("Groq ile metin çevirisi");enabled.setTextColor(TEXT);enabled.setChecked(prefs.getBoolean("groqEnabled",false));full(content,enabled);gap(content,10);
+                                                        ~~~~~~~~~~~~~~~~~~~~~~~~~
 /workspace/scratch/2472231e9677/restored/HizirBey-Tercuman/app/src/main/java/com/hizirbey/tercuman/PackSetup.java:64: Warning: String literal in setText can not be translated. Use Android resources instead. [SetTextI18n]
         CheckBox voices=new CheckBox(activity);voices.setText("Çok dilli ücretsiz ses motorunu da kur (yaklaşık 10 MB)");voices.setChecked(true);content.addView(voices);
                                                               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -109,4 +178,4 @@
 
    https://developer.android.com/guide/topics/resources/localization.html
 
-0 errors, 17 warnings
+0 errors, 24 warnings

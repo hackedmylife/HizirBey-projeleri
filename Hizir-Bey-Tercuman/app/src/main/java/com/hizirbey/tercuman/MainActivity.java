@@ -64,12 +64,16 @@ public class MainActivity extends Activity {
     private EditText input;
     private TextView output, status, originalLabel, translatedLabel;
     private LinearLayout root, body;
-    private LinearLayout translatedPanel;
+    private LinearLayout translatedPanel,attributionPanel;
+    private boolean lastCloudResult;
     private ScrollView mainScroll;
     private Button firstTalk, secondTalk, stopButton, finishButton, favoriteButton;
     private Runnable afterSpeech;
     private String utteranceId="";
-    private Bitmap photoPreview;
+    private Bitmap photoPreview,translatedPhoto;
+    private PhotoPage photoPage;private boolean showTranslatedPhoto;
+    private AlertDialog cropDialog,photoDialog;
+    private RoutedAudio routedAudio;private File routedFile;private String routedId="";private boolean privateAudio;
     private int resumeVoiceSide=-1;
     private long preparationSerial;
     private boolean preparationActive;
@@ -84,7 +88,8 @@ public class MainActivity extends Activity {
                 .putBoolean("repeat",prefs.getBoolean("repeat",true)).putInt("offlineFlowVersion",3).apply();
         }
         history=new HistoryStore(prefs);
-        engine=new LocalTranslationEngine(this);
+        engine=new HybridTranslationEngine(this,handler,this::setStatus);
+        routedAudio=new RoutedAudio(this);
         embeddedSpeech=new EmbeddedSpeech(this);
         packSetup=new PackSetup(this,prefs);
         languages.addAll(TranslateLanguage.getAllLanguages());
@@ -96,7 +101,7 @@ public class MainActivity extends Activity {
         if(state!=null) {
             draft=state.getString("draft",""); translation=state.getString("translation","");
             draftFrom=state.getString("draftFrom",source);
-            lastFrom=state.getString("lastFrom",source);lastTo=state.getString("lastTo",target);
+            lastFrom=state.getString("lastFrom",source);lastTo=state.getString("lastTo",target);lastCloudResult=state.getBoolean("lastCloudResult",false);
             mode=state.getInt("mode",0);
             String uri=state.getString("cameraUri");
             if(uri!=null) cameraUri=Uri.parse(uri);
@@ -113,17 +118,19 @@ public class MainActivity extends Activity {
         foreground=false;if(packSetup!=null)packSetup.onPause();int requestedSide=permissionSide;stopSession();permissionSide=requestedSide;super.onPause();
     }
     @Override protected void onDestroy() {
-        stopSession(); handler.removeCallbacksAndMessages(null); engine.close();
+        stopSession(); if(cropDialog!=null)cropDialog.dismiss();if(photoDialog!=null)photoDialog.dismiss(); handler.removeCallbacksAndMessages(null); engine.close();
+        if(routedAudio!=null)routedAudio.close();
         embeddedSpeech.close();packSetup.close();
         imageExecutor.shutdownNow(); if(tts!=null) tts.shutdown();
         for(TextToSpeech voice:extraTts.values())voice.shutdown();extraTts.clear();
         if(photoPreview!=null) photoPreview.recycle();
+        if(photoPage!=null)photoPage.recycle();if(translatedPhoto!=null)translatedPhoto.recycle();
         super.onDestroy();
     }
     @Override protected void onSaveInstanceState(Bundle state) {
         rememberInput();state.putString("draft",draft);state.putString("translation",translation);
         state.putString("draftFrom",draftFrom);
-        state.putString("lastFrom",lastFrom);state.putString("lastTo",lastTo);state.putInt("mode",mode);
+        state.putBoolean("lastCloudResult",lastCloudResult);state.putString("lastFrom",lastFrom);state.putString("lastTo",lastTo);state.putInt("mode",mode);
         if(cameraUri!=null) state.putString("cameraUri",cameraUri.toString());
         state.putString("photoSource",photoSource);state.putString("photoTarget",photoTarget);
         super.onSaveInstanceState(state);
@@ -171,7 +178,7 @@ public class MainActivity extends Activity {
         header.addView(names,new LinearLayout.LayoutParams(0,-2,1));
         Button menu=button("Ayarlar",false,this::settings);header.addView(menu);full(root,header);gap(root,14);
         LinearLayout chip=horizontal();chip.setPadding(dp(12),dp(8),dp(12),dp(8));chip.setBackground(shape(0xFF142B29,12));
-        full(chip,text("●  Ücretsiz · Cihazda çeviri",12,GREEN,true));full(root,chip);gap(root,14);
+        full(chip,text(prefs.getBoolean("groqEnabled",false)?"●  Groq internet desteği açık":"●  Ücretsiz · Cihazda çeviri",12,GREEN,true));full(root,chip);gap(root,14);
         LinearLayout tabs=horizontal();tabButtons.clear();
         String[] titles={"Konuşma","Metin","Fotoğraf","Geçmiş"};
         for(int i=0;i<titles.length;i++) {
@@ -238,8 +245,14 @@ public class MainActivity extends Activity {
             rowItem(photoRow,button("Fotoğraf seç",false,this::pickPhoto));full(body,photoRow);gap(body,10);
             full(body,text("Fotoğraf okuma: Latin, Makedonca, Çince, Japonca, Korece ve Devanagari.",12,MUTED,false));gap(body,12);
             if(photoPreview!=null&&!photoPreview.isRecycled()) {
-                ImageView preview=new ImageView(this);preview.setImageBitmap(photoPreview);preview.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
-                preview.setContentDescription("Okunan fotoğrafın önizlemesi");body.addView(preview,new LinearLayout.LayoutParams(-1,dp(160)));gap(body,12);
+                ImageView preview=new ImageView(this);preview.setImageBitmap(showTranslatedPhoto&&translatedPhoto!=null?translatedPhoto:photoPreview);preview.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+                preview.setContentDescription("Fotoğrafı büyüt");preview.setOnClickListener(v->showPhotoFull());body.addView(preview,new LinearLayout.LayoutParams(-1,dp(220)));gap(body,8);
+                if(photoPage!=null&&!photoPage.regions.isEmpty()){
+                    full(body,button("Resim üzerinde çevir",true,this::translatePhoto));gap(body,6);
+                    full(body,button("Okunan alanları düzelt",false,this::editPhotoAreas));gap(body,6);
+                    if(translatedPhoto!=null){full(body,button(showTranslatedPhoto?"Orijinali göster":"Çevrilmiş resmi göster",false,()->{showTranslatedPhoto=!showTranslatedPhoto;render();}));gap(body,6);}
+                    full(body,text("Büyütmek için resme dokun. Tam ekranda iki parmakla yakınlaştır.",12,MUTED,false));
+                }gap(body,12);
             }
         }
         LinearLayout originalCard=card(body,CARD);
@@ -258,7 +271,7 @@ public class MainActivity extends Activity {
                 } else toast("Panoda metin bulunamadı.");
             }));
             rowItem(tools,button("Dili algıla",false,this::detectLanguage));full(originalCard,tools);
-            gap(originalCard,10);full(originalCard,button("Google ile çevir",true,this::submitText));
+            gap(originalCard,10);full(originalCard,button("Metni çevir",true,this::submitText));
         }
         gap(body,12);LinearLayout translatedCard=card(body,0xFF25243D);translatedPanel=translatedCard;
         translatedLabel=text("ÇEVİRİ · "+LanguageCatalog.name(translation.isEmpty()?target:lastTo),11,ACCENT,true);full(translatedCard,translatedLabel);gap(translatedCard,9);
@@ -270,7 +283,7 @@ public class MainActivity extends Activity {
             if(lastEntry==null){toast("Önce geçmiş kaydı açıkken bir çeviri yap.");return;}
             history.toggle(lastEntry);favoriteButton.setText(lastEntry.favorite?"★ Kayıtlı":"☆ Kaydet");
         });rowItem(actions,favoriteButton);full(translatedCard,actions);
-        gap(translatedCard,12);attribution(translatedCard);
+        gap(translatedCard,12);attributionPanel=vertical();full(translatedCard,attributionPanel);attribution(attributionPanel,lastCloudResult);
         gap(body,12);full(body,button("Dil paketlerini yönet",false,this::modelDialog));
     }
     private Spinner spinner(String code) {
@@ -330,7 +343,7 @@ public class MainActivity extends Activity {
             LinearLayout row=horizontal();rowItem(row,button("Dinle",false,()->replay(e.translated,e.to)));
             rowItem(row,button("Kopyala",false,()->copy(e.translated)));
             rowItem(row,button(e.favorite?"★":"☆",false,()->{history.toggle(e);render();}));full(c,row);
-            gap(c,10);attribution(c);gap(body,12);
+            gap(c,10);attribution(c,e.cloud);gap(body,12);
         }
     }
     private void initTts() {
@@ -340,7 +353,7 @@ public class MainActivity extends Activity {
     private void attachTtsListener(TextToSpeech voice){
         voice.setOnUtteranceProgressListener(new UtteranceProgressListener(){
             @Override public void onStart(String id){}
-            @Override public void onDone(String id){handler.post(()->finishSpeaking(id,false));}
+            @Override public void onDone(String id){handler.post(()->{if(id.equals(routedId))playRouted(id);else finishSpeaking(id,false);});}
             @Override public void onError(String id){handler.post(()->finishSpeaking(id,true));}
         });
     }
@@ -353,7 +366,8 @@ public class MainActivity extends Activity {
             }),name);extraTts.put(name,voice);attachTtsListener(voice);
         }
     }
-    private void attribution(LinearLayout parent){
+    private void attribution(LinearLayout parent,boolean cloud){
+        if(cloud){full(parent,text("Çeviride Groq internet desteği kullanıldı.",11,MUTED,false));return;}
         LinearLayout badge=horizontal();badge.setPadding(dp(8),dp(7),dp(8),dp(7));badge.setBackground(shape(Color.WHITE,6));
         ImageView image=new ImageView(this);image.setImageResource(R.drawable.google_translate_badge);
         image.setScaleType(ImageView.ScaleType.FIT_CENTER);image.setContentDescription("powered by Google Translate");
@@ -363,6 +377,7 @@ public class MainActivity extends Activity {
     private void finishSpeaking(String id,boolean error){
         if(!utteranceId.equals(id))return;
         Runnable done=afterSpeech;afterSpeech=null;utteranceId="";
+        if(routedFile!=null){routedFile.delete();routedFile=null;}routedId="";
         if(error)toast("Seslendirme tamamlanamadı. Telefonun ses paketlerini kontrol et.");
         if(done!=null)done.run();
     }
@@ -401,10 +416,17 @@ public class MainActivity extends Activity {
         afterSpeech=()->{if(alive(token)){if(rest.isEmpty())done.run();else speak(rest,language,token,done);}};
         setStatus("Seslendiriliyor · "+LanguageCatalog.name(language));
         String chunk=value.substring(0,end);
-        if(selectedEngine.speak(chunk,TextToSpeech.QUEUE_FLUSH,null,id)==TextToSpeech.ERROR){finishSpeaking(id,true);return;}
+        if(prefs.getBoolean("splitAudio",false)&&mode==0){
+            privateAudio=language.equals("tr");
+            if(routedAudio.output(privateAudio)==null){afterSpeech=null;utteranceId="";sessionActive=false;conversationStarted=false;setStatus(privateAudio?"Kulaklık bağlı değil. Türkçe çeviri seslendirilmedi.":"Telefon hoparlörü bulunamadı.");return;}
+            try{routedFile=File.createTempFile("speech-",".wav",getCacheDir());routedId=id;
+                setStatus("Ses hazırlanıyor · "+(privateAudio?"Türkçe → Kulaklık":LanguageCatalog.name(language)+" → Telefon hoparlörü"));
+                if(selectedEngine.synthesizeToFile(chunk,null,routedFile,id)==TextToSpeech.ERROR){finishSpeaking(id,true);return;}
+            }catch(IOException e){finishSpeaking(id,true);return;}
+        }else if(selectedEngine.speak(chunk,TextToSpeech.QUEUE_FLUSH,null,id)==TextToSpeech.ERROR){finishSpeaking(id,true);return;}
         handler.postDelayed(()->{
             if(alive(token)&&id.equals(utteranceId)){
-                selectedEngine.stop();finishSpeaking(id,true);
+                selectedEngine.stop();routedAudio.stop();finishSpeaking(id,true);
             }
         },Math.max(120000,Math.min(600000,chunk.length()*120L)));
     }
@@ -427,7 +449,8 @@ public class MainActivity extends Activity {
         resumeVoiceSide=-1;cancelPreparationWait();if(engine!=null)engine.cancelPreparation();
         if(packSetup!=null)packSetup.resumeAfterConversation();
         if(embeddedSpeech!=null)embeddedSpeech.cancel();embeddedThisTurn=false;
-        afterSpeech=null;utteranceId="";if(tts!=null)tts.stop();
+        afterSpeech=null;utteranceId="";routedId="";if(routedAudio!=null)routedAudio.stop();
+        if(routedFile!=null){routedFile.delete();routedFile=null;}if(tts!=null)tts.stop();
         for(TextToSpeech voice:extraTts.values())voice.stop();
         getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         if(stopButton!=null)stopButton.setText("Durdur");
@@ -493,11 +516,12 @@ public class MainActivity extends Activity {
             @Override public void success(String result){
                 if(!alive(token))return;
                 if(result.trim().isEmpty()){fail(token,"Çeviri sonucu boş geldi. Metni kontrol edip tekrar dene.",null);return;}
-                translation=result;lastFrom=from;lastTo=to;
+                translation=result;lastFrom=from;lastTo=to;lastCloudResult=engine instanceof HybridTranslationEngine&&((HybridTranslationEngine)engine).usingCloud();
+                if(attributionPanel!=null){attributionPanel.removeAllViews();attribution(attributionPanel,lastCloudResult);}
                 if(output!=null){output.setText(result);output.setTextColor(TEXT);}
                 if(translatedLabel!=null)translatedLabel.setText("ÇEVİRİ · "+LanguageCatalog.name(to));
                 if(originalLabel!=null)originalLabel.setText("ORİJİNAL · "+LanguageCatalog.name(from));
-                lastEntry=prefs.getBoolean("saveHistory",true)?history.add(value,result,from,to):null;
+                lastEntry=prefs.getBoolean("saveHistory",true)?history.add(value,result,from,to,lastCloudResult):null;
                 if(favoriteButton!=null)favoriteButton.setText("☆ Kaydet");
                 if(conversation&&mainScroll!=null)mainScroll.post(()->{
                     if(alive(token)&&translatedPanel!=null)mainScroll.smoothScrollTo(0,translatedPanel.getTop());
@@ -522,6 +546,7 @@ public class MainActivity extends Activity {
             permissionSide=side;requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO},MICROPHONE_REQUEST);return;
         }
         if(source.equals(target)){toast("Konuşma için iki farklı dil seç.");return;}
+        if(prefs.getBoolean("splitAudio",false)&&!source.equals("tr")&&!target.equals("tr")){toast("Kulaklık modu için dillerden birini Türkçe seç.");return;}
         activeSide=side;sessionActive=true;conversationStarted=true;silenceCount=0;long token=gate.current();
         packSetup.pauseForConversation();beginListening(token);
     }
@@ -603,27 +628,42 @@ public class MainActivity extends Activity {
     @Override protected void onActivityResult(int request,int result,Intent data){
         super.onActivityResult(request,result,data);
         if(result!=RESULT_OK)return;
-        if(request==CAMERA_RESULT&&cameraUri!=null)readPhoto(cameraUri);
-        if(request==GALLERY_RESULT&&data!=null&&data.getData()!=null)readPhoto(data.getData());
+        if(request==CAMERA_RESULT&&cameraUri!=null)selectPhotoArea(cameraUri);
+        if(request==GALLERY_RESULT&&data!=null&&data.getData()!=null)selectPhotoArea(data.getData());
     }
-    private void readPhoto(Uri uri){
+    private void selectPhotoArea(Uri uri){
+        stopSession();long token=gate.current();setStatus("Fotoğraf hazırlanıyor…");
+        imageExecutor.execute(()->{try{Bitmap image=decodeImage(uri);handler.post(()->{
+            if(!alive(token)){image.recycle();return;}
+            PhotoCropView crop=new PhotoCropView(this,image);LinearLayout content=vertical();content.setPadding(dp(16),dp(8),dp(16),dp(4));
+            full(content,text("Yazının etrafına parmağınla bir kutu çiz. Küçük yazılarda boş arka planı dışarıda bırak. Belgenin tamamını da seçebilirsin.",14,MUTED,false));gap(content,10);
+            int height=Math.max(dp(160),Math.min(dp(400),getResources().getDisplayMetrics().heightPixels/2));content.addView(crop,new LinearLayout.LayoutParams(-1,height));
+            cropDialog=new AlertDialog.Builder(this).setTitle("Yazı alanını seç").setView(content)
+                .setPositiveButton("Seçili alanı oku",(dialog,which)->{if(alive(token))readPhoto(crop.croppedImage());})
+                .setNeutralButton("Tümü",null).setNegativeButton("Vazgeç",(dialog,which)->setStatus("Fotoğraf iptal edildi.")).create();
+            cropDialog.setOnDismissListener(dialog->{image.recycle();cropDialog=null;});
+            cropDialog.setOnShowListener(dialog->cropDialog.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener(v->crop.resetSelection()));cropDialog.show();
+        });}catch(Exception|OutOfMemoryError e){handler.post(()->fail(token,"Görüntü açılamadı. Daha küçük bir fotoğraf seç.",null));}});
+    }
+    private void readPhoto(Bitmap bitmap){
         stopSession();long token=gate.current();String from=photoSource==null?source:photoSource;
-        setStatus("Fotoğraftaki yazılar okunuyor…");
+        draft="";translation="";setStatus("Seçili alandaki yazılar okunuyor…");
         imageExecutor.execute(()->{
             try{
-                Bitmap bitmap=decodeImage(uri);
                 if(LanguageCatalog.script(from).equals("Macedonian")){
-                    String recognized;
-                    try{recognized=OfflinePhotoOcr.read(this,bitmap);}catch(Exception|LinkageError e){bitmap.recycle();throw new IOException("Makedonca yazı okunamadı.",e);}
+                    OfflinePhotoOcr.Result reading;
+                    try{reading=OfflinePhotoOcr.readDetailed(this,bitmap);}catch(Exception|LinkageError e){bitmap.recycle();throw new IOException("Makedonca yazı okunamadı.",e);}
                     handler.post(()->{
                         if(!alive(token)){bitmap.recycle();return;}
+                        replacePhotoPage(bitmap,reading.regions,from);
                         if(photoPreview!=null&&!photoPreview.isRecycled())photoPreview.recycle();
                         int width=Math.min(640,bitmap.getWidth()),height=Math.max(1,Math.round(bitmap.getHeight()*(width/(float)bitmap.getWidth())));
                         Bitmap preview=Bitmap.createScaledBitmap(bitmap,width,height,true);
                         photoPreview=preview==bitmap?bitmap.copy(Bitmap.Config.ARGB_8888,false):preview;bitmap.recycle();
-                        if(recognized.trim().isEmpty()){render();setStatus("Yazı bulunamadı. Daha net bir fotoğraf dene.");return;}
+                        String recognized=reading.text;
+                        if(recognized.trim().isEmpty()){render();setStatus("Makedonca yazı okunamadı. Fotoğrafı yeniden seçip yalnızca yazıyı çerçevele.");return;}
                         draft=recognized.substring(0,Math.min(4000,recognized.length()));source=from;draftFrom=from;
-                        target=photoTarget==null?target:photoTarget;saveLanguages();render();setStatus("Makedonca yazı çevrimdışı okundu. Metni kontrol edip Çevir'e dokun.");
+                        target=photoTarget==null?target:photoTarget;saveLanguages();render();setStatus(reading.needsReview()?"Okuma belirsiz. Kiril metnini kontrol et veya yazı alanını daha yakın seç.":"Makedonca yazı okundu. Resim üzerinde çevir veya metni kontrol et.");
                     });return;
                 }
                 handler.post(()->{
@@ -643,6 +683,9 @@ public class MainActivity extends Activity {
                     }
                     reader.process(InputImage.fromBitmap(bitmap,0)).addOnSuccessListener(result->{
                         if(!alive(token))return;
+                        List<PhotoPage.Region> areas=new ArrayList<>();
+                        for(Text.TextBlock block:result.getTextBlocks())if(block.getBoundingBox()!=null)areas.add(new PhotoPage.Region(new RectF(block.getBoundingBox()),block.getText()));
+                        replacePhotoPage(bitmap,areas,from);
                         String value=result.getText().trim();if(value.isEmpty()){render();setStatus("Yazı bulunamadı. Daha net ve yakın bir fotoğraf dene.");return;}
                         boolean truncated=value.length()>4000;draft=value.substring(0,Math.min(value.length(),4000));
                         source=from;draftFrom=from;target=photoTarget==null?target:photoTarget;saveLanguages();render();
@@ -653,11 +696,76 @@ public class MainActivity extends Activity {
             }catch(Exception|OutOfMemoryError e){handler.post(()->fail(token,"Görüntü açılamadı. Daha küçük bir fotoğraf seç.",null));}
         });
     }
+    private void replacePhotoPage(Bitmap bitmap,List<PhotoPage.Region> areas,String from){
+        if(photoDialog!=null)photoDialog.dismiss();
+        if(photoPage!=null)photoPage.recycle();if(translatedPhoto!=null){translatedPhoto.recycle();translatedPhoto=null;}
+        photoPage=new PhotoPage(bitmap,areas,from);showTranslatedPhoto=false;
+    }
+    private void showPhotoFull(){
+        if(photoPage==null)return;Bitmap image=showTranslatedPhoto&&translatedPhoto!=null?translatedPhoto:photoPage.image;
+        LinearLayout content=vertical();content.setPadding(dp(10),dp(8),dp(10),dp(8));
+        full(content,text(showTranslatedPhoto?"Çevrilmiş resim · "+LanguageCatalog.name(photoPage.target):"Orijinal fotoğraf",16,TEXT,true));gap(content,8);
+        ZoomPhotoView zoom=new ZoomPhotoView(this,image);content.addView(zoom,new LinearLayout.LayoutParams(-1,0,1));gap(content,8);
+        full(content,button("Kapat",false,()->photoDialog.dismiss()));
+        photoDialog=new AlertDialog.Builder(this).setView(content).create();photoDialog.show();
+        photoDialog.getWindow().setLayout(-1,-1);
+    }
+    private void editPhotoAreas(){
+        if(photoPage==null)return;PhotoPage page=photoPage;String[] labels=new String[page.regions.size()];
+        for(int i=0;i<labels.length;i++){String text=page.regions.get(i).original;labels[i]=(i+1)+" · "+text.substring(0,Math.min(70,text.length()));}
+        new AlertDialog.Builder(this).setTitle("Düzeltilecek yazı alanı").setItems(labels,(dialog,which)->{
+            EditText edit=new EditText(this);edit.setText(page.regions.get(which).original);edit.setTextColor(TEXT);edit.setMinLines(2);edit.setFilters(new InputFilter[]{new InputFilter.LengthFilter(4000)});
+            new AlertDialog.Builder(this).setTitle("Okunan metni düzelt").setView(edit).setNegativeButton("Vazgeç",null).setPositiveButton("Kaydet",(d,w)->{
+                if(page!=photoPage)return;String value=edit.getText().toString().trim();if(value.isEmpty()){toast("Metin boş bırakılamaz.");return;}
+                stopSession();page.regions.get(which).original=value;for(PhotoPage.Region area:page.regions)area.translated="";page.translated=false;
+                if(translatedPhoto!=null){translatedPhoto.recycle();translatedPhoto=null;}showTranslatedPhoto=false;
+                ArrayList<String> parts=new ArrayList<>();for(PhotoPage.Region area:page.regions)parts.add(area.original);String joined=android.text.TextUtils.join("\n",parts);draft=joined.substring(0,Math.min(4000,joined.length()));translation="";render();setStatus("Yazı düzeltildi. Resim üzerinde çevir'e dokun.");
+            }).show();
+        }).setNegativeButton("Kapat",null).show();
+    }
+    private void translatePhoto(){
+        if(photoPage==null||photoPage.regions.isEmpty()){toast("Önce bir fotoğrafın yazısını okut.");return;}
+        int length=0,longest=0;for(PhotoPage.Region region:photoPage.regions){length+=region.original.length();longest=Math.max(longest,region.original.length());}
+        if(photoPage.regions.size()>150||length>24000||longest>4000){toast("Bu görüntü çok uzun. Belgeyi birkaç alan halinde seç.");return;}
+        rememberInput();stopSession();long token=gate.current();PhotoPage page=photoPage;String to=target;
+        prepare(page.language,to,token,()->PhotoBatch.translate(engine,page.regions,page.language,to,()->alive(token)&&page==photoPage,
+            count->setStatus("Resim çevriliyor · "+count+" / "+page.regions.size()),new TranslationEngine.Callback<List<String>>(){
+                public void success(List<String> values){if(!alive(token)||page!=photoPage)return;
+                    for(int i=0;i<values.size();i++)page.regions.get(i).translated=values.get(i);
+                    page.target=to;page.translated=true;
+                    try{Bitmap result=PhotoRenderer.render(page);if(translatedPhoto!=null)translatedPhoto.recycle();translatedPhoto=result;showTranslatedPhoto=true;
+                        lastCloudResult=false;for(PhotoPage.Region region:page.regions)lastCloudResult|=region.cloud;translation=android.text.TextUtils.join("\n",values);lastFrom=page.language;lastTo=to;render();setStatus("Resim çevirisi hazır · Büyütmek için resme dokun.");
+                    }catch(OutOfMemoryError e){fail(token,"Resim büyük geldi. Daha küçük bir yazı alanı seç.",null);}
+                }
+                public void failure(Exception e){fail(token,"Resim çevirisi tamamlanamadı. Dil paketlerini kontrol et.",e);}
+            }));
+    }
+    private void playRouted(String id){
+        if(!id.equals(utteranceId)||routedFile==null)return;File file=routedFile;routedFile=null;routedId="";
+        setStatus("Seslendiriliyor · "+(privateAudio?"Kulaklık":"Telefon hoparlörü"));
+        routedAudio.play(file,privateAudio,new RoutedAudio.Callback(){public void done(){finishSpeaking(id,false);}public void error(String message){
+            if(!id.equals(utteranceId))return;afterSpeech=null;utteranceId="";sessionActive=false;conversationStarted=false;setStatus(message);toast(message);
+        }});
+    }
+    private void groqSettings(){
+        LinearLayout content=vertical();content.setPadding(dp(20),dp(8),dp(20),dp(8));
+        full(content,text("İsteğe bağlı internet desteği. Açıkken çevrilecek metin Groq'a gönderilir; fotoğraf ve ses gönderilmez. Ücretsiz hesap limitlidir; ücretsiz hesabının anahtarını kullan. Uygulama hesap planını doğrulayamaz. Hata veya kota durumunda yerel çeviri denenir. API anahtarını bir kez kaydet.",14,TEXT,false));gap(content,12);
+        Switch enabled=new Switch(this);enabled.setText("Groq ile metin çevirisi");enabled.setTextColor(TEXT);enabled.setChecked(prefs.getBoolean("groqEnabled",false));full(content,enabled);gap(content,10);
+        EditText key=new EditText(this);key.setTextColor(TEXT);key.setHintTextColor(MUTED);key.setSingleLine(true);key.setInputType(android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        key.setHint(ApiKeyStore.has(this)?"Anahtar kayıtlı · Değiştirmek için yaz":"Groq API anahtarı");key.setImportantForAutofill(View.IMPORTANT_FOR_AUTOFILL_NO);full(content,key);
+        AlertDialog dialog=new AlertDialog.Builder(this).setTitle("Groq desteği").setView(content).setPositiveButton("Kaydet",null)
+            .setNeutralButton("Anahtarı sil",(d,w)->{ApiKeyStore.clear(this);prefs.edit().putBoolean("groqEnabled",false).apply();stopSession();setStatus("Groq kapatıldı. Yerel çeviri kullanılacak.");}).setNegativeButton("Vazgeç",null).create();
+        dialog.setOnShowListener(d->dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v->{try{
+            String value=key.getText().toString().trim();if(!value.isEmpty())ApiKeyStore.save(this,value);
+            if(enabled.isChecked()&&!ApiKeyStore.has(this)){key.setError("Önce API anahtarını gir.");return;}
+            stopSession();prefs.edit().putBoolean("groqEnabled",enabled.isChecked()).apply();render();setStatus(enabled.isChecked()?"Groq internet desteği açık.":"Yerel çeviri seçildi.");dialog.dismiss();
+        }catch(Exception e){key.setError("Anahtar güvenli biçimde kaydedilemedi.");}}));dialog.show();
+    }
     private Bitmap decodeImage(Uri uri)throws IOException{
         BitmapFactory.Options o=new BitmapFactory.Options();o.inJustDecodeBounds=true;
         try(InputStream in=getContentResolver().openInputStream(uri)){BitmapFactory.decodeStream(in,null,o);}
         if(o.outWidth<1||o.outHeight<1)throw new IOException("Görüntü geçersiz.");
-        o.inSampleSize=1;while(Math.max(o.outWidth,o.outHeight)/o.inSampleSize>2200)o.inSampleSize*=2;
+        o.inSampleSize=1;while(Math.max(o.outWidth,o.outHeight)/o.inSampleSize>3200)o.inSampleSize*=2;
         o.inJustDecodeBounds=false;o.inPreferredConfig=Bitmap.Config.ARGB_8888;Bitmap b;
         try(InputStream in=getContentResolver().openInputStream(uri)){b=BitmapFactory.decodeStream(in,null,o);}
         if(b==null)throw new IOException("Görüntü açılamadı.");
@@ -683,18 +791,22 @@ public class MainActivity extends Activity {
         rememberInput();stopSession();LinearLayout content=vertical();content.setPadding(dp(22),dp(6),dp(22),dp(12));
         full(content,text("Ücretsiz motor · "+languages.size()+" dilde metin çevirisi\nSes tanıma uygulamanın içinde, çevrimdışı çalışır.",14,TEXT,false));gap(content,12);
         settingSwitch(content,"Çeviriyi otomatik seslendir","autoSpeak",true);
+        settingSwitch(content,"Kulaklıkla karşılıklı konuşma","splitAudio",false);
+        settingSwitch(content,"Kulaklık modunda telefon mikrofonunu kullan","phoneMic",true);
+        full(content,text("Konuşma sekmesinde Türkçe çeviri kulaklığa, diğer dil telefon hoparlörüne verilir. Türkçe ve karşı tarafın dilini seç. Kulaklık yoksa Türkçe ses oynatılmaz. Telefonun çıkış yönlendirme desteği gerekir.",12,MUTED,false));gap(content,8);
+        full(content,button("Groq internet desteği",false,this::groqSettings));gap(content,8);
         settingSwitch(content,"Çeviriden sonra yeniden dinle","repeat",true);
         settingSwitch(content,"Yeniden dinlerken sırayla iki dile geç","alternate",false);
         full(content,text("İki dile sırayla geçiş her çeviriden sonra yönü değiştirir; konuşulan dili kendiliğinden algılamaz. İlk konuşmacının düğmesine bir kez dokunarak başlat.",12,MUTED,false));gap(content,6);
         settingSwitch(content,"Paketleri yalnızca Wi-Fi ile indir","wifiOnly",true);
-        full(content,text("İngilizce ve Makedonca dahil yerel konuşma modeli uygulamaya dahildir. Desteklenen dillerde her zaman bu yerel motor kullanılır. Mikrofon sen Bitir ve çevir'e basana kadar açık kalır. Kısa konuşma parçaları arka planda yazıya çevrilir. Bitir ve çevir kalan metni tamamlayıp çevirir; İptal sonucu siler.",12,MUTED,false));gap(content,8);
+        full(content,text("İngilizce ve Makedonca dahil yerel konuşma modeli uygulamaya dahildir. Desteklenen dillerde her zaman bu yerel motor kullanılır. Mikrofon sen Bitir ve çevir'e basana kadar açık kalır. Kısa konuşma parçaları arka planda yazıya çevrilir. Bitir ve çevir kalan metni tamamlayıp çevirir; Durdur bütün işlemi keser.",12,MUTED,false));gap(content,8);
         full(content,button("Tüm dil ve ses desteğini hazırla",false,()->packSetup.showOffer()));gap(content,8);
         full(content,text("Yerel konuşma motoru Esperanto ve İrlandaca hariç metin çevirisi dillerini destekler. Sesli okuma ayrı bir motordur; çok dilli ses kurulumu için Android onayı gerekebilir.",12,MUTED,false));gap(content,6);
         settingSwitch(content,"Çevirileri geçmişe kaydet","saveHistory",true);gap(content,12);
         full(content,button("Telefon ve ses desteğini kontrol et",false,this::diagnostics));gap(content,8);
         full(content,button("Seslendirme ayarları",false,()->openSystem("com.android.settings.TTS_SETTINGS",null)));gap(content,8);
         full(content,button("Çeviri hakkında",false,()->openSystem(Intent.ACTION_VIEW,Uri.parse("https://cloud.google.com/translate/"))));gap(content,12);
-        full(content,text("Metin çevirisi, fotoğraftan okuma ve yerel konuşma modeli cihazda çalışır. Konuşma kaydı ve çözümlemesi için Google ses hizmeti kullanılmaz. İlk çeviri paketi indirmesi internet gerektirir. API anahtarı veya abonelik gerekmez.\n\nHızır Bey Tercüman 0.4.1 · Test sürümü\nYerel ses: Whisper / whisper.cpp (MIT). Çok dilli sesli okuma: ayrı ve isteğe bağlı eSpeak NG uygulaması (GPL-3.0+). Google Translate modelleri ile otomatik çeviri (Google ML Kit). Fotoğraftan okuma: Google ML Kit.\n\nÇeviriler otomatik oluşturulur. Google; çevirilerin doğruluğu, güvenilirliği, ticari elverişliliği, belirli bir amaca uygunluğu ve hak ihlali içermemesi konusunda açık veya örtülü garanti vermez.",12,MUTED,false));
+        full(content,text("Metin çevirisi, fotoğraftan okuma ve yerel konuşma modeli cihazda çalışır. Konuşma kaydı ve çözümlemesi için Google ses hizmeti kullanılmaz. İlk çeviri paketi indirmesi internet gerektirir. Varsayılan yerel kullanımda API anahtarı veya abonelik gerekmez. İsteğe bağlı Groq desteği yalnızca açıldığında metni internete gönderir.\n\nHızır Bey Tercüman 0.5.0 · Test sürümü\nYerel ses: Whisper / whisper.cpp (MIT). Çok dilli sesli okuma: ayrı ve isteğe bağlı eSpeak NG uygulaması (GPL-3.0+). Google Translate modelleri ile otomatik çeviri (Google ML Kit). Fotoğraftan okuma: Google ML Kit.\n\nÇeviriler otomatik oluşturulur. Google; çevirilerin doğruluğu, güvenilirliği, ticari elverişliliği, belirli bir amaca uygunluğu ve hak ihlali içermemesi konusunda açık veya örtülü garanti vermez.",12,MUTED,false));
         ScrollView scroll=new ScrollView(this);scroll.addView(content);
         new AlertDialog.Builder(this).setTitle("Tercihler").setView(scroll).setPositiveButton("Tamam",(d,w)->render()).show();
     }
@@ -708,6 +820,7 @@ public class MainActivity extends Activity {
     }
     private void diagnostics(){
         String device=Build.MANUFACTURER+" "+Build.MODEL+"\nAndroid "+Build.VERSION.RELEASE+" (API "+Build.VERSION.SDK_INT+")\n\n";
+        device+="Ses çıkışları:\n"+routedAudio.outputs()+"\n";
         device+="Ses tanıma: Uygulamaya dahil Whisper · Çevrimdışı\n";
         device+="Yerel ses durumu: "+embeddedSpeech.diagnostics()+"\n";
         device+="Seslendirme: "+(ttsReady?"Hazır":"Hazır değil")+"\n\n";
@@ -716,7 +829,7 @@ public class MainActivity extends Activity {
             device+=LanguageCatalog.name(code)+" seslendirme: "+(support>=0?"Destekleniyor":"Paket eksik / desteklenmiyor")+"\n";
         }}
         device+="\nMetin çevirisi: "+languages.size()+" dil\nFotoğraf alfabeleri: Latin, Makedonca, Çince, Japonca, Korece, Devanagari\n\nSes tanıma ve seslendirme dil listeleri metin çevirisi listesinden farklı olabilir.";
-        device+="\n\nUygulama: 0.4.1\nSon paket hatası: "+(lastPreparationError.isEmpty()?"Yok":lastPreparationError);
+        device+="\n\nUygulama: 0.5.0\nSon paket hatası: "+(lastPreparationError.isEmpty()?"Yok":lastPreparationError);
         final String summary=device;
         AlertDialog d=new AlertDialog.Builder(this).setTitle("Telefon desteği").setMessage(device)
             .setNeutralButton("Kopyala",(dialog,w)->copy(summary)).setPositiveButton("Tamam",null).create();d.show();
@@ -745,7 +858,7 @@ public class MainActivity extends Activity {
             String code=codes.get(which);new AlertDialog.Builder(this).setTitle(LanguageCatalog.name(code)+" paketi silinsin mi?")
                 .setMessage("Bu dilde metin çevirisi için paketi yeniden indirmen gerekecek.")
                 .setNegativeButton("Vazgeç",null).setPositiveButton("Sil",(dialog,w)->{
-                    stopSession();engine.close();engine=new LocalTranslationEngine();
+                    stopSession();engine.close();engine=new HybridTranslationEngine(this,handler,this::setStatus);
                     RemoteModelManager.getInstance().deleteDownloadedModel(new TranslateRemoteModel.Builder(code).build())
                         .addOnSuccessListener(v->toast("Dil paketi silindi.")).addOnFailureListener(e->toast("Paket silinemedi. Uygulamayı yeniden açıp dene."));
                 }).show();

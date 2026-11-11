@@ -36,6 +36,16 @@ public class LayoutTest {
         ReflectionHelpers.callInstanceMethod(a,"changeMode",ReflectionHelpers.ClassParameter.from(int.class,3));save(a,"history");
         assertNotNull(a.findViewById(android.R.id.content));controller.pause().stop().destroy();
     }
+    @Test public void translatedPhotoAndControlsRenderWithoutCrash()throws Exception{
+        RuntimeEnvironment.getApplication().getSharedPreferences("tercuman",Context.MODE_PRIVATE).edit().clear().putBoolean("setupOfferV2",true).commit();
+        ActivityController<MainActivity> controller=Robolectric.buildActivity(MainActivity.class).setup();MainActivity a=controller.get();ShadowLooper.idleMainLooper();
+        ReflectionHelpers.callInstanceMethod(a,"changeMode",ReflectionHelpers.ClassParameter.from(int.class,2));
+        Bitmap image=Bitmap.createBitmap(900,500,Bitmap.Config.ARGB_8888);Canvas c=new Canvas(image);c.drawColor(0xFFE8E1CD);Paint p=new Paint(Paint.ANTI_ALIAS_FLAG);p.setColor(0xFF282828);p.setTextSize(46);c.drawText("кошничка за пазарење",90,155,p);c.drawText("Мени",90,310,p);
+        java.util.List<PhotoPage.Region> regions=java.util.Arrays.asList(new PhotoPage.Region(new RectF(80,105,790,170),"кошничка за пазарење"),new PhotoPage.Region(new RectF(80,260,370,325),"Мени"));
+        PhotoPage page=new PhotoPage(image,regions,"mk");page.regions.get(0).translated="Alışveriş sepeti";page.regions.get(1).translated="Menü";page.target="tr";page.translated=true;
+        ReflectionHelpers.setField(a,"source","mk");ReflectionHelpers.setField(a,"target","tr");ReflectionHelpers.setField(a,"photoPage",page);ReflectionHelpers.setField(a,"photoPreview",image.copy(Bitmap.Config.ARGB_8888,false));ReflectionHelpers.setField(a,"translatedPhoto",PhotoRenderer.render(page));ReflectionHelpers.setField(a,"showTranslatedPhoto",true);
+        ReflectionHelpers.callInstanceMethod(a,"render");save(a,"photo-overlay");image.recycle();controller.pause().stop().destroy();
+    }
     private void save(MainActivity activity,String name)throws IOException{
         View decor=activity.getWindow().getDecorView();
         decor.measure(View.MeasureSpec.makeMeasureSpec(1179,View.MeasureSpec.EXACTLY),View.MeasureSpec.makeMeasureSpec(2553,View.MeasureSpec.EXACTLY));

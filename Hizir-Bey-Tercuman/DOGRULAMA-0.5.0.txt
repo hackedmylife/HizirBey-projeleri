@@ -1,0 +1,31 @@
+Hızır Bey Tercüman 0.5.0 — 11 Kasım 2026
+Paket: com.hizirbey.tercuman; versionCode 8; Android min 26 / target 34.
+APK: 169419448 bayt.
+SHA-256: 877477819d3488bd9dc9fb01548207ee942f4a15f7c4abb1959febed4df99524
+ABI: arm64-v8a, armeabi-v7a. İngilizce, çok dilli Whisper ve Silero modelleri APK içinde.
+İmza SHA-256: d47ad32e1ed0241f879cedeae27ac8520105b94c3e83bb4b415eb2043b5190c3
+Önceki APK ile aynı imza; apksigner ve zipalign doğrulaması başarılı.
+
+Derleme ve otomatik kontroller:
+assembleDebug testDebugUnitTest lintDebug: BUILD SUCCESSFUL.
+90 test, 0 başarısız, 0 hata. Lint: 0 hata, 23 uyarı.
+Kapsam: fotoğraf kırpma koordinatları, ters sürükleme/boşluk, resim üzerinde metin çizimi ve kaynak resmin korunması, iptal edilen resim çevirisinden sonra yeni istek başlatılmaması, tekrar metin önbelleği, WAV başlıkları ve bozuk dosya reddi, özel kulaklık türleri, Groq kapalı/çevrimdışı modda sıfır bulut isteği, kota hatasında yerel yedek, iptal sonrası geç bulut sonucu reddi. Önceki konuşma/Durdur testleri korundu. UI akışlarında konuşma/çeviri ve Groq taşıyıcıları sahtedir. Resim yerleşimi görsel olarak kontrol edildi.
+
+Gerçek Android motor denemesi:
+Android API28 x86_64 emülatörü, uçak modu ayarı açık; Wi-Fi ve mobil veri kapalı.
+4 Android testi geçti:
+1. Üretilmiş Makedonca alışveriş etiketi yerel Tesseract ile doğru Kiril metin olarak okundu; metin alanı koordinatları doğrulandı.
+2. Kullanıcının ekran görüntüsündeki küçük etiket alanı çevrimdışı doğru okundu: кошничка за пазарење.
+3. Kulaklık yokken özel Türkçe ses hoparlöre düşmedi; hata ve dosya temizliği doğrulandı.
+4. eSpeak çevrimdışı Türkçe WAV üretti; uygulamanın AudioTrack yolu Android’in gerçek dahili hoparlör çıkışını doğrulayıp oynatmayı tamamladı. Emülatörün fiziksel sesi dinlenmedi.
+Emülatör APK'sı x86_64 test varyantıdır; kurulum süresini azaltmak için yalnız Whisper/Silero ASR .bin dosyaları bu test kopyasından çıkarıldı ve aynı imzayla imzalandı. OCR/ses kodu ve OCR modeli teslim sürümüyle aynıdır. Teslim APK'sından dosya çıkarılmadı.
+
+Makedonca model: tessdata_best mkd.traineddata, SHA-256 be5f0af7a7b7a1a804069bcab83225286d78ce3171c6a1d1587f975b083af299.
+Fotoğrafın özgün gri yapısı korunur. Yapay beyaz kenar/kontrastın küçük gri etikette yazıyı yok ettiği gerçek testte görüldü ve kaldırıldı. Tabela kenarından gelen satır başı tek dikey ayırıcı temizlenir; kelime tahmini veya sabit alışveriş-sepeti eşlemesi yapılmaz.
+
+Doğrulanmayanlar ve sınırlar:
+- Samsung S20 FE/Redmi Note 10 Pro fiziksel denemesi ve gerçek kablolu/Bluetooth kulaklık-hoparlör ayrımı yapılmadı. Donanım ve Android ses politikasına bağlıdır. Ses rotası istenen çıkış değilse oynatma kesilir; cihaz değişikliklerinin algılanması anlık garanti edilemez.
+- Gerçek Groq API anahtarı yok; ücretli/ücretsiz hesap planı uygulama tarafından doğrulanamaz. İstek/yanıt ve yedek akışı sahte servisle test edildi. Gerçek çeviri kalitesi kıyaslanmadı. İnternet desteği varsayılan kapalıdır.
+- Bu yeni Android testinde ML Kit Makedonca→Türkçe uçtan uca çeviri modeli indirilip test edilmedi. OCR, resme yerleştirme, yerel motor çağrısı ve TTS ayrı kontrollerdir.
+- Fotoğraf çevirisi ilgili alanı düz renk zeminle kaplar; karmaşık arka plan, tablo, yazı tipi ve belge düzenini birebir yeniden kurmaz. OCR hatası için alan düzeltme vardır. Fotoğraf ve çevrilmiş bitmap uygulama oturumu belleğindedir.
+- Konuşma performansı/başka diller bu sürüm için yeniden fiziksel olarak ölçülmedi; eski raporlar tarihsel sonuçlardır.
