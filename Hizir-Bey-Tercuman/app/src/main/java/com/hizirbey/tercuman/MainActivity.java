@@ -45,6 +45,8 @@ public class MainActivity extends Activity {
     private HistoryStore history;
     private TranslationEngine engine;
     private TextToSpeech tts;
+    private String defaultTtsEngine="",lastVoiceDescription="Henüz seçilmedi.";
+    private boolean lastVoiceBasic;
     private boolean ttsReady, foreground, sessionActive, favoritesOnly, building;
     private int mode=0, activeSide=0, permissionSide=-1, silenceCount=0;
     private String source="tr", target="en", draft="", draftFrom="tr", translation="", lastFrom="tr", lastTo="en";
@@ -349,7 +351,7 @@ public class MainActivity extends Activity {
     }
     private void initTts() {
         tts=new TextToSpeech(this,result->{ttsReady=result==TextToSpeech.SUCCESS;if(ttsReady)handler.post(this::refreshTtsEngines);});
-        attachTtsListener(tts);
+        defaultTtsEngine=tts.getDefaultEngine();attachTtsListener(tts);
     }
     private void attachTtsListener(TextToSpeech voice){
         voice.setOnUtteranceProgressListener(new UtteranceProgressListener(){
@@ -361,7 +363,7 @@ public class MainActivity extends Activity {
     private void refreshTtsEngines(){
         if(tts==null||!ttsReady||isDestroyed())return;
         for(TextToSpeech.EngineInfo info:tts.getEngines()){
-            if(info.name.equals(tts.getDefaultEngine())||extraTts.containsKey(info.name))continue;
+            if(info.name.equals(defaultTtsEngine)||extraTts.containsKey(info.name))continue;
             String name=info.name;TextToSpeech voice=new TextToSpeech(this,result->handler.post(()->{
                 if(!isDestroyed()&&result==TextToSpeech.SUCCESS)readyTts.add(name);
             }),name);extraTts.put(name,voice);attachTtsListener(voice);
@@ -382,9 +384,13 @@ public class MainActivity extends Activity {
         if(error)toast("Seslendirme tamamlanamadı. Telefonun ses paketlerini kontrol et.");
         if(done!=null)done.run();
     }
-    private boolean knownLightVoice(TextToSpeech voice){
-        if(voice==tts&&VoiceSelector.knownOfflineEngine(tts.getDefaultEngine()))return true;
-        for(Map.Entry<String,TextToSpeech> entry:extraTts.entrySet())if(entry.getValue()==voice)return VoiceSelector.knownOfflineEngine(entry.getKey());return false;
+    private String engineName(TextToSpeech voice){
+        if(voice==tts)return defaultTtsEngine;
+        for(Map.Entry<String,TextToSpeech> entry:extraTts.entrySet())if(entry.getValue()==voice)return entry.getKey();return "";
+    }
+    private static final class VoiceChoice {
+        final TextToSpeech engine;final String name;final Voice voice;
+        VoiceChoice(TextToSpeech engine,String name,Voice voice){this.engine=engine;this.name=name;this.voice=voice;}
     }
     private void speak(String value,String language,long token,Runnable done){
         if(value.isEmpty()){done.run();return;}
@@ -392,15 +398,14 @@ public class MainActivity extends Activity {
         boolean offline=true;
         ArrayList<TextToSpeech> candidates=new ArrayList<>();if(ttsReady)candidates.add(tts);
         for(String name:readyTts){TextToSpeech voice=extraTts.get(name);if(voice!=null)candidates.add(voice);}
-        if(mode==0&&prefs.getBoolean("fastDialogue",true))candidates.sort((a,b)->Boolean.compare(knownLightVoice(b),knownLightVoice(a)));
-        speakingTts=null;
-        for(TextToSpeech candidate:candidates){
-            Voice selected=VoiceSelector.choose(candidate.getVoices(),locale,offline);
-            if(selected!=null&&candidate.setVoice(selected)==TextToSpeech.SUCCESS){speakingTts=candidate;break;}
-            String engineName=candidate==tts?tts.getDefaultEngine():null;
-            for(Map.Entry<String,TextToSpeech> entry:extraTts.entrySet())if(entry.getValue()==candidate)engineName=entry.getKey();
-            if(VoiceSelector.knownOfflineEngine(engineName)&&candidate.setLanguage(locale)>=0){speakingTts=candidate;break;}
-        }
+        ArrayList<VoiceChoice> choices=new ArrayList<>();
+        for(TextToSpeech candidate:candidates){Set<Voice> voices=candidate.getVoices();if(voices==null)continue;
+            String name=engineName(candidate);for(Voice voice:voices)if(VoiceSelector.usable(voice,locale,offline))choices.add(new VoiceChoice(candidate,name,voice));}
+        choices.sort((a,b)->VoiceSelector.compare(b.name,b.voice,a.name,a.voice,locale));
+        speakingTts=null;Voice selectedVoice=null;
+        for(VoiceChoice choice:choices)if(choice.engine.setVoice(choice.voice)==TextToSpeech.SUCCESS){speakingTts=choice.engine;selectedVoice=choice.voice;break;}
+        // Old eSpeak versions may not expose voices. Keep them as the final fallback only.
+        if(speakingTts==null)for(TextToSpeech candidate:candidates)if(VoiceSelector.knownOfflineEngine(engineName(candidate))&&candidate.setLanguage(locale)>=0){speakingTts=candidate;break;}
         if(speakingTts==null){
             sessionActive=false;
             if(warnedVoiceLanguages.add(language)){
@@ -411,20 +416,24 @@ public class MainActivity extends Activity {
             done.run();return;
         }
         final TextToSpeech selectedEngine=speakingTts;
+        String selectedName=engineName(selectedEngine);boolean basic=VoiceSelector.knownOfflineEngine(selectedName);lastVoiceBasic=basic;
+        lastVoiceDescription=(basic?"Temel robotik ses: ":"Cihazın çevrimdışı sesi: ")+selectedName+(selectedVoice==null?"":" · "+selectedVoice.getName()+" · kalite="+selectedVoice.getQuality());
+        selectedEngine.setSpeechRate(1f);selectedEngine.setPitch(1f);
+        if(basic)setStatus("Bu dilde yalnız temel robotik ses var. Ayarlar'dan cihazın ses paketini kurabilirsin.");
         selectedEngine.setAudioAttributes(new android.media.AudioAttributes.Builder().setUsage(android.media.AudioAttributes.USAGE_MEDIA).setContentType(android.media.AudioAttributes.CONTENT_TYPE_SPEECH).build());
         utteranceId="hb-"+token+"-"+System.nanoTime();String id=utteranceId;
         int limit=Math.min(TextToSpeech.getMaxSpeechInputLength(),4000);
         int end=SpeechChunks.end(value,limit,mode==0&&prefs.getBoolean("fastDialogue",true));
         final String rest=value.substring(end).trim();
         afterSpeech=()->{if(alive(token)){if(rest.isEmpty())done.run();else speak(rest,language,token,done);}};
-        setStatus("Seslendiriliyor · "+LanguageCatalog.name(language));
+        setStatus("Seslendiriliyor · "+LanguageCatalog.name(language)+(basic?" · Temel robotik ses":""));
         String chunk=value.substring(0,end);
         if(ttsRequestedAt==0){ttsRequestedAt=SystemClock.elapsedRealtime();lastVoiceMs=-1;}
         if(forceAudioRoute>=0||(prefs.getBoolean("splitAudio",false)&&mode==0)){
             privateAudio=forceAudioRoute>=0?forceAudioRoute==1:language.equals("tr");
             if(routedAudio.output(privateAudio)==null){afterSpeech=null;utteranceId="";sessionActive=false;conversationStarted=false;setStatus(privateAudio?"Kulaklık bağlı değil. Türkçe çeviri seslendirilmedi.":"Telefon hoparlörü bulunamadı.");return;}
             try{routedFile=File.createTempFile("speech-",".wav",getCacheDir());routedId=id;
-                setStatus("Ses hazırlanıyor · "+(privateAudio?"Türkçe → Kulaklık":LanguageCatalog.name(language)+" → Telefon hoparlörü"));
+                setStatus("Ses hazırlanıyor · "+(privateAudio?"Türkçe → Kulaklık":LanguageCatalog.name(language)+" → Telefon hoparlörü")+(basic?" · Temel robotik ses":""));
                 if(selectedEngine.synthesizeToFile(chunk,null,routedFile,id)==TextToSpeech.ERROR){finishSpeaking(id,true);return;}
             }catch(IOException e){finishSpeaking(id,true);return;}
         }else if(selectedEngine.speak(chunk,TextToSpeech.QUEUE_FLUSH,null,id)==TextToSpeech.ERROR){finishSpeaking(id,true);return;}
@@ -747,7 +756,7 @@ public class MainActivity extends Activity {
     }
     private void playRouted(String id){
         if(!id.equals(utteranceId)||routedFile==null)return;File file=routedFile;routedFile=null;routedId="";
-        setStatus("Seslendiriliyor · "+(privateAudio?"Kulaklık":"Telefon hoparlörü"));
+        setStatus("Seslendiriliyor · "+(privateAudio?"Kulaklık":"Telefon hoparlörü")+(lastVoiceBasic?" · Temel robotik ses":""));
         routedAudio.play(file,privateAudio,new RoutedAudio.Callback(){public void started(){if(id.equals(utteranceId)&&lastVoiceMs<0)lastVoiceMs=SystemClock.elapsedRealtime()-ttsRequestedAt;}public void done(){finishSpeaking(id,false);}public void error(String message){
             if(!id.equals(utteranceId))return;afterSpeech=null;utteranceId="";sessionActive=false;conversationStarted=false;setStatus(message);toast(message);
         }});
@@ -798,7 +807,7 @@ public class MainActivity extends Activity {
         full(content,text("Ücretsiz motor · "+languages.size()+" dilde metin çevirisi\nSes tanıma uygulamanın içinde, çevrimdışı çalışır.",14,TEXT,false));gap(content,12);
         settingSwitch(content,"Çeviriyi otomatik seslendir","autoSpeak",true);
         settingSwitch(content,"Hızlı diyalog modu","fastDialogue",true);
-        full(content,text("Çok dilli ses modeli diller arasında yeniden yüklenmez. Kısa konuşmalar daha küçük işlem penceresinde çözülür; ses parçaları daha erken oynatılır. Hız için tanıma doğruluğu azalabilir ve daha mekanik bir ses kullanılabilir; daha ayrıntılı tanıma için bu seçeneği kapat.",12,MUTED,false));gap(content,6);
+        full(content,text("Çok dilli ses modeli diller arasında yeniden yüklenmez. Kısa konuşmalar daha küçük işlem penceresinde çözülür; ses parçaları daha erken oynatılır. Hız için ses tanıma doğruluğu azalabilir; daha ayrıntılı tanıma için bu seçeneği kapat.",12,MUTED,false));gap(content,6);
         settingSwitch(content,"Kulaklıkla karşılıklı konuşma","splitAudio",false);
         settingSwitch(content,"Kulaklık modunda telefon mikrofonunu kullan","phoneMic",true);
         full(content,button("Ses çıkışlarını dene",false,this::testAudioOutputs));gap(content,6);
@@ -813,9 +822,10 @@ public class MainActivity extends Activity {
         full(content,text("Yerel konuşma motoru Esperanto ve İrlandaca hariç metin çevirisi dillerini destekler. Sesli okuma ayrı bir motordur; çok dilli ses kurulumu için Android onayı gerekebilir.",12,MUTED,false));gap(content,6);
         settingSwitch(content,"Çevirileri geçmişe kaydet","saveHistory",true);gap(content,12);
         full(content,button("Telefon ve ses desteğini kontrol et",false,this::diagnostics));gap(content,8);
+        full(content,button("Cihazın ses paketlerini hazırla",false,this::installDeviceVoices));gap(content,8);
         full(content,button("Seslendirme ayarları",false,()->openSystem("com.android.settings.TTS_SETTINGS",null)));gap(content,8);
         full(content,button("Çeviri hakkında",false,()->openSystem(Intent.ACTION_VIEW,Uri.parse("https://cloud.google.com/translate/"))));gap(content,12);
-        full(content,text("Metin çevirisi, fotoğraftan okuma ve yerel konuşma modeli cihazda çalışır. Konuşma kaydı ve çözümlemesi için Google ses hizmeti kullanılmaz. İlk çeviri paketi indirmesi internet gerektirir. Varsayılan yerel kullanımda API anahtarı veya abonelik gerekmez. İsteğe bağlı Groq desteği yalnızca açıldığında metni internete gönderir.\n\nHızır Bey Tercüman 0.5.1 · Test sürümü\nYerel ses: Whisper / whisper.cpp (MIT). Çok dilli sesli okuma: ayrı ve isteğe bağlı eSpeak NG uygulaması (GPL-3.0+). Google Translate modelleri ile otomatik çeviri (Google ML Kit). Fotoğraftan okuma: Google ML Kit.\n\nÇeviriler otomatik oluşturulur. Google; çevirilerin doğruluğu, güvenilirliği, ticari elverişliliği, belirli bir amaca uygunluğu ve hak ihlali içermemesi konusunda açık veya örtülü garanti vermez.",12,MUTED,false));
+        full(content,text("Metin çevirisi, fotoğraftan okuma ve yerel konuşma modeli cihazda çalışır. Konuşma kaydı ve çözümlemesi için Google ses hizmeti kullanılmaz. İlk çeviri paketi indirmesi internet gerektirir. Varsayılan yerel kullanımda API anahtarı veya abonelik gerekmez. İsteğe bağlı Groq desteği yalnızca açıldığında metni internete gönderir.\n\nHızır Bey Tercüman 0.5.2 · Test sürümü\nYerel ses: Whisper / whisper.cpp (MIT). Çok dilli sesli okuma: ayrı ve isteğe bağlı eSpeak NG uygulaması (GPL-3.0+). Google Translate modelleri ile otomatik çeviri (Google ML Kit). Fotoğraftan okuma: Google ML Kit.\n\nÇeviriler otomatik oluşturulur. Google; çevirilerin doğruluğu, güvenilirliği, ticari elverişliliği, belirli bir amaca uygunluğu ve hak ihlali içermemesi konusunda açık veya örtülü garanti vermez.",12,MUTED,false));
         ScrollView scroll=new ScrollView(this);scroll.addView(content);
         new AlertDialog.Builder(this).setTitle("Tercihler").setView(scroll).setPositiveButton("Tamam",(d,w)->render()).show();
     }
@@ -826,6 +836,16 @@ public class MainActivity extends Activity {
     private void openSystem(String action,Uri uri){
         try{Intent i=new Intent(action);if(uri!=null)i.setData(uri);startActivity(i);}
         catch(ActivityNotFoundException e){toast("Bu telefonda ilgili ayar ekranı bulunamadı.");}
+    }
+    private void installDeviceVoices(){
+        if(tts==null||!ttsReady){toast("Ses motoru hazırlanıyor. Biraz sonra tekrar dene.");return;}
+        ArrayList<String> names=new ArrayList<>(),labels=new ArrayList<>();
+        for(TextToSpeech.EngineInfo engine:tts.getEngines())if(!VoiceSelector.knownOfflineEngine(engine.name)){names.add(engine.name);labels.add(engine.label==null?engine.name:engine.label);}
+        if(names.isEmpty()){toast("Cihazın ses motoru bulunamadı. Sistem seslendirme ayarlarından Google veya Samsung ses desteğini kurabilirsin.");openSystem("com.android.settings.TTS_SETTINGS",null);return;}
+        new AlertDialog.Builder(this).setTitle("Çevrimdışı ses paketini hazırla").setItems(labels.toArray(new String[0]),(dialog,index)->{
+            try{startActivity(new Intent(TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA).setPackage(names.get(index)));}
+            catch(ActivityNotFoundException error){openSystem("com.android.settings.TTS_SETTINGS",null);}
+        }).setNegativeButton("Kapat",null).show();
     }
     private void testAudioOutputs(){
         new AlertDialog.Builder(this).setTitle("Ses çıkışını dene").setItems(new String[]{"Kulaklık · Türkçe ses","Telefon hoparlörü"},(dialog,index)->{
@@ -839,13 +859,13 @@ public class MainActivity extends Activity {
         device+="Ses tanıma: Uygulamaya dahil Whisper · Çevrimdışı\n";
         device+="Son aşamalar · Bitir sonrası yazı: "+lastAsrMs+" ms; metin çevirisi: "+lastTranslationMs+" ms; ses hazırlığı: "+lastVoiceMs+" ms\n(-1: henüz ölçülmedi; Bluetooth'un kulağa ulaşma süresi dahil değil.)\n\n";
         device+="Yerel ses durumu: "+embeddedSpeech.diagnostics()+"\n";
-        device+="Seslendirme: "+(ttsReady?"Hazır":"Hazır değil")+"\n\n";
+        device+="Seslendirme: "+(ttsReady?"Hazır":"Hazır değil")+"\nSeçilen ses: "+lastVoiceDescription+"\nHız/perde: normal (1,0)\n\n";
         if(ttsReady){for(String code:new String[]{source,target}){
             int support=tts.isLanguageAvailable(Locale.forLanguageTag(LanguageCatalog.speechTag(code)));
             device+=LanguageCatalog.name(code)+" seslendirme: "+(support>=0?"Destekleniyor":"Paket eksik / desteklenmiyor")+"\n";
         }}
         device+="\nMetin çevirisi: "+languages.size()+" dil\nFotoğraf alfabeleri: Latin, Makedonca, Çince, Japonca, Korece, Devanagari\n\nSes tanıma ve seslendirme dil listeleri metin çevirisi listesinden farklı olabilir.";
-        device+="\n\nUygulama: 0.5.1\nSon paket hatası: "+(lastPreparationError.isEmpty()?"Yok":lastPreparationError);
+        device+="\n\nUygulama: 0.5.2\nSon paket hatası: "+(lastPreparationError.isEmpty()?"Yok":lastPreparationError);
         final String summary=device;
         AlertDialog d=new AlertDialog.Builder(this).setTitle("Telefon desteği").setMessage(device)
             .setNeutralButton("Kopyala",(dialog,w)->copy(summary)).setPositiveButton("Tamam",null).create();d.show();

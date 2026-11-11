@@ -1,14 +1,22 @@
-# Hızır Bey Tercüman 0.5.1
+# Hızır Bey Tercüman 0.5.2
 
-Ücretsiz Android çevirmeni. Android 8.0+, ARM64/ARMv7. Samsung S20 FE ve Redmi Note 10 Pro üzerinde fiziksel test henüz yapılmadı. Gerçek doğrulama kapsamı DOGRULAMA-0.5.1.txt dosyasında yazılıdır.
+Ücretsiz Android çevirmeni. Android 8.0+, ARM64/ARMv7. Samsung S20 FE ve Redmi Note 10 Pro üzerinde fiziksel test henüz yapılmadı. Gerçek doğrulama kapsamı DOGRULAMA-0.5.2.txt dosyasında yazılıdır.
 
 ## Bu sürümde
 
-0.5.1: Bluetooth medya seçimi ve diyalog gecikmesi düzeltmesi.
+0.5.2: Hızlı modda ses kalitesi düzeltmesi.
+
+- Hızlı diyalog seçeneğinin eSpeak'i ilk sıraya alması kaldırıldı. Yüklü ve çevrimdışı kullanılabilen cihaz sesleri önce değerlendirilir; aynı dilde kalite puanı, bölge uyumu ve ancak eşitlik halinde gecikme dikkate alınır. Ağ gerektiren veya paketi indirilmemiş sesler seçilmez.
+- Google/Samsung gibi kurulu cihaz motorunun uygun çevrimdışı sesi varsa eSpeak'ten önce kullanılır. eSpeak, ses kalitesini yüksek bildirse bile diğer uygun cihaz motorunun önüne geçmez. Bu sıralama her dilde doğal bir ses paketinin var olduğu anlamına gelmez; yalnızca eSpeak destekliyorsa temel robotik yedek korunur ve ekranda belirtilir.
+- Konuşma hızı ve perde normal değere (1,0) alınır. Hızlı modun ASR, kısa işlem penceresi, Groq ve kısa ses parçaları korunur; hızlı diyaloğu kapatmak gerekmez. Gerçek ses kalitesi ve ilk ses gecikmesi, telefondaki motor/pakete bağlıdır.
+- Ayarlar → **Cihazın ses paketlerini hazırla** kurulu Google/Samsung vb. motorların Android ses verisi ekranını açar. İlk paket indirme internet gerektirebilir; indirilmiş uygun ses daha sonra çevrimdışı seçilir. İşletim sisteminin bu ekranı ve desteklenen dil listesi uygulama tarafından kontrol edilemez. Her dil için doğal ses garantisi yoktur.
+- Telefon ve ses desteğini kontrol et ekranı artık kullanılan motoru, ses kimliğini, kalite puanını ve normal hız/perde ayarını gösterir. Motor değiştirilip uygulamaya dönüldüğünde yeni motor da değerlendirilir.
+
+0.5.1'den korunan hız ve Bluetooth özellikleri:
 
 - Kulaklık için ilk görünen aygıt alınmaz: A2DP/LE/kablolu/USB medya çıkışları seçilir; Bluetooth arama (SCO) kanalı medya sesi yerine kullanılmaz. Android'in değiştirdiği çıkış kimlikleri, hâlâ özel bir medya kulaklığı etkinse hata sayılmaz. İstenen özel çıkış uygulanmazsa yalnızca sessiz doğrulama sırasında sistemin medya yolu denenir; gerçek çıkış kulaklık değilse konuşma oynatılmaz. Çıkış kaybında ses kesilir. Donanım ve Bluetooth ayarındaki **Medya sesi** desteği gerekir.
 - **Hızlı diyalog modu** varsayılan açıktır. Aynı çok dilli Base modeli İngilizce/Türkçe/Makedonca geçişlerinde korunur ve konuşma kaydı sürerken hazırlanır. Kısa ses parçaları tam 30 saniyelik pencere yerine en az 768 encoder adımlı (15,36 saniyelik) pencereyle çözülür; uzun parçalar için sınır modele göre büyütülür. Mikrofona otomatik kapanma eklenmedi: Bitir ve çevir kontrolü aynıdır.
-- Hızlı modda ilk kısa cümle/160 karakterlik bölüm seslendirilir, sonra kalan bölümler sırayla devam eder. İlk ses için bütün uzun metnin WAV dosyası beklenmez. Hafif çevrimdışı ses motoru varsa öncelik verilir; ses daha mekanik olabilir. Yeniden dinleme aralığı 850 ms yerine 250 ms'dir. Hızlı mod kapatılınca tam ses penceresi ve normal uzun seslendirme kullanılır.
+- Hızlı modda ilk kısa cümle/160 karakterlik bölüm seslendirilir, sonra kalan bölümler sırayla devam eder. İlk ses için bütün uzun metnin WAV dosyası beklenmez. Ses motoru seçimi 0.5.2 kalite politikasına göre yapılır; eSpeak önceliği kaldırılmıştır. Yeniden dinleme aralığı 850 ms yerine 250 ms'dir. Hızlı mod kapatılınca tam ses penceresi ve normal uzun seslendirme kullanılır.
 - Çok küçük Tiny modeli Türkçe/Makedonca sentetik ses denemelerinde tekrarlara girdiği için bu dağıtıma alınmadı. Base modeli korunur; bu seçim bütün kayıtların doğru anlaşılacağını garanti etmez.
 - **Groq ile ses tanıma** ayrı ve varsayılan kapalı bir tercihtir. Açıkken dinleme sırasındaki konuşma parçaları Groq'a gönderilir. Yerel Silero denetimi ses içermeyen parçaları elemeden gönderim yapılmaz. Hızlı modda whisper-large-v3-turbo, normal modda whisper-large-v3 kullanılır. Ağ/kota/hata durumunda yerel modele dönülür; başarısız istekten sonra 30 saniye boyunca yeni ağ denemesi yapılmaz. Durdur, sıradaki gönderimi iptal eder.
 - Groq metin ve ses seçenekleri ayrı ayrı açılır; her ikisi de kapalıyken konuşma/çeviri/seslendirme çevrimdışıdır (metin paketleri önceden indirilmiş olmalı). Mevcut Groq metin tercihi, güncelleme sonrası ses gönderimini kendiliğinden açmaz. Anahtarı silmek her iki tercihi kapatır. Gerçek API anahtarı ile bu sürüm test edilmedi; ücretsiz hesap kotası ve ağ gecikmesi değişebilir, uygulama hesap planını doğrulayamaz.

@@ -7,8 +7,8 @@ android {
         applicationId 'com.hizirbey.tercuman'
         minSdk 26
         targetSdk 34
-        versionCode 9
-        versionName '0.5.1'
+        versionCode 10
+        versionName '0.5.2'
         ndk { abiFilters(*(project.hasProperty('testAbi') ? [project.property('testAbi')] : ['arm64-v8a','armeabi-v7a'])) }
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
         externalNativeBuild { cmake { cFlags '-O3'; cppFlags '-std=c++17 -O3'; arguments '-DANDROID_STL=c++_static' } }

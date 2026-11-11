@@ -1,0 +1,14 @@
+Hızır Bey Tercüman 0.5.2 — 11 Kasım 2026
+Paket: com.hizirbey.tercuman; versionCode 10; minSdk26 / targetSdk34; ARM64 + ARMv7.
+APK boyutu: 137381309 bayt.
+APK SHA-256: 549582b543b37ba13e33f97b104585c0acdbc3ee6ae24773c250169094908df6
+İmza SHA-256: d47ad32e1ed0241f879cedeae27ac8520105b94c3e83bb4b415eb2043b5190c3
+Önceki sürümle aynı imza. apksigner ve zipalign kontrolü yapıldı.
+
+assembleDebug testDebugUnitTest lintDebug: BUILD SUCCESSFUL.
+123 test, 0 başarısız, 0 hata. Lint: 0 errors, 25 warnings.
+10 yeni API28/33 testi: cihazın çevrimdışı sesi, eSpeak çok yüksek kalite bildirse dahi önceliklidir; kalite düşük latanstan önce gelir; yüksek kaliteli ağ sesi offline modda seçilmez; indirilmemiş ses reddedilir; yalnız temel ses varken yedek çalışır.
+Ses motoru kimliği, bağlanılan motorla birlikte saklanır; sistemin varsayılanı sonradan değişse bile eski bağlı motor yanlış adla sıralanmaz. Yeni kurulan/değişen motorlar geri dönüşte yeniden listelenir.
+Hız/perde normal (1,0). Temel robotik yedek kullanılırsa durum satırı ve tanılama bunu belirtir. Kaliteli ses paketi için Android motorunun kendi kurulum ekranına bağlantı vardır.
+
+Sınır: Kullanıcının ses örneği sağlanmadı. Önceki kodun hızlı modda eSpeak'i zorla öne aldığı doğrulandı ve kaldırıldı; bildirilen kötü sesin tek nedeninin bu olduğu fiziksel olarak kanıtlanmadı. Cihazdaki Google/Samsung sesinin bulunması, offline kullanılabilirliği ve öznel anlaşılabilirliği burada dinlenerek test edilmedi. Samsung S20 FE/Redmi Note 10 Pro ve gerçek Bluetooth kulaklık testi yapılmadı. Her dilde doğal offline ses bulunmayabilir; bu durumda eSpeak yedeği mekanik kalır. Kullanıcı cihazındaki ilgili ses paketini hazırlamalıdır. ASR/çeviri/yönlendirme değişmedi; 0.5.1 hız ve daha eski Android ölçümleri tarihsel olarak kalır.
