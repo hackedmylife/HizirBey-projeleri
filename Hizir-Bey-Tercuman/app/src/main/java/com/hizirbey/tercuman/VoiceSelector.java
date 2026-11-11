@@ -3,6 +3,7 @@ import android.speech.tts.*;
 import java.util.*;
 
 final class VoiceSelector {
+    static boolean knownOfflineEngine(String name){return "com.reecedunn.espeak".equals(name);}
     static boolean sameLanguage(Locale a,Locale b){
         if(a.getLanguage().equals(b.getLanguage()))return true;
         try{return !a.getISO3Language().isEmpty()&&a.getISO3Language().equals(b.getISO3Language());}

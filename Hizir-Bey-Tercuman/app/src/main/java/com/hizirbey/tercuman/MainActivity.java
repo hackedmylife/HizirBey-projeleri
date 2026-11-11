@@ -9,7 +9,6 @@ import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.*;
 import android.provider.MediaStore;
-import android.speech.*;
 import android.speech.tts.*;
 import android.text.InputFilter;
 import android.view.*;
@@ -49,7 +48,9 @@ public class MainActivity extends Activity {
     private boolean ttsReady, foreground, sessionActive, favoritesOnly, building;
     private int mode=0, activeSide=0, permissionSide=-1, silenceCount=0;
     private String source="tr", target="en", draft="", draftFrom="tr", translation="", lastFrom="tr", lastTo="en";
-    private SpeechRecognizer speech;
+    private boolean microphoneActive, conversationStarted;
+    private ProgressBar microphoneLevel;
+    private long uiSerial;
     private EmbeddedSpeech embeddedSpeech;
     private boolean embeddedThisTurn;
     private final Map<String,TextToSpeech> extraTts=new LinkedHashMap<>();
@@ -78,8 +79,12 @@ public class MainActivity extends Activity {
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
         prefs=getSharedPreferences("tercuman",MODE_PRIVATE);
+        if(prefs.getInt("offlineFlowVersion",0)<3){
+            prefs.edit().putBoolean("strictOffline",true).putBoolean("preferEmbedded",true)
+                .putBoolean("repeat",prefs.getBoolean("repeat",true)).putInt("offlineFlowVersion",3).apply();
+        }
         history=new HistoryStore(prefs);
-        engine=new LocalTranslationEngine();
+        engine=new LocalTranslationEngine(this);
         embeddedSpeech=new EmbeddedSpeech(this);
         packSetup=new PackSetup(this,prefs);
         languages.addAll(TranslateLanguage.getAllLanguages());
@@ -154,7 +159,7 @@ public class MainActivity extends Activity {
     }
     private void rememberInput() { if(input!=null) draft=input.getText().toString(); }
     private void render() {
-        building=true;
+        building=true;uiSerial++;
         input=null;output=null;originalLabel=null;translatedLabel=null;
         firstTalk=null;secondTalk=null;stopButton=null;favoriteButton=null;
         root=vertical();root.setBackgroundColor(BG);root.setPadding(dp(20),dp(16),dp(20),dp(12));
@@ -183,7 +188,7 @@ public class MainActivity extends Activity {
             gap(root,8);stopButton=button("Durdur",false,()->{stopSession();setStatus("İşlem durduruldu. Yeni bir çeviri başlatabilirsin.");});
             stopButton.setMinHeight(dp(40));full(root,stopButton);
         }
-        gap(root,6);status=text("Hazır · Bir dil ve işlem seç.",12,MUTED,false);
+        gap(root,6);status=text(mode==0?"Mikrofon kapalı · Başlatmak için dil düğmesine dokun.":"Hazır · Bir dil ve işlem seç.",12,MUTED,false);
         status.setPadding(dp(2),dp(6),dp(2),dp(4));status.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);full(root,status);
         scroll.setFocusableInTouchMode(true);scroll.setDescendantFocusability(ViewGroup.FOCUS_BEFORE_DESCENDANTS);
         scroll.requestFocus();scroll.post(()->scroll.scrollTo(0,0));
@@ -191,10 +196,14 @@ public class MainActivity extends Activity {
     }
     private void renderConversationControls(){
         gap(root,8);LinearLayout talkRow=horizontal();
-        firstTalk=button("●  "+LanguageCatalog.name(source)+" konuş",true,()->startVoice(0));
-        secondTalk=button("●  "+LanguageCatalog.name(target)+" konuş",false,()->startVoice(1));
+        firstTalk=button(LanguageCatalog.name(source)+" dinle",false,()->startVoice(0));
+        secondTalk=button(LanguageCatalog.name(target)+" dinle",false,()->startVoice(1));
         firstTalk.setMinHeight(dp(60));secondTalk.setMinHeight(dp(60));
         rowItem(talkRow,firstTalk);rowItem(talkRow,secondTalk);full(root,talkRow);
+        microphoneLevel=new ProgressBar(this,null,android.R.attr.progressBarStyleHorizontal);
+        microphoneLevel.setMax(100);microphoneLevel.setProgress(0);
+        microphoneLevel.setContentDescription("Mikrofon ses seviyesi");full(root,microphoneLevel);
+        updateMicrophone(false);
     }
     private void changeMode(int selected) {
         if(mode==selected)return;
@@ -207,14 +216,14 @@ public class MainActivity extends Activity {
         LinearLayout right=vertical();full(right,text("HEDEF",10,MUTED,true));Spinner targetSpinner=spinner(target);full(right,targetSpinner);
         row.addView(left,new LinearLayout.LayoutParams(0,-2,1));
         Button swap=button("⇄",false,()->{
-            rememberInput();stopSession();String old=source;source=target;target=old;saveLanguages();render();
+            changeLanguages(target,source);
         });swap.setContentDescription("Kaynak ve hedef dilleri değiştir");row.addView(swap,new LinearLayout.LayoutParams(dp(48),dp(48)));
         row.addView(right,new LinearLayout.LayoutParams(0,-2,1));full(languageCard,row);gap(body,12);
         setLanguageListener(sourceSpinner,true);setLanguageListener(targetSpinner,false);
         if(mode==0) {
             full(body,text("Konuş, anlaş.",23,TEXT,true));gap(body,5);
-            full(body,text("Alttan konuşanın dilini seç. Google ile çeviri karşı dilde seslendirilsin.",13,MUTED,false));
-            if(prefs.getBoolean("repeat",false)){
+            full(body,text("Konuşanın diline dokun. Ses telefonda çözümlenir; indirilmiş çeviri paketleriyle internet gerekmez.",13,MUTED,false));
+            if(prefs.getBoolean("repeat",true)){
                 gap(body,5);full(body,text(prefs.getBoolean("alternate",false)?"● Sırayla iki dilde dinleme açık":"● Seçili yönde yeniden dinleme açık",11,GREEN,false));
             }
             gap(body,12);
@@ -223,7 +232,7 @@ public class MainActivity extends Activity {
             full(body,text("Menü, tabela veya fotoğraftaki yazıyı seç. Okunan metni çeviriden önce düzenleyebilirsin.",14,MUTED,false));gap(body,12);
             LinearLayout photoRow=horizontal();rowItem(photoRow,button("Kamera",true,this::takePhoto));
             rowItem(photoRow,button("Fotoğraf seç",false,this::pickPhoto));full(body,photoRow);gap(body,10);
-            full(body,text("Fotoğraf okuma: Latin, Çince, Japonca, Korece ve Devanagari alfabeleri.",12,MUTED,false));gap(body,12);
+            full(body,text("Fotoğraf okuma: Latin, Makedonca, Çince, Japonca, Korece ve Devanagari.",12,MUTED,false));gap(body,12);
             if(photoPreview!=null&&!photoPreview.isRecycled()) {
                 ImageView preview=new ImageView(this);preview.setImageBitmap(photoPreview);preview.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
                 preview.setContentDescription("Okunan fotoğrafın önizlemesi");body.addView(preview,new LinearLayout.LayoutParams(-1,dp(160)));gap(body,12);
@@ -271,15 +280,26 @@ public class MainActivity extends Activity {
         s.setSelection(Math.max(0,languages.indexOf(code)));s.setContentDescription("Seçili dil: "+LanguageCatalog.name(code));return s;
     }
     private void setLanguageListener(Spinner spinner,boolean isSource) {
+        final long serial=uiSerial;
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener(){
             @Override public void onNothingSelected(AdapterView<?> p){}
             @Override public void onItemSelected(AdapterView<?> p,View v,int pos,long id){
                 String chosen=languages.get(pos);String old=isSource?source:target;
-                if(building||chosen.equals(old))return;
-                rememberInput();stopSession();if(isSource)source=chosen;else target=chosen;
-                saveLanguages();render();
+                if(building||serial!=uiSerial||chosen.equals(old))return;
+                changeLanguages(isSource?chosen:source,isSource?target:chosen);
             }
         });
+    }
+    private void changeLanguages(String from,String to){
+        boolean resume=mode==0&&conversationStarted&&foreground;
+        rememberInput();stopSession();source=from;target=to;saveLanguages();render();
+        if(resume&&!source.equals(target))startVoice(0);
+    }
+    private void updateMicrophone(boolean active){
+        microphoneActive=active;
+        if(firstTalk!=null){firstTalk.setText((active&&activeSide==0?"● ":"")+LanguageCatalog.name(source)+" dinle");firstTalk.setBackground(shape(active&&activeSide==0?ACCENT:CARD2,18));firstTalk.setTextColor(active&&activeSide==0?BG:TEXT);}
+        if(secondTalk!=null){secondTalk.setText((active&&activeSide==1?"● ":"")+LanguageCatalog.name(target)+" dinle");secondTalk.setBackground(shape(active&&activeSide==1?ACCENT:CARD2,18));secondTalk.setTextColor(active&&activeSide==1?BG:TEXT);}
+        if(!active&&microphoneLevel!=null)microphoneLevel.setProgress(0);
     }
     private void saveLanguages(){prefs.edit().putString("source",source).putString("target",target).apply();}
     private void renderHistory() {
@@ -337,14 +357,16 @@ public class MainActivity extends Activity {
     private void speak(String value,String language,long token,Runnable done){
         if(value.isEmpty()){done.run();return;}
         Locale locale=Locale.forLanguageTag(LanguageCatalog.speechTag(language));
-        boolean offline=prefs.getBoolean("strictOffline",false);
+        boolean offline=true;
         ArrayList<TextToSpeech> candidates=new ArrayList<>();if(ttsReady)candidates.add(tts);
         for(String name:readyTts){TextToSpeech voice=extraTts.get(name);if(voice!=null)candidates.add(voice);}
         speakingTts=null;
         for(TextToSpeech candidate:candidates){
             Voice selected=VoiceSelector.choose(candidate.getVoices(),locale,offline);
             if(selected!=null&&candidate.setVoice(selected)==TextToSpeech.SUCCESS){speakingTts=candidate;break;}
-            if(!offline&&candidate.setLanguage(locale)>=0){speakingTts=candidate;break;}
+            String engineName=candidate==tts?tts.getDefaultEngine():null;
+            for(Map.Entry<String,TextToSpeech> entry:extraTts.entrySet())if(entry.getValue()==candidate)engineName=entry.getKey();
+            if(VoiceSelector.knownOfflineEngine(engineName)&&candidate.setLanguage(locale)>=0){speakingTts=candidate;break;}
         }
         if(speakingTts==null){
             sessionActive=false;
@@ -387,12 +409,9 @@ public class MainActivity extends Activity {
     private void hideKeyboard(){
         View focused=getCurrentFocus();if(focused!=null){((InputMethodManager)getSystemService(INPUT_METHOD_SERVICE)).hideSoftInputFromWindow(focused.getWindowToken(),0);focused.clearFocus();}
     }
-    private void releaseSpeech(){
-        SpeechRecognizer old=speech;speech=null;
-        if(old!=null){try{old.cancel();old.destroy();}catch(RuntimeException ignored){}}
-    }
+    private void releaseSpeech(){ /* The bundled recognizer owns capture and cancellation. */ }
     private void stopSession(){
-        gate.renew();sessionActive=false;permissionSide=-1;releaseSpeech();
+        gate.renew();sessionActive=false;conversationStarted=false;updateMicrophone(false);permissionSide=-1;releaseSpeech();
         resumeVoiceSide=-1;cancelPreparationWait();if(engine!=null)engine.cancelPreparation();
         if(packSetup!=null)packSetup.resumeAfterConversation();
         if(embeddedSpeech!=null)embeddedSpeech.cancel();embeddedThisTurn=false;
@@ -473,7 +492,7 @@ public class MainActivity extends Activity {
                 });
                 Runnable done=()->{
                     if(!alive(token))return;
-                    if(conversation&&sessionActive&&prefs.getBoolean("repeat",false)&&foreground){
+                    if(conversation&&sessionActive&&prefs.getBoolean("repeat",true)&&foreground){
                         if(prefs.getBoolean("alternate",false))activeSide=1-activeSide;
                         String next=activeSide==0?source:target;
                         setStatus("Yeniden dinlenecek · "+LanguageCatalog.name(next));
@@ -491,84 +510,16 @@ public class MainActivity extends Activity {
             permissionSide=side;requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO},MICROPHONE_REQUEST);return;
         }
         if(source.equals(target)){toast("Konuşma için iki farklı dil seç.");return;}
-        activeSide=side;sessionActive=true;silenceCount=0;long token=gate.current();
+        activeSide=side;sessionActive=true;conversationStarted=true;silenceCount=0;long token=gate.current();
         packSetup.pauseForConversation();beginListening(token);
-    }
-    private Intent recognitionIntent(String from){
-        Intent intent=new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
-        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
-        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE,LanguageCatalog.speechTag(from));
-        intent.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS,true);intent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS,1);
-        return intent;
     }
     private void beginListening(long token){
         if(!alive(token)||!foreground||!sessionActive)return;
-        releaseSpeech();String from=activeSide==0?source:target,to=activeSide==0?target:source;
-        boolean strict=prefs.getBoolean("strictOffline",false);
-        embeddedThisTurn=false;
-        if(LanguageCatalog.supportsEmbeddedSpeech(from)&&(from.equals("mk")||from.equals("en")||strict||prefs.getBoolean("preferEmbedded",false)||!SpeechRecognizer.isRecognitionAvailable(this))){
-            beginEmbedded(token,from,to);return;
+        String from=activeSide==0?source:target,to=activeSide==0?target:source;
+        if(!LanguageCatalog.supportsEmbeddedSpeech(from)){
+            fail(token,LanguageCatalog.name(from)+" için çevrimdışı konuşma tanıma bulunmuyor. Metin çevirisini kullanabilirsin.",null);return;
         }
-        try{
-            if(strict){
-                if(Build.VERSION.SDK_INT<31||!SpeechRecognizer.isOnDeviceRecognitionAvailable(this)){
-                    fail(token,"Bu telefonda kesin çevrimdışı ses tanıma servisi bulunamadı. Metin çevirisini kullanabilir veya çevrimdışı ses ayarını kapatabilirsin.",null);return;
-                }
-                speech=SpeechRecognizer.createOnDeviceSpeechRecognizer(this);
-            }else speech=SpeechRecognizer.createSpeechRecognizer(this);
-            SpeechRecognizer current=speech;
-            current.setRecognitionListener(new RecognitionListener(){
-                @Override public void onReadyForSpeech(Bundle params){if(alive(token)&&current==speech){setStatus("● Dinleniyor · "+LanguageCatalog.name(from));if(stopButton!=null)stopButton.setText("● Dinleniyor · Durdur");}}
-                @Override public void onBeginningOfSpeech(){if(alive(token)&&current==speech)setStatus("● Konuşman alınıyor · "+LanguageCatalog.name(from));}
-                @Override public void onRmsChanged(float v){}
-                @Override public void onBufferReceived(byte[] b){}
-                @Override public void onEndOfSpeech(){if(alive(token)&&current==speech)setStatus("Konuşma çözümleniyor…");}
-                @Override public void onPartialResults(Bundle results){
-                    if(!alive(token)||current!=speech)return;ArrayList<String> values=results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
-                    if(values!=null&&!values.isEmpty()&&input!=null){draftFrom=from;input.setText(values.get(0));if(originalLabel!=null)originalLabel.setText("DUYULAN · "+LanguageCatalog.name(from));}
-                }
-                @Override public void onResults(Bundle results){
-                    if(!alive(token)||current!=speech)return;
-                    ArrayList<String> values=results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
-                    if(values==null||values.isEmpty()||values.get(0).trim().isEmpty()){onError(SpeechRecognizer.ERROR_NO_MATCH);return;}
-                    silenceCount=0;String value=values.get(0).trim();
-                    if(value.length()>4000)value=value.substring(0,4000);
-                    draft=value;draftFrom=from;if(input!=null)input.setText(value);releaseSpeech();
-                    translateCaptured(value,from,to,token);
-                }
-                @Override public void onError(int code){
-                    if(!alive(token)||current!=speech)return;
-                    releaseSpeech();
-                    if(code!=SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS&&code!=SpeechRecognizer.ERROR_NO_MATCH&&code!=SpeechRecognizer.ERROR_SPEECH_TIMEOUT&&LanguageCatalog.supportsEmbeddedSpeech(from)){
-                        beginEmbedded(token,from,to);return;
-                    }
-                    if((code==SpeechRecognizer.ERROR_NO_MATCH||code==SpeechRecognizer.ERROR_SPEECH_TIMEOUT)&&prefs.getBoolean("repeat",false)&&++silenceCount<3){
-                        setStatus("Konuşma duyulmadı · Yeniden dinlenecek.");
-                        handler.postDelayed(()->{if(alive(token)&&sessionActive)beginListening(token);},1200);return;
-                    }
-                    String message;
-                    switch(code){
-                        case SpeechRecognizer.ERROR_NETWORK:case SpeechRecognizer.ERROR_NETWORK_TIMEOUT:message="Ses tanıma bağlantısı kurulamadı. İnterneti kontrol et veya destek varsa çevrimdışı sesi aç.";break;
-                        case SpeechRecognizer.ERROR_NO_MATCH:case SpeechRecognizer.ERROR_SPEECH_TIMEOUT:message="Konuşma duyulmadı. Dil düğmesine dokunup tekrar konuş.";break;
-                        case SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS:message="Mikrofon izni gerekli. Uygulama izinlerinden açabilirsin.";break;
-                        case SpeechRecognizer.ERROR_LANGUAGE_NOT_SUPPORTED:case SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE:message="Bu dil ses tanıma hizmetinde hazır değil. Dil paketini indir veya metin çevirisini kullan.";break;
-                        case SpeechRecognizer.ERROR_TOO_MANY_REQUESTS:message="Telefonun ses hizmeti çok sık istek aldı. Biraz bekleyip tekrar dene.";break;
-                        case SpeechRecognizer.ERROR_RECOGNIZER_BUSY:message="Mikrofon başka bir işlemde meşgul. Kısa süre sonra tekrar dene.";break;
-                        default:message="Ses tanıma tamamlanamadı ("+code+"). Google ses hizmetini ve mikrofonu kontrol et.";
-                    }
-                    fail(token,message,null);
-                }
-                @Override public void onEvent(int type,Bundle params){}
-            });
-            getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-            current.startListening(recognitionIntent(from));setStatus("Mikrofon hazırlanıyor · "+LanguageCatalog.name(from));
-            handler.postDelayed(()->{
-                if(alive(token)&&current==speech)fail(token,"Ses hizmeti uzun süredir yanıt vermiyor. Düğmeye dokunup yeniden dene.",null);
-            },90000);
-        }catch(RuntimeException e){
-            if(LanguageCatalog.supportsEmbeddedSpeech(from))beginEmbedded(token,from,to);
-            else fail(token,"Ses tanıma başlatılamadı. Telefonun ses hizmetini kontrol et.",e);
-        }
+        beginEmbedded(token,from,to);
     }
     private void beginEmbedded(long token,String from,String to){
         if(!alive(token)||!foreground||!sessionActive)return;
@@ -576,6 +527,8 @@ public class MainActivity extends Activity {
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         embeddedSpeech.listen(from,new EmbeddedSpeech.Listener(){
             public void state(String message){if(alive(token)){setStatus(message);if(stopButton!=null)stopButton.setText("Yerel ses · Durdur");}}
+            public void recording(boolean active){if(alive(token))updateMicrophone(active);}
+            public void level(float value){if(alive(token)&&microphoneLevel!=null)microphoneLevel.setProgress(Math.round(value*100));}
             public void result(String value){
                 if(!alive(token))return;draft=value.length()>4000?value.substring(0,4000):value;draftFrom=from;
                 if(input!=null)input.setText(draft);translateCaptured(draft,from,to,token);
@@ -643,6 +596,20 @@ public class MainActivity extends Activity {
         imageExecutor.execute(()->{
             try{
                 Bitmap bitmap=decodeImage(uri);
+                if(LanguageCatalog.script(from).equals("Macedonian")){
+                    String recognized;
+                    try{recognized=OfflinePhotoOcr.read(this,bitmap);}catch(Exception|LinkageError e){bitmap.recycle();throw new IOException("Makedonca yazı okunamadı.",e);}
+                    handler.post(()->{
+                        if(!alive(token)){bitmap.recycle();return;}
+                        if(photoPreview!=null&&!photoPreview.isRecycled())photoPreview.recycle();
+                        int width=Math.min(640,bitmap.getWidth()),height=Math.max(1,Math.round(bitmap.getHeight()*(width/(float)bitmap.getWidth())));
+                        Bitmap preview=Bitmap.createScaledBitmap(bitmap,width,height,true);
+                        photoPreview=preview==bitmap?bitmap.copy(Bitmap.Config.ARGB_8888,false):preview;bitmap.recycle();
+                        if(recognized.trim().isEmpty()){render();setStatus("Yazı bulunamadı. Daha net bir fotoğraf dene.");return;}
+                        draft=recognized.substring(0,Math.min(4000,recognized.length()));source=from;draftFrom=from;
+                        target=photoTarget==null?target:photoTarget;saveLanguages();render();setStatus("Makedonca yazı çevrimdışı okundu. Metni kontrol edip Çevir'e dokun.");
+                    });return;
+                }
                 handler.post(()->{
                     if(!alive(token)){bitmap.recycle();return;}
                     if(photoPreview!=null&&!photoPreview.isRecycled())photoPreview.recycle();
@@ -698,23 +665,20 @@ public class MainActivity extends Activity {
     }
     private void settings(){
         rememberInput();stopSession();LinearLayout content=vertical();content.setPadding(dp(22),dp(6),dp(22),dp(12));
-        full(content,text("Ücretsiz motor · "+languages.size()+" dilde metin çevirisi\nSes desteği, telefonun ses hizmetine bağlıdır.",14,TEXT,false));gap(content,12);
+        full(content,text("Ücretsiz motor · "+languages.size()+" dilde metin çevirisi\nSes tanıma uygulamanın içinde, çevrimdışı çalışır.",14,TEXT,false));gap(content,12);
         settingSwitch(content,"Çeviriyi otomatik seslendir","autoSpeak",true);
-        settingSwitch(content,"Çeviriden sonra yeniden dinle","repeat",false);
+        settingSwitch(content,"Çeviriden sonra yeniden dinle","repeat",true);
         settingSwitch(content,"Yeniden dinlerken sırayla iki dile geç","alternate",false);
         full(content,text("İki dile sırayla geçiş her çeviriden sonra yönü değiştirir; konuşulan dili kendiliğinden algılamaz. İlk konuşmacının düğmesine bir kez dokunarak başlat.",12,MUTED,false));gap(content,6);
         settingSwitch(content,"Paketleri yalnızca Wi-Fi ile indir","wifiOnly",true);
-        settingSwitch(content,"Kesin çevrimdışı ses kullan","strictOffline",false);
-        settingSwitch(content,"Konuşmayı her zaman telefonda çözümle","preferEmbedded",false);
-        full(content,text("İngilizce ve Makedonca dahil yerel konuşma modeli uygulamaya dahildir. Telefonun ses tanıma hizmeti hata verirse desteklenen dillerde bu motor açılır. Kısa cümlelerden sonra durakla; çözümleme telefona göre birkaç saniye sürebilir.",12,MUTED,false));gap(content,8);
+        full(content,text("İngilizce ve Makedonca dahil yerel konuşma modeli uygulamaya dahildir. Desteklenen dillerde her zaman bu yerel motor kullanılır. Kısa cümlelerden sonra durakla; çözümleme telefona göre birkaç saniye sürebilir.",12,MUTED,false));gap(content,8);
         full(content,button("Tüm dil ve ses desteğini hazırla",false,()->packSetup.showOffer()));gap(content,8);
         full(content,text("Yerel konuşma motoru Esperanto ve İrlandaca hariç metin çevirisi dillerini destekler. Sesli okuma ayrı bir motordur; çok dilli ses kurulumu için Android onayı gerekebilir.",12,MUTED,false));gap(content,6);
         settingSwitch(content,"Çevirileri geçmişe kaydet","saveHistory",true);gap(content,12);
         full(content,button("Telefon ve ses desteğini kontrol et",false,this::diagnostics));gap(content,8);
         full(content,button("Seslendirme ayarları",false,()->openSystem("com.android.settings.TTS_SETTINGS",null)));gap(content,8);
-        full(content,button("Ses tanıma ayarları",false,()->openSystem(android.provider.Settings.ACTION_VOICE_INPUT_SETTINGS,null)));gap(content,12);
         full(content,button("Çeviri hakkında",false,()->openSystem(Intent.ACTION_VIEW,Uri.parse("https://cloud.google.com/translate/"))));gap(content,12);
-        full(content,text("Metin çevirisi, fotoğraftan okuma ve yerel konuşma modeli cihazda çalışır. Varsayılan Android ses tanıma hizmeti sesi internet üzerinden işleyebilir. API anahtarı veya abonelik gerekmez.\n\nHızır Bey Tercüman 0.2.1 · Test sürümü\nYerel ses: Whisper / whisper.cpp (MIT). Çok dilli sesli okuma: ayrı ve isteğe bağlı eSpeak NG uygulaması (GPL-3.0+). Google Translate modelleri ile otomatik çeviri (Google ML Kit). Fotoğraftan okuma: Google ML Kit.\n\nÇeviriler otomatik oluşturulur. Google; çevirilerin doğruluğu, güvenilirliği, ticari elverişliliği, belirli bir amaca uygunluğu ve hak ihlali içermemesi konusunda açık veya örtülü garanti vermez.",12,MUTED,false));
+        full(content,text("Metin çevirisi, fotoğraftan okuma ve yerel konuşma modeli cihazda çalışır. Konuşma kaydı ve çözümlemesi için Google ses hizmeti kullanılmaz. İlk çeviri paketi indirmesi internet gerektirir. API anahtarı veya abonelik gerekmez.\n\nHızır Bey Tercüman 0.3.0 · Test sürümü\nYerel ses: Whisper / whisper.cpp (MIT). Çok dilli sesli okuma: ayrı ve isteğe bağlı eSpeak NG uygulaması (GPL-3.0+). Google Translate modelleri ile otomatik çeviri (Google ML Kit). Fotoğraftan okuma: Google ML Kit.\n\nÇeviriler otomatik oluşturulur. Google; çevirilerin doğruluğu, güvenilirliği, ticari elverişliliği, belirli bir amaca uygunluğu ve hak ihlali içermemesi konusunda açık veya örtülü garanti vermez.",12,MUTED,false));
         ScrollView scroll=new ScrollView(this);scroll.addView(content);
         new AlertDialog.Builder(this).setTitle("Tercihler").setView(scroll).setPositiveButton("Tamam",(d,w)->render()).show();
     }
@@ -728,16 +692,15 @@ public class MainActivity extends Activity {
     }
     private void diagnostics(){
         String device=Build.MANUFACTURER+" "+Build.MODEL+"\nAndroid "+Build.VERSION.RELEASE+" (API "+Build.VERSION.SDK_INT+")\n\n";
-        device+="Ses tanıma servisi: "+(SpeechRecognizer.isRecognitionAvailable(this)?"Var":"Yok")+"\n";
-        boolean onDevice=Build.VERSION.SDK_INT>=31&&SpeechRecognizer.isOnDeviceRecognitionAvailable(this);
-        device+="Cihaz içi ses servisi: "+(onDevice?"Var; dil desteği ayrıca kontrol edilmeli":"Bulunamadı")+"\n";
+        device+="Ses tanıma: Uygulamaya dahil Whisper · Çevrimdışı\n";
+        device+="Yerel ses durumu: "+embeddedSpeech.diagnostics()+"\n";
         device+="Seslendirme: "+(ttsReady?"Hazır":"Hazır değil")+"\n\n";
         if(ttsReady){for(String code:new String[]{source,target}){
             int support=tts.isLanguageAvailable(Locale.forLanguageTag(LanguageCatalog.speechTag(code)));
             device+=LanguageCatalog.name(code)+" seslendirme: "+(support>=0?"Destekleniyor":"Paket eksik / desteklenmiyor")+"\n";
         }}
-        device+="\nMetin çevirisi: "+languages.size()+" dil\nFotoğraf alfabeleri: Latin, Çince, Japonca, Korece, Devanagari\n\nSes tanıma ve seslendirme dil listeleri metin çevirisi listesinden farklı olabilir.";
-        device+="\n\nUygulama: 0.2.1\nSon paket hatası: "+(lastPreparationError.isEmpty()?"Yok":lastPreparationError);
+        device+="\nMetin çevirisi: "+languages.size()+" dil\nFotoğraf alfabeleri: Latin, Makedonca, Çince, Japonca, Korece, Devanagari\n\nSes tanıma ve seslendirme dil listeleri metin çevirisi listesinden farklı olabilir.";
+        device+="\n\nUygulama: 0.3.0\nSon paket hatası: "+(lastPreparationError.isEmpty()?"Yok":lastPreparationError);
         final String summary=device;
         AlertDialog d=new AlertDialog.Builder(this).setTitle("Telefon desteği").setMessage(device)
             .setNeutralButton("Kopyala",(dialog,w)->copy(summary)).setPositiveButton("Tamam",null).create();d.show();

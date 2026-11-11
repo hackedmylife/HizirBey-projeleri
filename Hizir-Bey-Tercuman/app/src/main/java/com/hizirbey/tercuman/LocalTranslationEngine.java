@@ -1,5 +1,8 @@
 package com.hizirbey.tercuman;
 
+import android.content.Context;
+import android.net.ConnectivityManager;
+import android.net.NetworkCapabilities;
 import com.google.mlkit.common.model.*;
 import com.google.mlkit.nl.translate.Translation;
 import com.google.mlkit.nl.translate.Translator;
@@ -18,15 +21,25 @@ public final class LocalTranslationEngine implements TranslationEngine {
         void download(String code,boolean wifiOnly,Callback<Void> callback);
     }
     private final Models models;
-    public LocalTranslationEngine(){this(new SdkModels());}
+    public LocalTranslationEngine(){this(new SdkModels(null));}
+    public LocalTranslationEngine(Context context){this(new SdkModels(context.getApplicationContext()));}
     LocalTranslationEngine(Models models){this.models=models;}
     private static class SdkModels implements Models {
+        private final Context app;
+        SdkModels(Context context){app=context;}
         public void downloaded(Callback<Set<String>> cb){
             RemoteModelManager.getInstance().getDownloadedModels(TranslateRemoteModel.class)
                 .addOnSuccessListener(items->{Set<String> loaded=new HashSet<>();for(TranslateRemoteModel m:items)loaded.add(m.getLanguage());cb.success(loaded);})
                 .addOnFailureListener(cb::failure);
         }
         public void download(String code,boolean wifiOnly,Callback<Void> cb){
+            if(app!=null){
+                ConnectivityManager connection=(ConnectivityManager)app.getSystemService(Context.CONNECTIVITY_SERVICE);
+                NetworkCapabilities net=connection==null?null:connection.getNetworkCapabilities(connection.getActiveNetwork());
+                if(net==null||!net.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)){
+                    cb.failure(new IllegalStateException(LanguageCatalog.name(code)+" çeviri paketi telefonda yok. İnternet açıkken paketleri bir kez indir; ardından çevrimdışı kullanabilirsin."));return;
+                }
+            }
             DownloadConditions.Builder options=new DownloadConditions.Builder();if(wifiOnly)options.requireWifi();
             RemoteModelManager.getInstance().download(new TranslateRemoteModel.Builder(code).build(),options.build())
                 .addOnSuccessListener(cb::success).addOnFailureListener(cb::failure);

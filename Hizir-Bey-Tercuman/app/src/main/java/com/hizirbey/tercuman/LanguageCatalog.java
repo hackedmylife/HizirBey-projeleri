@@ -36,6 +36,7 @@ public final class LanguageCatalog {
     }
     /** OCR availability is independent from translation availability. */
     public static String script(String code) {
+        if (code.equals("mk")) return "Macedonian";
         if (code.equals("zh")) return "Chinese";
         if (code.equals("ja")) return "Japanese";
         if (code.equals("ko")) return "Korean";

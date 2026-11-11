@@ -7,9 +7,10 @@ android {
         applicationId 'com.hizirbey.tercuman'
         minSdk 26
         targetSdk 34
-        versionCode 3
-        versionName '0.2.1'
-        ndk { abiFilters 'arm64-v8a', 'armeabi-v7a' }
+        versionCode 4
+        versionName '0.3.0'
+        ndk { abiFilters(*(project.hasProperty('testAbi') ? [project.property('testAbi')] : ['arm64-v8a','armeabi-v7a'])) }
+        testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
         externalNativeBuild { cmake { cppFlags '-std=c++17 -O3'; arguments '-DANDROID_STL=c++_static' } }
     }
     compileOptions {
@@ -28,7 +29,7 @@ android {
     lint { abortOnError true; checkReleaseBuilds true }
     ndkVersion '25.2.9519653'
     externalNativeBuild { cmake { path file('src/main/cpp/CMakeLists.txt'); version '3.22.1' } }
-    androidResources { noCompress += ['bin'] }
+    androidResources { noCompress += ['bin','traineddata'] }
 }
 
 dependencies {
@@ -42,6 +43,9 @@ dependencies {
     implementation 'com.google.mlkit:text-recognition-japanese:16.0.1'
     implementation 'com.google.mlkit:text-recognition-korean:16.0.1'
     implementation 'com.google.mlkit:text-recognition-devanagari:16.0.1'
+    implementation 'cz.adaptech.tesseract4android:tesseract4android:4.8.0'
+    androidTestImplementation 'androidx.test:runner:1.6.2'
+    androidTestImplementation 'androidx.test.ext:junit:1.2.1'
     testImplementation 'junit:junit:4.13.2'
     testImplementation 'org.robolectric:robolectric:4.14.1'
 }
