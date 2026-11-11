@@ -1,1 +1,1 @@
-0.3.1: unit-summary, lint-results ve bounded-host-jni-0.3.1 günceldir. device-results, voice-results, host-jni-result ve OfflineNativeCheck, 0.3.0 doğrulamalarına aittir. Yeni fiziksel telefon/emülatör doğrulaması yapılmadı.
+0.4.0: unit-summary ve native-flags-0.4.0 günceldir. android-continuous-0.4.0 son Java hata-akışı iyileştirmesinden önceki test APK'sının 1 başarılı/1 başarısız Android sonucudur. Eski device-results, voice-results ve host JNI dosyaları 0.3.0/0.3.1 tarihsel sonuçlarıdır. Fiziksel telefon performansı ölçülmedi.

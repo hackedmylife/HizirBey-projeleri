@@ -65,5 +65,12 @@ public class OfflineFlowTest {
         AppBehaviorTest.FakeEngine engine=ReflectionHelpers.getField(a,"engine");assertNotNull(engine.ready);engine.ready.success(null);assertEquals("Merhaba",engine.input);
         c.pause().stop().destroy();
     }
+    @Test public void partialWordsAppearWithoutTriggeringTranslationOrStoppingCapture(){
+        ActivityController<MainActivity> c=Robolectric.buildActivity(MainActivity.class).setup();MainActivity a=c.get();SpeechRepairTest.FakeSpeech local=inject(a);
+        ReflectionHelpers.callInstanceMethod(a,"startVoice",ReflectionHelpers.ClassParameter.from(int.class,0));local.listener.recording(true);local.listener.partial("Merhaba arkadaşım");
+        assertEquals("Merhaba arkadaşım",ReflectionHelpers.getField(a,"draft"));assertTrue((boolean)ReflectionHelpers.getField(a,"microphoneActive"));
+        AppBehaviorTest.FakeEngine engine=ReflectionHelpers.getField(a,"engine");assertNull(engine.ready);assertNull(engine.result);
+        c.pause().stop().destroy();
+    }
     private Spinner findSpinner(View view){if(view instanceof Spinner)return (Spinner)view;if(view instanceof ViewGroup){ViewGroup group=(ViewGroup)view;for(int i=0;i<group.getChildCount();i++){Spinner result=findSpinner(group.getChildAt(i));if(result!=null)return result;}}return null;}
 }

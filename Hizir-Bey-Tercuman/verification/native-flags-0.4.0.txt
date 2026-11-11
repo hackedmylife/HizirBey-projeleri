@@ -1,0 +1,2 @@
+arm64-v8a: 6 C units, all compiled with -O3
+armeabi-v7a: 6 C units, all compiled with -O3

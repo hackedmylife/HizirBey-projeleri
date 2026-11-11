@@ -1,0 +1,39 @@
+Hızır Bey Tercüman 0.4.0 — Test güncellemesi, 11 Kasım 2026
+
+versionCode=6; minSdk=26; targetSdk=34; ARM64/ARMv7.
+APK bytes=166736933
+APK SHA-256=a6334d24fe0d9faab28c9f687160ac1745d3dbbbf84b6ff60b25d32bad531af3
+Önceki test sertifikası korunur:
+d47ad32e1ed0241f879cedeae27ac8520105b94c3e83bb4b415eb2043b5190c3
+İmza ve ZIP hizalaması doğrulandı. Lint 0 hata, 15 uyarı.
+
+59 birim/Robolectric testi: 0 hata / 0 başarısızlık.
+Yeni kontroller: birden fazla dahili ses parçası boyunca mikrofon açık kalır;
+uzun sessizlik kaydı kapatmaz; ara metin çeviri başlatmadan görünür; Bitir
+alınan sesi koruyup sonlandırır; çözümleme hatası kaydı kendiliğinden kapatmaz.
+Bu akış testlerinde mikrofon/çözücü taklitleri kullanılır.
+
+Android API 28, x86_64 yazılım emülatörü, uçak modu:
+- Gerçek mikrofonun 7,5 saniye sonra hâlâ açık olması ve ardından dil
+  değişiminde yeniden açılması: GEÇTİ.
+- Gerçek İngilizce JFK kaydının arka plandaki JNI çözümlemesi: 45 saniyelik
+  parça sınırında ZAMAN AŞIMI; bu test geçmiş sayılmadı.
+Android testleri son Java hata-akışı iyileştirmesinden önceki 0.4.0 test
+APK'sında çalıştırıldı. Son iyileştirme, çözümleme hatasında dinlemeyi açık
+tutma davranışını 59. birim testiyle kapsar.
+
+Derleme hız düzeltmesi:
+Önceki APK'da C++ -O3 iken alt seviye C kodlarında -O3 yoktu. Bu sürümde
+C kodlarına da -O3 eklendi; her iki ARM ABI için altı C biriminin derleme
+komutlarında doğrulandı. C++ ayarı ve model ağırlıkları korunur.
+Bu derleme kontrolü telefon üzerinde süre ölçümü değildir. Emülatör ASR
+testi de hâlâ başarısızdır. Hız sorununun tamamen çözüldüğü iddia edilmez.
+Samsung S20 FE / Redmi Note 10 Pro'da fiziksel performans, gerçek ortam ve
+uçtan uca çeviri testi yapılmadı.
+
+Normal dinleme Bitir ve çevir seçilene kadar sürer. Duraklamalar ve dahili
+parça sınırları yalnızca arka plan çözümlemesini tetikler. Kayıt ve çözümleme
+ayrı iş parçacıklarında çalışır. Hazır konuşma metni ekranda görünür; metin
+çevirisi Bitir'den sonra başlar. Hazır olmayan son parçaların tamamlanması
+beklenir. 4000 karakter metin sınırı geçerlidir. Ham ses RAM'de tutulur.
+Önceki TTS/OCR/host sonuçları tarihsel sürüm doğrulama dosyalarında korunur.

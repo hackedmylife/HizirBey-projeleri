@@ -44,7 +44,7 @@ public class OfflineDeviceTest {
         EmbeddedSpeech speech=new EmbeddedSpeech(app,()->new EmbeddedSpeech.Capture(){
             public int sampleRate(){return 16000;}
             public int read(short[] buffer,int offset,int count){
-                int start=position.getAndAdd(count);for(int i=0;i<count;i++)buffer[offset+i]=start+i<pcm.length?pcm[start+i]:0;return count;
+                int start=position.getAndAdd(count);for(int i=0;i<count;i++)buffer[offset+i]=start+i<pcm.length?pcm[start+i]:0;SystemClock.sleep(1);return count;
             }
             public void close(){}
         });
@@ -54,7 +54,7 @@ public class OfflineDeviceTest {
             public void result(String value){result.set(value);done.countDown();}
             public void error(String value){error.set(value);done.countDown();}
         });
-        try{assertTrue("Native inference did not finish",done.await(210,TimeUnit.SECONDS));assertNull(error.get());assertNotNull(result.get());assertTrue(result.get(),result.get().toLowerCase(Locale.ROOT).contains("fellow americans"));}
+        try{long until=SystemClock.elapsedRealtime()+15000;while(position.get()<pcm.length+16000&&SystemClock.elapsedRealtime()<until)SystemClock.sleep(10);speech.finishCapture();assertTrue("Native inference did not finish",done.await(210,TimeUnit.SECONDS));assertNull(error.get());assertNotNull(result.get());assertTrue(result.get(),result.get().toLowerCase(Locale.ROOT).contains("fellow americans"));}
         finally{speech.close();}
     }
     @Test public void macedonianPhotoIsReadByBundledNativeOcr()throws Exception{
@@ -73,7 +73,7 @@ public class OfflineDeviceTest {
             instrumentation.runOnMainSync(()->{
                 try{call(activity,"changeLanguages",new Class[]{String.class,String.class},"en","tr");call(activity,"startVoice",new Class[]{int.class},0);}catch(Exception e){throw new RuntimeException(e);}
             });
-            waitForMicrophone(activity);
+            waitForMicrophone(activity);SystemClock.sleep(7500);assertTrue("Capture stopped without Finish",(boolean)field(activity,"microphoneActive"));
             instrumentation.runOnMainSync(()->{try{call(activity,"changeLanguages",new Class[]{String.class,String.class},"mk","tr");}catch(Exception e){throw new RuntimeException(e);}});
             waitForMicrophone(activity);assertEquals("mk",field(activity,"source"));
         }finally{instrumentation.runOnMainSync(activity::finish);instrumentation.waitForIdleSync();}

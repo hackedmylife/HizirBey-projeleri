@@ -222,7 +222,7 @@ public class MainActivity extends Activity {
         setLanguageListener(sourceSpinner,true);setLanguageListener(targetSpinner,false);
         if(mode==0) {
             full(body,text("Konuş, anlaş.",23,TEXT,true));gap(body,5);
-            full(body,text("Konuşanın diline dokun. Kısa bir cümle söyle; Bitir ve çevir ile beklemeden kaydı tamamla. Yazı, ses çözümlemesi bitince görünür.",13,MUTED,false));
+            full(body,text("Konuşanın diline dokun. Bitir ve çevir'e basana kadar dinleme sürer. Konuşmanın metni hazır oldukça burada görünür.",13,MUTED,false));
             if(prefs.getBoolean("repeat",true)){
                 gap(body,5);full(body,text(prefs.getBoolean("alternate",false)?"● Sırayla iki dilde dinleme açık":"● Seçili yönde yeniden dinleme açık",11,GREEN,false));
             }
@@ -535,6 +535,10 @@ public class MainActivity extends Activity {
             public void state(String message){if(alive(token))setStatus(message);}
             public void recording(boolean active){if(alive(token))updateMicrophone(active);}
             public void level(float value){if(alive(token)&&microphoneLevel!=null)microphoneLevel.setProgress(Math.round(value*100));}
+            public void partial(String value){
+                if(!alive(token))return;draft=value.length()>4000?value.substring(0,4000):value;draftFrom=from;
+                if(input!=null)input.setText(draft);if(originalLabel!=null)originalLabel.setText("DUYULAN · "+LanguageCatalog.name(from));
+            }
             public void result(String value){
                 if(!alive(token))return;silenceCount=0;draft=value.length()>4000?value.substring(0,4000):value;draftFrom=from;
                 if(input!=null)input.setText(draft);translateCaptured(draft,from,to,token);
@@ -677,14 +681,14 @@ public class MainActivity extends Activity {
         settingSwitch(content,"Yeniden dinlerken sırayla iki dile geç","alternate",false);
         full(content,text("İki dile sırayla geçiş her çeviriden sonra yönü değiştirir; konuşulan dili kendiliğinden algılamaz. İlk konuşmacının düğmesine bir kez dokunarak başlat.",12,MUTED,false));gap(content,6);
         settingSwitch(content,"Paketleri yalnızca Wi-Fi ile indir","wifiOnly",true);
-        full(content,text("İngilizce ve Makedonca dahil yerel konuşma modeli uygulamaya dahildir. Desteklenen dillerde her zaman bu yerel motor kullanılır. Konuşma en çok 6 saniyelik parçalarla alınır. Bitir ve çevir kaydı hemen tamamlar; İptal sonucu siler. Yazı, çözümleme tamamlanınca görünür; işlem süresi ekranda gösterilir.",12,MUTED,false));gap(content,8);
+        full(content,text("İngilizce ve Makedonca dahil yerel konuşma modeli uygulamaya dahildir. Desteklenen dillerde her zaman bu yerel motor kullanılır. Mikrofon sen Bitir ve çevir'e basana kadar açık kalır. Kısa konuşma parçaları arka planda yazıya çevrilir. Bitir ve çevir kalan metni tamamlayıp çevirir; İptal sonucu siler.",12,MUTED,false));gap(content,8);
         full(content,button("Tüm dil ve ses desteğini hazırla",false,()->packSetup.showOffer()));gap(content,8);
         full(content,text("Yerel konuşma motoru Esperanto ve İrlandaca hariç metin çevirisi dillerini destekler. Sesli okuma ayrı bir motordur; çok dilli ses kurulumu için Android onayı gerekebilir.",12,MUTED,false));gap(content,6);
         settingSwitch(content,"Çevirileri geçmişe kaydet","saveHistory",true);gap(content,12);
         full(content,button("Telefon ve ses desteğini kontrol et",false,this::diagnostics));gap(content,8);
         full(content,button("Seslendirme ayarları",false,()->openSystem("com.android.settings.TTS_SETTINGS",null)));gap(content,8);
         full(content,button("Çeviri hakkında",false,()->openSystem(Intent.ACTION_VIEW,Uri.parse("https://cloud.google.com/translate/"))));gap(content,12);
-        full(content,text("Metin çevirisi, fotoğraftan okuma ve yerel konuşma modeli cihazda çalışır. Konuşma kaydı ve çözümlemesi için Google ses hizmeti kullanılmaz. İlk çeviri paketi indirmesi internet gerektirir. API anahtarı veya abonelik gerekmez.\n\nHızır Bey Tercüman 0.3.1 · Test sürümü\nYerel ses: Whisper / whisper.cpp (MIT). Çok dilli sesli okuma: ayrı ve isteğe bağlı eSpeak NG uygulaması (GPL-3.0+). Google Translate modelleri ile otomatik çeviri (Google ML Kit). Fotoğraftan okuma: Google ML Kit.\n\nÇeviriler otomatik oluşturulur. Google; çevirilerin doğruluğu, güvenilirliği, ticari elverişliliği, belirli bir amaca uygunluğu ve hak ihlali içermemesi konusunda açık veya örtülü garanti vermez.",12,MUTED,false));
+        full(content,text("Metin çevirisi, fotoğraftan okuma ve yerel konuşma modeli cihazda çalışır. Konuşma kaydı ve çözümlemesi için Google ses hizmeti kullanılmaz. İlk çeviri paketi indirmesi internet gerektirir. API anahtarı veya abonelik gerekmez.\n\nHızır Bey Tercüman 0.4.0 · Test sürümü\nYerel ses: Whisper / whisper.cpp (MIT). Çok dilli sesli okuma: ayrı ve isteğe bağlı eSpeak NG uygulaması (GPL-3.0+). Google Translate modelleri ile otomatik çeviri (Google ML Kit). Fotoğraftan okuma: Google ML Kit.\n\nÇeviriler otomatik oluşturulur. Google; çevirilerin doğruluğu, güvenilirliği, ticari elverişliliği, belirli bir amaca uygunluğu ve hak ihlali içermemesi konusunda açık veya örtülü garanti vermez.",12,MUTED,false));
         ScrollView scroll=new ScrollView(this);scroll.addView(content);
         new AlertDialog.Builder(this).setTitle("Tercihler").setView(scroll).setPositiveButton("Tamam",(d,w)->render()).show();
     }
@@ -706,7 +710,7 @@ public class MainActivity extends Activity {
             device+=LanguageCatalog.name(code)+" seslendirme: "+(support>=0?"Destekleniyor":"Paket eksik / desteklenmiyor")+"\n";
         }}
         device+="\nMetin çevirisi: "+languages.size()+" dil\nFotoğraf alfabeleri: Latin, Makedonca, Çince, Japonca, Korece, Devanagari\n\nSes tanıma ve seslendirme dil listeleri metin çevirisi listesinden farklı olabilir.";
-        device+="\n\nUygulama: 0.3.1\nSon paket hatası: "+(lastPreparationError.isEmpty()?"Yok":lastPreparationError);
+        device+="\n\nUygulama: 0.4.0\nSon paket hatası: "+(lastPreparationError.isEmpty()?"Yok":lastPreparationError);
         final String summary=device;
         AlertDialog d=new AlertDialog.Builder(this).setTitle("Telefon desteği").setMessage(device)
             .setNeutralButton("Kopyala",(dialog,w)->copy(summary)).setPositiveButton("Tamam",null).create();d.show();

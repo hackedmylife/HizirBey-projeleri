@@ -1,0 +1,61 @@
+INSTRUMENTATION_STATUS: class=com.hizirbey.tercuman.OfflineDeviceTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=2
+INSTRUMENTATION_STATUS: stream=
+com.hizirbey.tercuman.OfflineDeviceTest:
+INSTRUMENTATION_STATUS: test=languageChangeRestartsTheRealMicrophone
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.hizirbey.tercuman.OfflineDeviceTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=2
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=languageChangeRestartsTheRealMicrophone
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.hizirbey.tercuman.OfflineDeviceTest
+INSTRUMENTATION_STATUS: current=2
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=2
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=bundledEnglishRecognizerTranscribesWavThroughCapturePipeline
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.hizirbey.tercuman.OfflineDeviceTest
+INSTRUMENTATION_STATUS: current=2
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=2
+INSTRUMENTATION_STATUS: stack=java.lang.AssertionError: expected null, but was:<Ses çözümleme 45 saniyede tamamlanmadı. Daha kısa ve net bir cümleyle yeniden dene.>
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.failNotNull(Assert.java:756)
+	at org.junit.Assert.assertNull(Assert.java:738)
+	at org.junit.Assert.assertNull(Assert.java:748)
+	at com.hizirbey.tercuman.OfflineDeviceTest.bundledEnglishRecognizerTranscribesWavThroughCapturePipeline(OfflineDeviceTest.java:57)
+
+INSTRUMENTATION_STATUS: stream=
+Error in bundledEnglishRecognizerTranscribesWavThroughCapturePipeline(com.hizirbey.tercuman.OfflineDeviceTest):
+java.lang.AssertionError: expected null, but was:<Ses çözümleme 45 saniyede tamamlanmadı. Daha kısa ve net bir cümleyle yeniden dene.>
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.failNotNull(Assert.java:756)
+	at org.junit.Assert.assertNull(Assert.java:738)
+	at org.junit.Assert.assertNull(Assert.java:748)
+	at com.hizirbey.tercuman.OfflineDeviceTest.bundledEnglishRecognizerTranscribesWavThroughCapturePipeline(OfflineDeviceTest.java:57)
+
+INSTRUMENTATION_STATUS: test=bundledEnglishRecognizerTranscribesWavThroughCapturePipeline
+INSTRUMENTATION_STATUS_CODE: -2
+INSTRUMENTATION_RESULT: stream=
+
+Time: 67.054
+There was 1 failure:
+1) bundledEnglishRecognizerTranscribesWavThroughCapturePipeline(com.hizirbey.tercuman.OfflineDeviceTest)
+java.lang.AssertionError: expected null, but was:<Ses çözümleme 45 saniyede tamamlanmadı. Daha kısa ve net bir cümleyle yeniden dene.>
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.failNotNull(Assert.java:756)
+	at org.junit.Assert.assertNull(Assert.java:738)
+	at org.junit.Assert.assertNull(Assert.java:748)
+	at com.hizirbey.tercuman.OfflineDeviceTest.bundledEnglishRecognizerTranscribesWavThroughCapturePipeline(OfflineDeviceTest.java:57)
+
+FAILURES!!!
+Tests run: 2,  Failures: 1
+
+
+INSTRUMENTATION_CODE: -1
