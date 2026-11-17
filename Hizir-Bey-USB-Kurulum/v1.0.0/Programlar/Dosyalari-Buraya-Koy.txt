@@ -1,0 +1,7 @@
+﻿EXE ve MSI kurulum dosyalarınızı bu klasöre koyun.
+Ardından bir üst klasördeki Hepsini-Yukle.bat dosyasına çift tıklayın.
+
+Kurulum dosyaları bu pakete dahil değildir.
+Alt klasörler taranmaz. Her program için doğru mimaride tek kurulum dosyası koyun.
+Yanında ek dosya gerektiren kurucuların bütün yardımcı dosyalarını da koruyun.
+Klasöre yalnızca çalıştırmak istediğiniz kurulum dosyalarını ekleyin.
