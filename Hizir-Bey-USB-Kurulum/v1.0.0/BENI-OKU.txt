@@ -1,0 +1,61 @@
+﻿HIZIR BEY - USB PROGRAM KURULUMU v1.0.0
+Windows 10 / 11 | Ek program gerektirmez
+
+KULLANIM
+1. ZIP dosyasını tamamen çıkartın.
+2. HizirBey-USB-Kurulum klasörünü USB'ye kopyalayın.
+3. Programlar klasörüne programların EXE / MSI kurulum dosyalarını koyun.
+4. Windows kurulumunu bitirip masaüstüne geldikten sonra USB'yi açın.
+5. Hepsini-Yukle.bat dosyasına çift tıklayın ve Windows yönetici iznini onaylayın.
+6. Normal kurulum ekranı açılan programlarda kurulumu tamamlayıp kurucuyu kapatın.
+   Ardından sıradaki program açılır. Kurulum bitince açılan uygulamayı kapatmanız
+   da gerekebilir; program, başlattığı alt işlemlerin kapanmasını bekler.
+
+NASIL ÇALIŞIR?
+- Programlar klasörünün içindeki EXE ve MSI dosyaları isim sırasıyla çalışır.
+- MSI paketleri ilerleme penceresiyle, soru sormadan kurulur. Paket yeniden
+  başlatma isteğini otomatik uygulamasın diye /norestart kullanılır.
+- EXE dosyaları varsayılan olarak kendi normal kurulum ekranıyla açılır.
+- Bir kurulum hata verirse sonraki dosyayla devam eder. Sonuçlar sonunda görünür.
+- Her çalıştırma bütün dosyaları yeniden çalıştırır; kurulu programları atlamaz.
+- Kayıtlar bilgisayarda tutulur; tam konum işlem sonunda gösterilir.
+- Dosyalar kopyalanmaz, silinmez veya indirilmez. Kurucular USB'den çalıştırılır.
+
+TAM OTOMATİK / SESSİZ EXE KURULUMU
+Her EXE için sessiz kurulum parametresi farklıdır. Evrensel bir /S yoktur.
+Programların adları ve kurulum dosyalarının tam isimleri belli olduğunda
+Sessiz-Komutlar.json dosyasına doğrulanmış komutlar eklenebilir.
+Varsayılan içerik {} olduğundan EXE dosyalarına tahmini parametre verilmez.
+
+JSON yapısı: dosya adı -> kurucunun belgelenmiş komut satırı parametreleri.
+Her değer metin olmalı, son girdiden sonra virgül olmamalıdır. Windows yollarında
+ters eğik çizgiyi iki kez yazın. Bu dosyada yalnızca EXE komutları tanımlanır.
+MSI parametreleri Kurulum.ps1 tarafından sağlanır.
+Program listesini göndererek bu kısmı özelleştirebilirsiniz.
+
+İNTERNET VE YENİDEN BAŞLATMA
+İnternetsiz kurulum için programın tam/offline kurulum paketini kullanın.
+Küçük web kurucuları, bağımlılıklar, oturum açma veya lisans işlemleri internet
+isteyebilir. Bu araç kendi başına internetten program indirmez.
+EXE kurucuları kendi yeniden başlatma davranışını belirler. Sorulursa erteleyin.
+MSI ve standart Windows Installer kodlarında 3010 yeniden başlatma gerektiğini,
+1641 yeniden başlatmanın başlatıldığını bildirir. Diğer EXE kodları programın
+belgelerine göre değerlendirilmelidir. Kod 0 tek başına kurulum doğrulaması değildir.
+Oturum açma ve lisans işlemleri otomatik yapılmaz.
+
+ÖNEMLİ
+Bu paket Windows'u kurmaz veya diski biçimlendirmez; masaüstüne geldikten sonra
+program kurmak içindir. Windows kurulum USB'sini oluşturduktan sonra bu klasörü
+ekleyin; kurulum USB'si hazırlama işlemi önceki dosyaları silebilir.
+BAT ve PS1 dosyalarını birlikte tutun. ZIP içinden doğrudan çalıştırmayın.
+Program kurucularını resmi kaynaklarından alın. Yönetici izniyle çalıştırılan
+kurucuların yaptığı değişiklikler bu aracın kontrolü dışındadır.
+
+DOĞRULAMA
+Paket içeriği ve PowerShell sözdizimi kontrolü uygulanmıştır.
+Gerçek program kurulumu Windows bilgisayarda denenmemiştir.
+
+TEKNİK KAYNAKLAR
+https://learn.microsoft.com/en-us/windows/win32/msi/standard-installer-command-line-options
+https://learn.microsoft.com/en-us/windows/win32/msi/error-codes
+https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.management/start-process?view=powershell-5.1
